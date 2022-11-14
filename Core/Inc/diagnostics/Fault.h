@@ -1,135 +1,127 @@
-/**
- * \file       diagnostics/Fault.h
- * \class      Fault
- * \brief      A reporting mechanism for hardware and software faults, with digital indication output.
- */
+///	@file       diagnostics/Fault.h
+///	@class      Fault
+///	@brief      A reporting mechanism for hardware and software faults, with digital indication output
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
+
 
 #ifndef INC_DIAGNOSTICS_FAULT_H_
 #define INC_DIAGNOSTICS_FAULT_H_
 
-#include <stdint.h>
-#include "hal/hal.h"
-#include "devices/Led.h"
+#include "stm32/stm32.h"
+#if FAULT_ENABLE_LED_SUPPORT
+#include "stm32-toolbox/devices/Led.h"
+#endif
 
+/// <summary>
+/// A reporting mechanism for hardware and software faults, with digital indication output
+/// </summary>
+/// <remarks>
+/// Fault is an abstract class and should be subclassed to be use. When subsclassing, up to 32 individual faults can be
+/// defined. The class should then be (generally) instantiated within global scope. Throughout your code, faults can be
+/// set or cleared, and the current fault state can be checked at any time. Optionally, a FAULT LED can be
+/// automatically illuminated when a fault is present.
+/// </remarks>
 class Fault
 {
 public:
-	static constexpr uint32_t None									= 0x00000000;
-	static constexpr uint32_t BatteryCommunications 				= 0x00000001;
-	static constexpr uint32_t ContactorFeedback 					= 0x00000002;
-	static constexpr uint32_t BatteryOvercharged 					= 0x00000004;
-	static constexpr uint32_t BatteryOvertemperature				= 0x00000008;
-	static constexpr uint32_t BatteryRemainingCapacity				= 0x00000010;
-	static constexpr uint32_t BatteryTerminateCharge				= 0x00000020;
-	static constexpr uint32_t SystemOverTemperature					= 0x00000040;
-	static constexpr uint32_t SystemUnderTemperature				= 0x00000080;
-	static constexpr uint32_t FanTachmometer 						= 0x00000100;
-	static constexpr uint32_t ChargePilotFeedback					= 0x00000200;
-	static constexpr uint32_t Encoder								= 0x00000400;
-	static constexpr uint32_t FanSpeedError        					= 0x00000800;
-	static constexpr uint32_t InternalTemperatureCommunications		= 0x00001000;
-	static constexpr uint32_t ExternalTemperatureCommunications		= 0x00002000;
-	static constexpr uint32_t CANCommunicationsOpen					= 0x00004000;
-	static constexpr uint32_t HardwareAbstractionLayerError			= 0x00008000;
-	static constexpr uint32_t TaskAllocation						= 0x00010000;
-	static constexpr uint32_t StackOverflow							= 0x00020000;
-	static constexpr uint32_t QueueAllocation						= 0x00040000;
-	static constexpr uint32_t UARTCommunications					= 0x00080000;
-	static constexpr uint32_t CANCommunicationsTransmit				= 0x00100000;
-	static constexpr uint32_t OperatingSystem						= 0x00200000;
-	static constexpr uint32_t Watchdog   							= 0x00400000;
-	static constexpr uint32_t FlashMemory							= 0x00800000;
-	static constexpr uint32_t Reserved10							= 0x01000000;
-	static constexpr uint32_t Reserved11							= 0x02000000;
-	static constexpr uint32_t Reserved12							= 0x04000000;
-	static constexpr uint32_t Reserved13							= 0x08000000;
-	static constexpr uint32_t Reserved14							= 0x10000000;
-	static constexpr uint32_t Reserved15							= 0x20000000;
-	static constexpr uint32_t Reserved16							= 0x40000000;
-	static constexpr uint32_t Reserved17							= 0x80000000;
+	// Subclass this class and add your own faults.
+	static constexpr uint64_t None									= 0x0000000000000000;
+	static constexpr uint64_t DhcpUnavailable						= 0x0000000100000000;
+	static constexpr uint64_t HardFault								= 0x0000000200000000;
+	static constexpr uint64_t TaskAllocation						= 0x0000000400000000;
+	static constexpr uint64_t QueueAllocation						= 0x0000000800000000;
+	static constexpr uint64_t StackOverflow							= 0x0000001000000000;
 
 	// When these occur, code should not attempt to recover.
 	static constexpr uint32_t fatal_faults = TaskAllocation | StackOverflow;
 
-	Fault(GPIO_TypeDef* led_port, uint16_t led_pin)
+#if FAULT_ENABLE_LED_SUPPORT
+	/// <summary>
+	/// If FAULT LED feature is enabled, points the class to an instance of the <see cref="Led">Led</see> class that should
+	/// be illuminated when a fault is present.
+	/// </summary>
+	/// <param name="led">Led instance</param>
+	void set_led(Led* led)
 	{
-	    led.setup(led_port, led_pin);
+		this->led = led;
+		led->off();
 	}
+#endif
 
-	/**
-	 * Raises a fault.
-	 * @param fault The fault.
-	 */
-	void alert(uint32_t fault)
+	/// <summary>
+	/// Raises a fault.
+	/// </summary>
+	/// <param name="fault">The fault to raise.</param>
+	void raise(uint64_t fault)
 	{
 		this->fault |= fault;
-		if (fault & fatal_faults)
-			self_destruct();
-		else
-			update_fault_led();
+		update_fault_led();
 	}
 
 
-	/**
-	 * Clears a raised fault.
-	 * @note There is no effect if the specified fault is not raised.
-	 * @param fault The fault.
-	 */
-	void reset(uint32_t fault)
+	/// <summary>
+	/// Clears a raised fault.
+	/// </summary>
+	/// <remarks>There is no effect if the specified fault is not raised.</remarks>
+	/// <param name="fault">The fault to clear.</param>
+	void clear(uint64_t fault)
 	{
 		this->fault = this->fault & (0xffffffff ^ fault);
 		update_fault_led();
 	}
 
 
-	/**
-	 * Raises or clears a fault, based on the specified state.
-	 * @param fault The fault.
-	 * @param state True to raise the fault, false to clear it.
-	 */
-	void update(uint32_t fault, bool state)
+	/// <summary>
+	/// Raises or clears a fault, based on the specified state.
+	/// </summary>
+	/// <param name="fault">The fault to alter.</param>
+	/// <param name="state">The new state (true or raise; false to clear).</param>
+	void update(uint64_t fault, bool state)
 	{
-		if (state) alert (fault);
-		else reset (fault);
+		if (state) raise (fault);
+		else clear (fault);
 	}
 
+
+	/// <summary>
+	/// Gets the current fault state.
+	/// </summary>
+	/// <returns>The bitfield representing the current fault state, or zero if no faults are present.</returns>
 	uint32_t get(void)
 	{
 		return this->fault;
 	}
 
 
-private:
-	uint32_t fault = 0;
-	Led led;
+	/// <summary>
+	/// Determines whether the specified fault is currently present.
+	/// </summary>
+	/// <returns>True if the fault is present; otherwise false.</returns>
+	bool is_present(uint64_t fault)
+	{
+		return this->fault & fault;
+	}
 
 
-	/**
-	 * Illuminates the fault LED if there is an outstanding fault.
-	 */
+protected:
+	uint64_t fault = 0;
+#if FAULT_ENABLE_LED_SUPPORT
+	Led* led;
+#endif
+
+	/// <summary>
+	/// Illuminates the fault LED if there is an outstanding fault.
+	/// </summary>
 	void update_fault_led()
 	{
-		bool state = this->fault > 0;
-		led.set(state);
-	}
-
-
-	/**
-	 * Flashes the fault LED.
-	 */
-	void self_destruct()
-	{
-	    bool state;
-		// Give the user some indication that something very bad happened.
-		for (;;)
-		{
-			led.set(state);
-			state = !state;
-			osDelay(100);
-		}
+		if (fault & fatal_faults)
+			led->flash();
+		else
+			led->set(this->fault > 0);
 	}
 };
-
-
 
 #endif /* INC_DIAGNOSTICS_FAULT_H_ */

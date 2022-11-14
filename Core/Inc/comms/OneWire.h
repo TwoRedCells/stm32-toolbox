@@ -1,16 +1,20 @@
-/**
- * \file       comms/OneWire.h
- * \class      OneWire
- * \brief      Encapsulates communications with devices that use the Dallas Semiconductor one-wire protocol.
- * \note       See the DS18B20 datasheet for details how this class is implemented.
- */
+///	@file       comms/OneWire.h
+///	@class      OneWire
+///	@brief      Encapsulates communications with devices that use the Dallas Semiconductor one-wire protocol.
+/// @note       See the DS18B20 datasheet for details how this class is implemented.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
+
 
 #ifndef INC_COMMS_ONEWIRE_H_
 #define INC_COMMS_ONEWIRE_H_
 
 #include <cmsis_os.h>
-#include "hal/gpio.h"
-#include "utility/Timer.h"
+#include "stm32-toolbox/constants.h"
+#include "stm32-toolbox/utility/Timer.h"
+
 
 class OneWire
 {
@@ -148,9 +152,9 @@ public:
 		wait(guard_time);
 		high();
 		wait(read_wait_time);
-        HAL_GPIO_WritePin(READY_LED_GPIO_Port, READY_LED_Pin, LOW);
+        //HAL_GPIO_WritePin(READY_LED_GPIO_Port, READY_LED_Pin, LOW);
         bool value = HAL_GPIO_ReadPin(port, pin);
-        HAL_GPIO_WritePin(READY_LED_GPIO_Port, READY_LED_Pin, HIGH);
+        //HAL_GPIO_WritePin(READY_LED_GPIO_Port, READY_LED_Pin, HIGH);
 		wait(slot_time - read_wait_time - guard_time);
 		return value;
 	}

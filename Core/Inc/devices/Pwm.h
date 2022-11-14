@@ -1,8 +1,10 @@
-/**
- * \file       utility/Pwm.h
- * \class      Pwm
- * \brief      Encapsulation of the STM32 PWM GPIO timer.
- */
+///	@file       devices/Pwm.h
+///	@class      Pwm
+///	@brief      Encapsulation of the STM32 PWM GPIO timer.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
 
 
 #ifndef INC_PWM_H_
@@ -26,7 +28,5 @@ protected:
 		HAL_TIM_PWM_Start(timer, channel);
 	}
 };
-
-
 
 #endif /* INC_PWM_H_ */

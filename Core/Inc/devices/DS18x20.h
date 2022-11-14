@@ -1,15 +1,18 @@
-/**
- * \file       devices/DS18x20.h
- * \class      DS18x20
- * \brief      Encapsulates communications with DS18x20 temperature measurement devices.
- */
+///	@file       devices/DS18x20.h
+///	@class      DS18x20
+///	@brief      Encapsulates communications with DS18x20 temperature measurement devices.
+/// @note       See the DS18B20 datasheet for details how this class is implemented.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
+
 
 #ifndef INC_SENSORS_DS18B20_H_
 #define INC_SENSORS_DS18B20_H_
 
 #include <math.h>
-#include "comms/OneWire.h"
-
+#include "stm32-toolbox/comms/OneWire.h"
 
 
 struct DS18x20_ROM_Read_Response
@@ -67,40 +70,42 @@ public:
 	{
 		if (!reset())
 		{
-			log_e("Slave not responding on OneWire network.");
+			//log_e("Slave not responding on OneWire network.");
 			return false;
 		}
 
 		rom_read();
 		if (rom.family != DS18x20::FamilyCode_DS18B20)
 		{
-			log_e("DS18B20 reported family code is incorrect.");
+			//log_e("DS18B20 reported family code is incorrect.");
 			return false;
 		}
 
         //log_d("%x   %x:%x:%x:%x:%x:%x   %x", rom.family, rom.serial[0], rom.serial[1], rom.serial[2], rom.serial[3], rom.serial[4], rom.serial[5], rom.crc);
 		if (!crc_ok)
 		{
-			log_e("rom_read failed CRC check.");
-			log_d("%x   %x:%x:%x:%x:%x:%x   %x", rom.family, rom.serial[0], rom.serial[1], rom.serial[2], rom.serial[3], rom.serial[4], rom.serial[5], rom.crc);
+			//log_e("rom_read failed CRC check.");
+			//log_d("%x   %x:%x:%x:%x:%x:%x   %x", rom.family, rom.serial[0], rom.serial[1], rom.serial[2], rom.serial[3], rom.serial[4], rom.serial[5], rom.crc);
 			return false;
 		}
 
 		convert_temperature();
 		osDelay(750);
 
+		osKernelLock();
 		reset();
 		rom_skip();
 		read_scratchpad();
         //log_d("%x:%x   %x:%x   %x   %x:%x:%x   %x", scr.temperature_lsb, scr.temperature_msb, scr.th_register, scr.tl_register, scr.configuration_register, scr.reserved0, scr.reserved1, scr.reserved2, scr.crc);
 		if (!crc_ok)
 		{
-			log_e("read_scratchpad failed CRC check.");
-			log_d("%x:%x   %x:%x   %x   %x:%x:%x   %x", scr.temperature_lsb, scr.temperature_msb, scr.th_register, scr.tl_register, scr.configuration_register, scr.reserved0, scr.reserved1, scr.reserved2, scr.crc);
+			//log_e("read_scratchpad failed CRC check.");
+			//log_d("%x:%x   %x:%x   %x   %x:%x:%x   %x", scr.temperature_lsb, scr.temperature_msb, scr.th_register, scr.tl_register, scr.configuration_register, scr.reserved0, scr.reserved1, scr.reserved2, scr.crc);
 			return false;
 		}
 
 		int16_t raw = get_temperature_raw();
+		osKernelUnlock();
 		bool negative = raw & (0b11110000 << 8);
 		if (negative)
 			raw |= (0b11110000 << 8);
