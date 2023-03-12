@@ -1,21 +1,45 @@
-/**
- * \file       devices/Relay.h
- * \class      Relay
- * \brief      A relay or contactor with feedback.
- */
+///	@file       devices/Relay.h
+///	@class      Relay
+///	@brief      Controls an external relay.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
+
 
 #ifndef INC_DEVICES_RELAY_H_
 #define INC_DEVICES_RELAY_H_
 
-#include <stdint.h>
-#include "hal/hal.h"
 
-
+/**
+ * @brief	Controls an external relay.
+ */
 class Relay
 {
 public:
+	/**
+	 * @brief Instantiates a Relay object.
+	 */
+	Relay(void)
+	{
+	}
+
     /**
-     * Prepares the class to interface with the relay hardware.
+     * @brief Prepares the class to interface with the relay hardware.
+     * @param coil_port The GPIO port that the coil is connected to.
+     * @param coil_pin The GPIO pin that the coil is connected to.
+     * @param feedback_port The GPIO port that the feedback circuit is connected to.
+     * @param feedback_pin The GPIOpin that the feedback circuit is connected to.
+     * @param coil_inverted Whether the meaning of the coil pin state is inverted (default is false).
+     * @param feedback_inverted Whether the meaning of the feedback pin state is inverted (defaults is false).
+     */
+	Relay(GPIO_TypeDef* coil_port, uint16_t coil_pin, GPIO_TypeDef* feedback_port, uint16_t feedback_pin, bool coil_inverted=false, bool feedback_inverted=false)
+	{
+		setup(coil_port, coil_pin, feedback_port, feedback_pin, coil_inverted, feedback_inverted);
+	}
+
+    /**
+     * @brief Prepares the class to interface with the relay hardware.
      * @param coil_port The GPIO port that the coil is connected to.
      * @param coil_pin The GPIO pin that the coil is connected to.
      * @param feedback_port The GPIO port that the feedback circuit is connected to.
@@ -35,7 +59,7 @@ public:
 
 
 	/**
-	 * Sets the relay coil to the specified state.
+	 * @brief Sets the relay coil to the specified state.
 	 * @param state The desired state.
 	 * @return True if the feedback circuit confirms the reacted.
 	 */
@@ -48,7 +72,7 @@ public:
 
 
 	/**
-	 * Gets the state of the feedback circuit.
+	 * @brief Gets the state of the feedback circuit.
 	 * @return The state.
 	 */
 	bool get(void)
@@ -59,7 +83,7 @@ public:
 
 
 	/**
-	 * Energizes the relay.
+	 * @brief Energizes the relay.
 	 * @return True if the feedback circuit reflected the new state.
 	 */
 	bool on(void)
@@ -69,7 +93,7 @@ public:
 
 
     /**
-     * Denergizes the relay.
+     * @brief Denergizes the relay.
      * @return True if the feedback circuit reflected the new state.
      */
 	bool off(void)

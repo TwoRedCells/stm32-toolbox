@@ -1,13 +1,15 @@
-/**
- * \file       diagnostics/Log.h
- * \class      Log
- * \brief      A simple lightweight logging facility with printf-style support suitable for serial logging on microcontrollers.
- */
+///	@file       diagnostics/Log.h
+///	@class      Log
+///	@brief      A flexible serial logging subsystem.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
 
 #ifndef LOG_H
 #define LOG_H
 
-#include <comms/Serial.hpp>
+#include "stm32-toolbox/comms/Serial.h"
 
 #define DEC 10
 #define HEX 16

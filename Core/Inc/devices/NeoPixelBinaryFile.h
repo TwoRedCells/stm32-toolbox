@@ -59,6 +59,7 @@ public:
 	};
 
 
+#if DEBUG
 	/*
 	 * @brief 	Generates an example file with a simple pattern.
 	 * @param 	pixels The number of pixels for the pattern.
@@ -99,6 +100,7 @@ public:
 			}
 		}
 	}
+#endif
 
 
 	/**
@@ -155,6 +157,15 @@ public:
 
 
 	/**
+	 * @brief 	Frees link to binary stored in memory.
+	 */
+	void clear(void)
+	{
+		binary = nullptr;
+	}
+
+
+	/**
 	 * @brief	Get the underlying raw binary data.
 	 * @returns	Pointer to the data.
 	 */
@@ -187,8 +198,7 @@ private:
 	}
 
 
-	uint8_t* binary;
-	bool allocated = false;
+	uint8_t* binary = nullptr;
 };
 
 

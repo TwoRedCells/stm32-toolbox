@@ -10,7 +10,6 @@
 #ifndef INC_DEVICES_LED_H_
 #define INC_DEVICES_LED_H_
 
-#include <stdint.h>
 #include "stm32/stm32.h"
 #include "stm32-toolbox/utility/Timer.h"
 

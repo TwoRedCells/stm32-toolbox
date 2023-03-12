@@ -1,0 +1,86 @@
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.h:51:7:void String::StringIfHelper() const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.h:138:2:String::operator String::StringIfHelperType() const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:29:1:String::String(const char*)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:35:1:String::String(const String&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:41:1:String::String(const __FlashStringHelper*)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:48:1:String::String(String&&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:53:1:String::String(StringSumHelper&&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:60:1:String::String(char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:69:1:String::String(unsigned char, unsigned char)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:77:1:String::String(int, unsigned char)	64	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:85:1:String::String(unsigned int, unsigned char)	64	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:93:1:String::String(long int, unsigned char)	64	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:101:1:String::String(long unsigned int, unsigned char)	64	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:109:1:String::String(float, unsigned char)	72	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:116:1:String::String(double, unsigned char)	64	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:123:1:String::~String()	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:132:13:void String::init()	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:139:6:void String::invalidate()	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:146:15:unsigned char String::reserve(unsigned int)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:156:15:unsigned char String::changeBuffer(unsigned int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:171:10:String& String::copy(const char*, unsigned int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:182:10:String& String::copy(const __FlashStringHelper*, unsigned int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:194:6:void String::move(String&)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:215:10:String& String::operator=(const String&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:226:10:String& String::operator=(String&&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:232:10:String& String::operator=(StringSumHelper&&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:239:10:String& String::operator=(const char*)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:247:10:String& String::operator=(const __FlashStringHelper*)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:259:15:unsigned char String::concat(const String&)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:264:15:unsigned char String::concat(const char*, unsigned int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:275:15:unsigned char String::concat(const char*)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:281:15:unsigned char String::concat(char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:289:15:unsigned char String::concat(unsigned char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:296:15:unsigned char String::concat(int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:303:15:unsigned char String::concat(unsigned int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:310:15:unsigned char String::concat(long int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:317:15:unsigned char String::concat(long unsigned int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:324:15:unsigned char String::concat(float)	48	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:331:15:unsigned char String::concat(double)	48	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:338:15:unsigned char String::concat(const __FlashStringHelper*)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:354:19:StringSumHelper& operator+(const StringSumHelper&, const String&)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:361:19:StringSumHelper& operator+(const StringSumHelper&, const char*)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:368:19:StringSumHelper& operator+(const StringSumHelper&, char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:375:19:StringSumHelper& operator+(const StringSumHelper&, unsigned char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:382:19:StringSumHelper& operator+(const StringSumHelper&, int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:389:19:StringSumHelper& operator+(const StringSumHelper&, unsigned int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:396:19:StringSumHelper& operator+(const StringSumHelper&, long int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:403:19:StringSumHelper& operator+(const StringSumHelper&, long unsigned int)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:410:19:StringSumHelper& operator+(const StringSumHelper&, float)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:417:19:StringSumHelper& operator+(const StringSumHelper&, double)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:424:19:StringSumHelper& operator+(const StringSumHelper&, const __FlashStringHelper*)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:435:5:int String::compareTo(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:445:15:unsigned char String::equals(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:450:15:unsigned char String::equals(const char*) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:457:15:unsigned char String::operator<(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:462:15:unsigned char String::operator>(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:467:15:unsigned char String::operator<=(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:472:15:unsigned char String::operator>=(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:477:15:unsigned char String::equalsIgnoreCase(const String&) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:490:15:unsigned char String::startsWith(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:496:15:unsigned char String::startsWith(const String&, unsigned int) const	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:502:15:unsigned char String::endsWith(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:512:6:char String::charAt(unsigned int) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:517:6:void String::setCharAt(unsigned int, char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:522:8:char& String::operator[](unsigned int)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:532:6:char String::operator[](unsigned int) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:538:6:void String::getBytes(unsigned char*, unsigned int, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:555:5:int String::indexOf(char) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:560:5:int String::indexOf(char, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:568:5:int String::indexOf(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:573:5:int String::indexOf(const String&, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:581:5:int String::lastIndexOf(char) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:586:5:int String::lastIndexOf(char, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:597:5:int String::lastIndexOf(const String&) const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:602:5:int String::lastIndexOf(const String&, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:615:8:String String::substring(unsigned int, unsigned int) const	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:636:6:void String::replace(char, char)	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:644:6:void String::replace(const String&, const String&)	56	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:687:6:void String::remove(unsigned int)	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:694:6:void String::remove(unsigned int, unsigned int)	32	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:704:6:void String::toLowerCase()	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:712:6:void String::toUpperCase()	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:720:6:void String::trim()	24	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:736:6:long int String::toInt() const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:742:7:float String::toFloat() const	16	static
+../Core/Inc/stm32-toolbox/comms/ethernet/WString.cpp:747:8:double String::toDouble() const	16	static

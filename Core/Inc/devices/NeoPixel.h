@@ -45,6 +45,20 @@ public:
 #if ENABLE_NEOPIXEL_BINARYFILE
 	static const uint8_t LED_PATTERN_BINARYFILE = 9;
 #endif
+
+#if LED_TYPE_RGB
+	static const uint8_t LED_SIZE = 24;
+	static const uint32_t RED = 0x00ff00;
+	static const uint32_t GREEN = 0xff0000;
+	static const uint32_t BLUE = 0x0000ff;
+	static const uint32_t WHITE = 0x000000;
+	static const uint32_t CYAN = 0xff00ff;
+	static const uint32_t MAGENTA = 0x00ffff;
+	static const uint32_t YELLOW = 0xffff00;
+	static const uint32_t BLACK = 0x000000;
+	static const uint8_t MAX_INTENSITY = 0xff;
+#else
+	static const uint8_t LED_SIZE = 32;
 	static const uint32_t RED = 0x00ff0000;
 	static const uint32_t GREEN = 0xff000000;
 	static const uint32_t BLUE = 0x0000ff00;
@@ -54,6 +68,8 @@ public:
 	static const uint32_t YELLOW = 0xffff0000;
 	static const uint32_t BLACK = 0x00000000;
 	static const uint8_t MAX_INTENSITY = 0xff;
+#endif
+
 	// The timer runs from 0 to 119. These represent the duty cycle expected by the LED to represent a 0 or 1.
 	const uint32_t PWM_HIGH = 76;
 	const uint32_t PWM_LOW = 38;
@@ -63,19 +79,19 @@ public:
 	 * @brief Instantiates a NeoPixel strip.
 	 * @param length The number of LEDs in the strip.
 	 */
-	NeoPixel(uint32_t length)
+	NeoPixel(uint32_t length, uint32_t* buffer)
 	{
 		this->length = length;
-		pixel_buffer = (uint32_t*) malloc(length * sizeof(uint32_t));
-		dma_buffer = (uint32_t*) malloc((length+4) * sizeof(uint32_t) * 0x20);
+		pixel_buffer = buffer;
+		dma_buffer = buffer + length;
 
 		// We use "empty" pixels at the end to achieve a timing pause.
-		for (int i=0; i<0x20*2; i++)
+		for (int i=0; i<LED_SIZE*2; i++)
 			dma_buffer[i] = 0;
 
 		// 64 empty bits at the end.
-		for (int i=0; i<0x20*2; i++)
-			dma_buffer[length*0x20+i] = 0;
+		for (int i=0; i<LED_SIZE*2; i++)
+			dma_buffer[length*LED_SIZE+i] = 0;
 
 		clear();
 	}
@@ -97,7 +113,11 @@ public:
 	 */
 	void set(uint32_t index, uint32_t colour)
 	{
+#if LED_TYPE_RGB
+		pixel_buffer[index] = colour >> 8;
+#else
 		pixel_buffer[index] = colour;
+#endif
 		set_dma_buffer(index);
 	}
 
@@ -130,7 +150,7 @@ public:
 	uint32_t get_dma_buffer_length(void)
 	{
 		// We add two empty spots to the beginning and end.
-		return (length+4) * 0x20;
+		return (length+4) * LED_SIZE;
 	}
 
 
@@ -258,26 +278,12 @@ public:
 		pattern = LED_PATTERN_BINARYFILE;
 		binary_file = binaryfile;
 		binary_channel = channel;
-	}
-
-
-	/**
-	 * @brief	Gets the colour for the specified frame, channel, and index from the specified file.
-	 * @param	frame The frame to get colour for.
-	 * @param	channel The channel to get colour for.
-	 * @param 	index The pixel index to get colour for.
-	 * @param	binaryfile The file to extract data from.
-	 * @returns	The colour.
-	 */
-	static uint32_t get_binary_colour(uint32_t frame, uint8_t channel, uint32_t index, NeoPixelBinaryFile *binaryfile)
-	{
-		uint32_t colour = 0;
-		NeoPixelBinaryFile::Pixel* pixel = binaryfile->get_pixel(frame, channel, index);
-		colour |= pixel->g << 24;
-		colour |= pixel->r << 16;
-		colour |= pixel->b << 8;
-		colour |= pixel->w;
-		return colour;
+		binary_pixel_count = binary_file->file_header->pixel_count;
+		binary_channel_count = binary_file->file_header->channel_count;
+		binary_frame_count = binary_file->file_header->frame_count;
+		binary_refresh_time = binary_file->file_header->refresh_time;
+		binary_frame_length = sizeof(NeoPixelBinaryFile::FrameHeader) + binary_channel_count * sizeof(NeoPixelBinaryFile::Pixel) * binary_pixel_count;
+		binary_frame_index = 0;
 	}
 #endif
 
@@ -287,8 +293,10 @@ public:
 	 */
 	void loop(void)
 	{
+#if ENABLE_NEOPIXEL_DEMO_PATTERN
 		if (pattern == LED_PATTERN_DEMO)
 			loop_demo();
+#endif
 #if ENABLE_NEOPIXEL_BUILTIN_PATTERNS
 		else if (pattern == LED_PATTERN_FLASH)
 			loop_flash();
@@ -317,10 +325,10 @@ private:
 	 */
 	void set_dma_buffer(uint32_t index)
 	{
-		for (int j=0; j<0x20; j++)
-			dma_buffer[(index+2)*0x20+j-1] = (pixel_buffer[index] >> (0x20-j)) & 0x01 ? PWM_HIGH : PWM_LOW;
+		for (int j=0; j<LED_SIZE; j++)
+			dma_buffer[(index+2)*LED_SIZE+j-1] = (pixel_buffer[index] >> (LED_SIZE-j)) & 0x01 ? PWM_HIGH : PWM_LOW;
 
-		dma_buffer[0x20+0x1f] = 0;
+		dma_buffer[LED_SIZE+0x1f] = 0;
 	}
 
 
@@ -481,36 +489,37 @@ private:
 #if ENABLE_NEOPIXEL_BINARYFILE
 	NeoPixelBinaryFile *binary_file;
 	uint8_t binary_channel;
-	uint32_t frame_index = 0;
+	uint32_t binary_frame_index;
+	uint32_t binary_pixel_count;
+	uint32_t binary_channel_count;
+	uint32_t binary_frame_count;
+	uint32_t binary_refresh_time;
+	uint32_t binary_frame_length;
 
 	void loop_binaryfile(void)
 	{
-		// Save these so we don't need to continuously parse the structure.
-		static uint32_t pixel_count = binary_file->file_header->pixel_count;
-		static uint32_t channel_count = binary_file->file_header->channel_count;
-		static uint32_t frame_count = binary_file->file_header->frame_count;
-		static uint32_t refresh_time = binary_file->file_header->refresh_time;
-		static uint32_t frame_length = sizeof(NeoPixelBinaryFile::FrameHeader) + channel_count * sizeof(NeoPixelBinaryFile::Pixel) * pixel_count;
+		// The memory may have needed to be freed in order to complete another operation.
+		if (binary_file->get_binary() == nullptr)
+			return;
 
 		if (timer.is_elapsed() || !timer.is_started())
 		{
 			uint32_t* frame_data = (uint32_t*)(
 					binary_file->get_binary() + sizeof(NeoPixelBinaryFile::FileHeader)
-					+ frame_index * frame_length
-					+ sizeof(NeoPixelBinaryFile::FrameHeader) + binary_channel * sizeof(NeoPixelBinaryFile::Pixel) * pixel_count);
+					+ binary_frame_index * binary_frame_length
+					+ sizeof(NeoPixelBinaryFile::FrameHeader) + binary_channel * sizeof(NeoPixelBinaryFile::Pixel) * binary_pixel_count);
 
-			for (uint32_t j = 0; j < pixel_count; j++)
+			for (uint32_t j = 0; j < binary_pixel_count; j++)
 				set(j, frame_data[j]);
 
-			if (frame_index++ == frame_count - 1)
-				frame_index = 0;
+			if (binary_frame_index++ == binary_frame_count - 1)
+				binary_frame_index = 0;
 
-			timer.start(milliseconds(refresh_time));
+			timer.start(milliseconds(binary_refresh_time));
 		}
 	}
-
-
 #endif
+
 
 private:
 	uint32_t length;  /// The number of pixels.
@@ -520,9 +529,8 @@ private:
 	uint32_t ontime, offtime;  // The on-time/off-time for flashing pattersn.
 	uint32_t colour;  /// The colour to display.
 	uint8_t state = 0;  // Used to keep internal state, may be used differently by different patterns.
-	uint32_t* pixel_buffer;  /// The pixel buffer, each pixel in WBRG format.
+	uint32_t* pixel_buffer;;  /// The pixel buffer, each pixel in WBRG format.
 	NeoPixel *other;  /// Another instance to coordinate with.
-
 };
 
 #endif /* INC_NEOPIXEL_H_ */
