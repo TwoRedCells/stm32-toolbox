@@ -10,9 +10,9 @@
 #ifndef	W5500_H_INCLUDED
 #define	W5500_H_INCLUDED
 
-//#include <SPI.h>
 #include "util.h"
-//#include "variant.h"
+#include "gpio.h"
+#include <stdint.h>
 
 #define CS ETH_CS_GPIO_Port, ETH_CS_Pin
 

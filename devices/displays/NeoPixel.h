@@ -20,7 +20,7 @@
 #include "utility/Timer.h"
 
 #if ENABLE_NEOPIXEL_BINARYFILE
-#include "devices/NeoPixelBinaryFile.h"
+#include "devices/displays/NeoPixelBinaryFile.h"
 #endif
 
 /**

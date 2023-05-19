@@ -12,10 +12,8 @@
 #define INC_OUTPUTS_FAN_H_
 
 #include <math.h>
-#include "stm32/stm32.h"
-#include "stm32-toolbox/constants.h"
-#include "stm32-toolbox/devices/Pwm.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "devices/basic/Pwm.h"
+#include "utility/Timer.h"
 
 
 class Fan : public Pwm
