@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
  * Copyright (c) 2010 by WIZnet <support@wiznet.co.kr>
  *
@@ -179,3 +181,4 @@ void W5500Class::execCmdSn(SOCKET s, SockCMD _cmd) {
 }
 
 W5500Class w5500;
+#endif

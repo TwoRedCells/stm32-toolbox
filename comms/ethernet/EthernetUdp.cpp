@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
  *  Udp.cpp: Library to send/receive UDP packets with the Arduino ethernet shield.
  *  This version only offers minimal wrapping of socket.c/socket.h
@@ -246,3 +248,4 @@ uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
 	return 1;
 }
 
+#endif

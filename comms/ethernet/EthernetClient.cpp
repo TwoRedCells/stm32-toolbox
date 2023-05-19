@@ -1,4 +1,5 @@
-
+#include "toolbox.h"
+#if ENABLE_W5500
 #include "Ethernet.h"
 #include "main.h"
 #include "utility/Timer.h"
@@ -154,3 +155,4 @@ uint8_t EthernetClient::status()
 	if (_sock == MAX_SOCK_NUM) return SnSR::CLOSED;
 	return socket.status(_sock);
 }
+#endif

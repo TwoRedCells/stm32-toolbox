@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 // Arduino DNS client for WizNet5100-based Ethernet shield
 // (c) Copyright 2009-2010 MCQN Ltd.
 // Released under Apache License, version 2.0
@@ -397,3 +399,4 @@ uint16_t DNSClient::ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
 	return -10;//INVALID_RESPONSE;
 }
 
+#endif

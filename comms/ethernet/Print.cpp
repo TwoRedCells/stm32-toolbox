@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
  Print.cpp - Base class that provides print() and println()
  Copyright (c) 2008 David A. Mellis.  All right reserved.
@@ -264,3 +266,4 @@ size_t Print::printFloat(double number, uint8_t digits)
 
 	return n;
 }
+#endif

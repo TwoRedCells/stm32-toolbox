@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
   WString.cpp - String library for Wiring & Arduino
   ...mostly rewritten by Paul Stoffregen...
@@ -749,3 +751,4 @@ double String::toDouble(void) const
 	if (buffer) return atof(buffer);
 	return 0;
 }
+#endif
