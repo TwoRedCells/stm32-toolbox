@@ -12,7 +12,7 @@
 #define INC_PRINT_HPP_
 
 #include <stdarg.h>
-#include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
 
 #define DEC 10
@@ -41,21 +41,21 @@
  *			of features, or compatibility.
  */
 class PrintLite
-
 {
 public:
 	/**
 	 * @brief	Outputs a formatted string.
 	 * @param 	format A string that may include format specifiers.
 	 * @param	... Value(s) to format.
+	 * @returns The number of characters printed.
 	 */
-	void printf(const char *format, ...)
+	uint16_t printf(const char *format, ...)
 	{
 		va_list a;
 		va_start(a, format);
-
-		int i, dec;
-		long n;
+		int32_t n, dec;
+		uint32_t u;
+		uint16_t count = 0;
 		double f;
 
 		while(char c = *format++)
@@ -68,45 +68,55 @@ public:
 					write(va_arg(a, char*));
 					break;
 				case 'c':                       // Char
-					write(va_arg(a, int));
+					write(va_arg(a, int8_t));
+					count++;
 					break;
-				case 'i':                       // 16 bit Integer
-				case 'u':                       // 16 bit Unsigned
-					i = va_arg(a, int);
-					if(c == 'i' && i < 0) i = -i, write('-');
-					xtoa((unsigned)i, divisors + 5);
+				case 'd':
+				case 'i':                       // 16 bit signed integer
+				case 'u':                       // 16 bit unsigned integer
+					n = va_arg(a, int32_t);
+					if(c == 'i' && n < 0) n = -n, write('-');
+					count += xtoa((uint16_t)n, divisors + 5);
 					break;
-				case 'l':                       // 32 bit Long
-				case 'n':                       // 32 bit uNsigned loNg
-					n = va_arg(a, long);
+				case 'l':                       // 32 bit long signed integer
+				case 'n':                       // 32 bit long unsigned integer
+					n = va_arg(a, int32_t);
 					if(c == 'l' && n < 0) n = -n, write('-');
-					xtoa((unsigned long)n, divisors);
+					count += xtoa((uint32_t)n, divisors);
 					break;
 				case 'x':                       // 16 bit heXadecimal
-					i = va_arg(a, int);
-					puth(i >> 12);
-					puth(i >> 8);
-					puth(i >> 4);
-					puth(i);
+					u = va_arg(a, uint32_t);
+					puth(u >> 12);
+					puth(u >> 8);
+					puth(u >> 4);
+					puth(u);
+					count += 4;
 					break;
 				case '.':						// float
 					dec = *format++ - 0x30;
 					f = va_arg(a, double);
 					if(f < 0) f = -f, write('-');
-					print((int)f, DEC);
-					write('.');
-					print((f - (int)f) * pow(10, dec), DEC);
+					print((int16_t)f, DEC);
+					if (dec > 0)
+					{
+						write('.');
+						count++;
+						print((f - (int16_t)f) * pow(10, dec), DEC);
+					}
 					format++;
 					break;
-				case 0: return;
-				default: goto bad_fmt;
+				case 0:
+					return count;
+				default:
+					goto bad_fmt;
 				}
 			}
 			else
 				bad_fmt:
-				write(c);
+			write(c);
 		}
 		va_end(a);
+		return count;
 	}
 
 
@@ -114,9 +124,9 @@ public:
 	 * @brief	Prints the specified string.
 	 * @param	s The string.
 	 */
-	void print(const char* s)
+	uint16_t print(const char* s)
 	{
-		write((char*)s);
+		return write((char*)s);
 	}
 
 
@@ -124,9 +134,9 @@ public:
 	 * @brief	Prints the specified string.
 	 * @param	s The string.
 	 */
-	void print(char* s)
+	uint16_t print(char* s)
 	{
-		write(s);
+		return write(s);
 	}
 
 
@@ -135,18 +145,18 @@ public:
 	 * @param	c The integer value.
 	 * @param	base 10 or 16.
 	 */
-	void print(unsigned int c, uint8_t base=HEX)
+	uint16_t print(unsigned int c, uint8_t base=HEX)
 	{
 		const char* format = base == HEX ? "%x" : "%u";
-		printf((char*)format, c);
+		return printf((char*)format, c);
 	}
 
 
 	/**
 	 * @brief	Writes the specified byte to the underlying resource.
-	 * @param	c The bye value
+	 * @param	c The byte value
 	 */
-	virtual void write(uint8_t b) = 0;
+	virtual size_t write(uint8_t b) = 0;
 
 
 	/**
@@ -155,47 +165,62 @@ public:
 	 * @param	buffer A pointer to the buffer
 	 * @param	size The number of bytes to write.
 	 */
-	void write(const uint8_t *buffer, size_t size)
+	uint16_t write(const uint8_t *buffer, size_t size)
 	{
 		for (size_t i=0; i<size; i++)
 			write(buffer[i]);
+		return size;
 	}
 
 
 	/**
 	 * @brief	Writes a NUL-terminated string.
-	 * @param	s String to write.
+	 * @param	string String to write.
 	 */
-	void write(const char *s)
+	uint16_t write(const char *string)
 	{
-		const char *p = s;
+		uint16_t count = 0;
+		const char *p = string;
 		while(*p)
 		{
 			write((uint8_t)(*p));
 			p++;
+			count++;
 		}
+		return count;
 	}
 
 protected:
-	void xtoa(unsigned long x, const unsigned long *dp)
+	/**
+	 * Converts an integer to a string.
+	 * @param value The integer to convert.
+	 * @param string Pointer to place the string.
+	 */
+	uint16_t xtoa(uint32_t value, const uint32_t *string)
 	{
+		uint16_t count = 0;
 		char c;
-		unsigned long d;
-		if(x)
+		uint32_t d;
+		if(value)
 		{
-			while(x < *dp) ++dp;
+			while(value < *string) ++string;
 			do
 			{
-				d = *dp++;
+				d = *string++;
 				c = '0';
-				while(x >= d) ++c, x -= d;
+				while(value >= d)
+					++c, value -= d;
 				write(c);
+				count++;
 			} while(!(d & 1));
-		} else
+		}
+		else
 			write('0');
+		return count;
 	}
 
-	static inline const unsigned long divisors[] = {
+
+	static inline const uint32_t divisors[] = {
 			//  4294967296      // 32 bit unsigned max
 			1000000000,     // +0
 			100000000,     // +1
@@ -210,10 +235,15 @@ protected:
 			1,     // +9
 	};
 
-	void puth(unsigned n)
+
+	/**
+	 * Prints the hex value (zero to A) corresponding to the specified value.
+	 * @param value The value.
+	 */
+	void puth(uint8_t value)
 	{
 		static const char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-		write(hex[n & 15]);
+		write(hex[value & 15]);
 	}
 };
 
