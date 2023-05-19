@@ -22,7 +22,7 @@ public:
 	 * @param	hspi The SPI instance to use.
 	 * @param	ss_pin The pin to use for SPI CS.
 	 */
-	void init(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	SPI(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 	{
 		this->hspi = hspi;
 		this->cs_port = cs_port;

@@ -10,10 +10,8 @@
 #ifndef INC_STM32_TOOLBOX_UTILITY_STRINGBUILDER_H_
 #define INC_STM32_TOOLBOX_UTILITY_STRINGBUILDER_H_
 
-//#include <stdarg.h>
-#include <utility/PrintLite.h>
-#include <toolbox.h>
-#include "cmsis_os.h"
+#include "utility/PrintLite.h"
+#include "toolbox.h"
 
 
 /**
@@ -76,9 +74,11 @@ public:
 	/**
 	 * @brief	Writes a byte to the string buffer.
 	 * @param	c The byte to add to the buffer.
+	 * @returns	The number of bytes added.
 	 */
-	void write(uint8_t c)
+	size_t write(uint8_t c)
 	{
+		uint32_t before = length;
 		if (reset)
 		{
 			reset = false;
@@ -100,6 +100,7 @@ public:
 		}
 		buffer[length-1] = c;
 		buffer[length] = 0;
+		return length - before;
 	}
 
 
