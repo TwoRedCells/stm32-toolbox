@@ -17,10 +17,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 
 #if ENABLE_NEOPIXEL_BINARYFILE
-#include "stm32-toolbox/devices/NeoPixelBinaryFile.h"
+#include "devices/NeoPixelBinaryFile.h"
 #endif
 
 /**

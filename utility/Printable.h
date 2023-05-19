@@ -21,7 +21,7 @@
 #define Printable_h
 
 #include <stdlib.h>
-#include "PrintLite.h"
+#include "Print.h"
 
 class Print;
 
@@ -34,7 +34,7 @@ class Print;
 class Printable
 {
 public:
-	virtual size_t printTo(PrintLite& p) const = 0;
+	virtual size_t printTo(Print& p) const = 0;
 };
 
 #endif

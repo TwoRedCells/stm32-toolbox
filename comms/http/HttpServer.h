@@ -11,12 +11,12 @@
 #ifndef INC_STM32_TOOLBOX_COMMS_HTTPSERVER_H_
 #define INC_STM32_TOOLBOX_COMMS_HTTPSERVER_H_
 
-#include <stm32-toolbox/comms/ethernet/Ethernet.h>
-#include "stm32-toolbox/comms/ethernet/Ping.h"
+#include "comms/ethernet/Ethernet.h"
+#include "comms/ethernet/Ping.h"
 #include "HttpHandler.h"
-#include "stm32-toolbox/generics/List.h"
+#include "generics/List.h"
 #include "string.h"
-#include "globals.h"
+#include "rad/Globals.h"
 #include "strings.h"
 
 
@@ -49,26 +49,37 @@ public:
 		for(;;)
 		{
 			// Feed watchdog.
-			gooddog.feed(HttpdTaskOk);
+			G.gooddog.feed(HttpdTaskOk);
 
-			// See if we are online.
-			if (tick++ % 50 == 0)  // Every 5-10 seconds.
-			{
-				Ping::ICMPPing ping(4, 0xff);  // 4 is socket number.
-				socket.getGatewayIp(gw);
-				Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
-				fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != Ping::SUCCESS);
-			}
+			// See if we are connected
+			uint8_t phy = w5500.getPHYCFGR();
+			bool link = phy & 0x01;
+			G.fault.update(NemoFault::NetworkLinkNotPresent, !link);
 
-			// Check for client connection.
-			EthernetClient client = this->available();
-			if (client)
+			if (link)
 			{
-				handle_request(&client);
-				client.print(S_LF);
-				client.stop();
+				// See if we are online.
+				if (tick++ % 50 == 0)  // Every 5-10 seconds.
+				{
+					Ping::ICMPPing ping(4, 0xff);  // 4 is socket number.
+					socket.getGatewayIp(gw);
+					Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
+					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != Ping::SUCCESS);
+				}
+
+				// Check for client connection.
+				EthernetClient client = this->available();
+				if (client)
+				{
+					handle_request(&client);
+					client.print(S_LF);
+					client.stop();
+				}
+				ethernet->maintain();  // Manage DHCP leases, if applicable.
 			}
-			ethernet->maintain();  // Manage DHCP leases, if applicable.
+#ifdef DEBUG
+			uint32_t uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
+#endif
 			osDelay(100);
 		}
 	}

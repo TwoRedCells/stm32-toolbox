@@ -24,8 +24,28 @@ public:
      */
     List()
     {
-        buffer = NULL;
+        buffer = nullptr;
         length = 0;
+    }
+
+
+    /**
+     * Dynamic constructor allocates memory from the heap.
+     * @param length The number of objects in the list.
+     */
+    List(uint32_t length)
+    {
+    	dynamic = true;
+    	T* buffer = (T*) malloc(length*sizeof(T));
+    	set_buffer(buffer, length);
+    	this->length = 0;
+    }
+
+
+    ~List()
+    {
+    	if (dynamic)
+    		free(buffer);
     }
 
     /**
@@ -85,6 +105,17 @@ public:
     	return buffer[index];
     }
 
+
+    /**
+     * Returns the specified item from the list.
+     * @param index Index of the item to retrieve.
+     * @return The item at the specified index.
+     */
+    T operator[] (uint32_t index)
+    {
+    	return get(index);
+    }
+
     /**
      * Returns the state of the queue.
      * @return true if the queue is empty; otherwise false.
@@ -107,6 +138,7 @@ private:
     uint32_t buffer_length;  // Length of the buffer.
     uint32_t length;  // The current length of the queue.
     T _default;  // Empty value.
+    bool dynamic = false;  // True if the buffer was allocated at runtime.
 };
 #endif
 

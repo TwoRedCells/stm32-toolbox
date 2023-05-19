@@ -37,15 +37,19 @@
 #define FAULT_ENABLE_LED_SUPPORT (1)
 
 // NeoPixel
-#define ENABLE_NEOPIXEL_BUILTIN_PATTERNS (1)
-#define ENABLE_NEOPIXEL_DEMO_PATTERN (1)
-#define ENABLE_NEOPIXEL_BINARYFILE (1)
+#define ENABLE_NEOPIXEL_BUILTIN_PATTERNS (1)	// Whether or not to include build-in patterns.
+#define ENABLE_NEOPIXEL_DEMO_PATTERN (1)		// Whether or not to include the demo pattern.
+#define ENABLE_NEOPIXEL_BINARYFILE (1)			// Whether or not to include binary file support.
+#define NEOPIXEL_MAX_PIXELS (35)				// The maximum number of pixels.
+#define NEOPIXEL_BUFFER_SIZE (NEOPIXEL_MAX_PIXELS + (NEOPIXEL_MAX_PIXELS+2) * 0x20)  // Allocate uint32_t[NEOPIXEL_BUFFER_SIZE].
 
 // Flash memory
-#define FLASH_LAYOUT_SECTORS (1)   	// For MCUs that layout FLASH into sectors.
-#define FLASH_LAYOUT_PAGES (0)     	// For MCUs that layout FLASH into pages.
-#define FLASH_ALLOW_OVERWRITING (1)	// Can add a new copy of existing file. Old one will be unlinked.
-#define FLASH_DIRECTORY_SIZE (16)  	// The maximum number of directory entries (files) that the filesystem will support.
+#define INTERNAL_FLASH_LAYOUT_SECTORS (1)   	// For MCUs that layout FLASH into sectors.
+#define INTERNAL_FLASH_LAYOUT_PAGES (0)     	// For MCUs that layout FLASH into pages.
+#define INTERNAL_FLASH_ALLOW_OVERWRITING (1)	// Can add a new copy of existing file. Old one will be unlinked.
+#define INTERNAL_FLASH_DIRECTORY_SIZE (16)  	// The maximum number of directory entries (files) that the filesystem will support.
+#define INTERNAL_FLASH_FILENAME_LENGTH (80)     // The maximum length of a filename, including the terminating NUL.
+#define EXTERNAL_FLASH_FILENAME_LENGTH (80)     // The maximum length of a filename, including the terminating NUL.
 
 // HTTPd
 #define HTTP_SERVER_MAX_HANDLERS (3)
@@ -55,3 +59,7 @@
 #define OTP_BASE_ADDRESS 0x1fff7800  // The memory address of the first block of OTP memory. See your MCU reference manual.
 #define OTP_BLOCK_MAC 0  // Where to permanently store a MAC address.
 #define OTP_BLOCK_SERIAL 1 // Where to store the serial number.
+
+// StringBuilder
+#define ENABLE_STRINGBUILDER_MALLOC (0)
+#define STRINGBUILDER_BLOCK_SIZE (0x40)  // StringBuilder will allocate memory in these increments.

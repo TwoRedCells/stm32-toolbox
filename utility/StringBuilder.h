@@ -10,26 +10,28 @@
 #ifndef INC_STM32_TOOLBOX_UTILITY_STRINGBUILDER_H_
 #define INC_STM32_TOOLBOX_UTILITY_STRINGBUILDER_H_
 
-#include <stdarg.h>
-#include <stm32-toolbox/utility/Print.h>
-#include <string.h>
+//#include <stdarg.h>
+#include <utility/PrintLite.h>
+#include <toolbox.h>
 #include "cmsis_os.h"
 
 
 /**
  * @brief	Allows a string to be built with one or more commands similar to writing to a stream.
  */
-class StringBuilder : public PrintPrint
+class StringBuilder : public PrintLite
 {
-	const uint32_t BLOCKSIZE = 0x100;
-
 public:
+#if ENABLE_STRINGBUILDER_MALLOC
 	/**
 	 * @brief	Constructs a new StringBuilder instance.
 	 */
 	StringBuilder(void)
 	{
-		buffer = (char*) malloc(BLOCKSIZE);
+		buffer = (char*) malloc(STRINGBUILDER_BLOCK_SIZE);
+		if (buffer == nullptr)
+			trip_watchdog();
+
 		this->size = size;
 		buffer[0] = 0;  // NUL terminate.
 	}
@@ -42,16 +44,34 @@ public:
 	StringBuilder(uint32_t size)
 	{
 		buffer = (char*) malloc(size);
+		if (buffer == nullptr)
+			trip_watchdog();
+
 		this->size = size;
 		buffer[0] = 0;  // NUL terminate.
 	}
+#endif
 
 
-	~StringBuilder()
+	/**
+	 * @brief	Constructs a new StringBuilder instance using a static buffer.
+	 * @param	buffer Pointer to the buffer.
+	 * @param	length Length of the buffer.
+	 */
+	StringBuilder(char* buffer, uint32_t length)
 	{
-		free(buffer);
+		this->buffer = buffer;
+		this->size = length;
+		buffer[0] = 0;  // NUL terminate.
 	}
 
+#if ENABLE_STRINGBUILDER_MALLOC
+	~StringBuilder()
+	{
+		if (buffer != nullptr)
+			free(buffer);
+	}
+#endif
 
 	/**
 	 * @brief	Writes a byte to the string buffer.
@@ -69,8 +89,14 @@ public:
 		length++;
 		if (length+1 >= size)
 		{
+#if ENABLE_STRINGBUILDER_MALLOC
 			size += BLOCKSIZE;
 			buffer = (char*) realloc(buffer, size);
+			if (buffer == nullptr)
+				trip_watchdog();
+#else
+			trip_watchdog();
+#endif
 		}
 		buffer[length-1] = c;
 		buffer[length] = 0;
@@ -89,10 +115,25 @@ public:
 	}
 
 
+	/**
+	 * @brief	Gets the current length of the string.
+	 * @returns	The string length.
+	 */
+	uint32_t get_length(void)
+	{
+		return length;
+	}
+
+
 private:
-	char* buffer;
-	uint32_t size;
-	uint32_t length=0;
+	void trip_watchdog(void)
+	{
+		while(true);
+	}
+
+	char* buffer = nullptr;
+	uint32_t size;  // Size of the buffer.
+	uint32_t length=0;  // Current length of the string.
 	bool reset = false;
 };
 

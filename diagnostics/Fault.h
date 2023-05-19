@@ -10,11 +10,8 @@
 #ifndef INC_DIAGNOSTICS_FAULT_H_
 #define INC_DIAGNOSTICS_FAULT_H_
 
-#include <stdint.h>
-#include "stm32/stm32.h"
-#include "stm32-toolbox/toolbox.h"
 #if FAULT_ENABLE_LED_SUPPORT
-#include "stm32-toolbox/devices/Led.h"
+#include "devices/Led.h"
 #endif
 
 /// <summary>
@@ -42,7 +39,6 @@ public:
 	static constexpr uint64_t fatal_faults = TaskAllocation | StackOverflow | MemoryAllocation;
 
 #if FAULT_ENABLE_LED_SUPPORT
-
 	/// <summary>
 	/// If FAULT LED feature is enabled, points the class to an instance of the <see cref="Led">Led</see> class that should
 	/// be illuminated when a fault is present.
@@ -62,9 +58,7 @@ public:
 	void raise(uint64_t fault)
 	{
 		this->fault |= fault;
-#if FAULT_ENABLE_LED_SUPPORT
 		update_fault_led();
-#endif
 	}
 
 
@@ -76,9 +70,7 @@ public:
 	void clear(uint64_t fault)
 	{
 		this->fault = this->fault & (0xffffffff ^ fault);
-#if FAULT_ENABLE_LED_SUPPORT
 		update_fault_led();
-#endif
 	}
 
 
@@ -118,6 +110,7 @@ protected:
 	uint64_t fault = 0;
 #if FAULT_ENABLE_LED_SUPPORT
 	Led* led;
+#endif
 
 	/// <summary>
 	/// Illuminates the fault LED if there is an outstanding fault.
@@ -129,8 +122,6 @@ protected:
 		else
 			led->set(this->fault > 0);
 	}
-#endif
-
 };
 
 #endif /* INC_DIAGNOSTICS_FAULT_H_ */

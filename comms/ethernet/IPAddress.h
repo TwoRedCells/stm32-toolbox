@@ -21,9 +21,9 @@
 #define IPAddress_h
 
 #include <stdint.h>
-#include "Printable.h"
-#include "WString.h"
-#define MAX_SOCK_NUM (8)
+#include "stm32-toolbox/utility/Printable.h"
+#include "stm32-toolbox/utility/WString.h"
+
 // A class to make it easier to handle and pass around IP addresses
 
 class IPAddress : public Printable {

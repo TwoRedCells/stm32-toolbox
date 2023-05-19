@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include "Ethernet.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 #include "w5500.h"
 
 #define REQ_DATASIZE 64
@@ -260,7 +260,6 @@ public:
 			result.status = sendEchoRequest(addr, echoReq);
 			if (result.status == SUCCESS)
 			{
-				uint8_t replyAddr [4];
 				ICMPPING_DOYIELD();
 				receiveEchoReply(echoReq, addr, result);
 			}

@@ -25,6 +25,8 @@ public:
 		this->original = value;
 		this->delimiters = delimiters;
 		this->copy = (char*) malloc(strlen(value));
+		if (this->copy == nullptr)
+			trip_watchdog();
 	}
 
 
@@ -38,11 +40,14 @@ public:
 		this->original = (char*) value;
 		this->delimiters = delimiters;
 		this->copy = (char*) malloc(strlen(value));
+		if (this->copy == nullptr)
+			trip_watchdog();
 	}
 
 	~Tokenism()
 	{
-		free(this->copy);
+		if (copy != nullptr)
+			free(copy);
 	}
 
 
@@ -123,7 +128,12 @@ public:
 	}
 
 private:
-	char* copy;
+	void trip_watchdog(void)
+	{
+		while(true);
+	}
+
+	char* copy = nullptr;
 	char* original;
 	char* delimiters;
 };

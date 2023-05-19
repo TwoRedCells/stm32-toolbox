@@ -17,7 +17,7 @@
 #ifndef server_h
 #define server_h
 
-#include "Print.h"
+#include "stm32-toolbox/utility/Print.h"
 
 class Server: public Print {
 public:

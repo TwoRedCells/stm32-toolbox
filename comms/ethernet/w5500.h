@@ -41,8 +41,9 @@
 
 typedef uint8_t SOCKET;
 
+#ifndef MAX_SOCK_NUM
 #define MAX_SOCK_NUM 8   // Select the number of Sockets (1-8)
-
+#endif
 
 class SnMR {
 public:
