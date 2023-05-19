@@ -52,14 +52,14 @@ public:
 #define TRUNCATED        -3
 #define INVALID_RESPONSE -4
 
-	void begin(const IPAddress& aDNSServer)
+	void begin(const IP4Address& aDNSServer)
 	{
 		iDNSServer = aDNSServer;
 		iRequestId = 0;
 	}
 
 
-	int inet_aton(const char* address, IPAddress& result)
+	int inet_aton(const char* address, IP4Address& result)
 	{
 		uint16_t acc = 0; // Accumulator
 		uint8_t dots = 0;
@@ -99,7 +99,7 @@ public:
 		return 1;
 	}
 
-	int getHostByName(const char* aHostname, IPAddress& aResult)
+	int getHostByName(const char* aHostname, IP4Address& aResult)
 	{
 		int ret =0;
 
@@ -237,7 +237,7 @@ public:
 	}
 
 
-	uint16_t ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
+	uint16_t ProcessResponse(uint16_t aTimeout, IP4Address& aAddress)
 	{
 		uint32_t startTime = millis();
 		// Wait for a response packet
@@ -407,9 +407,9 @@ public:
 
 protected:
 	uint16_t BuildRequest(const char* aName);
-	uint16_t ProcessResponse(uint16_t aTimeout, IPAddress& aAddress);
+	uint16_t ProcessResponse(uint16_t aTimeout, IP4Address& aAddress);
 
-	IPAddress iDNSServer;
+	IP4Address iDNSServer;
 	uint16_t iRequestId;
 	EthernetUDP iUdp;
 };

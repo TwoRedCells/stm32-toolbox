@@ -26,7 +26,7 @@
 #define MAX_SOCK_NUM (8)
 // A class to make it easier to handle and pass around IP addresses
 
-class IPAddress : public Printable {
+class IP4Address : public Printable {
 private:
 	union {
 		uint8_t bytes[4];  // IPv4 address
@@ -65,12 +65,12 @@ public:
 
 	//	virtual size_t printTo(Print& p) const;
 
-	IPAddress()
+	IP4Address()
 	{
 		_address.dword = 0;
 	}
 
-	IPAddress(uint8_t first_octet, uint8_t second_octet, uint8_t third_octet, uint8_t fourth_octet)
+	IP4Address(uint8_t first_octet, uint8_t second_octet, uint8_t third_octet, uint8_t fourth_octet)
 	{
 		_address.bytes[0] = first_octet;
 		_address.bytes[1] = second_octet;
@@ -78,12 +78,12 @@ public:
 		_address.bytes[3] = fourth_octet;
 	}
 
-	IPAddress(uint32_t address)
+	IP4Address(uint32_t address)
 	{
 		_address.dword = address;
 	}
 
-	IPAddress(const uint8_t *address)
+	IP4Address(const uint8_t *address)
 	{
 		memcpy(_address.bytes, address, sizeof(_address.bytes));
 	}
@@ -128,13 +128,13 @@ public:
 		return true;
 	}
 
-	IPAddress& operator=(const uint8_t *address)
+	IP4Address& operator=(const uint8_t *address)
 	{
 		memcpy(_address.bytes, address, sizeof(_address.bytes));
 		return *this;
 	}
 
-	IPAddress& operator=(uint32_t address)
+	IP4Address& operator=(uint32_t address)
 	{
 		_address.dword = address;
 		return *this;
@@ -159,13 +159,13 @@ public:
 
 
 	friend class EthernetClass;
-	friend class UDP;
+	friend class Udp;
 	friend class Client;
 	friend class Server;
 	friend class DhcpClass;
 	friend class DNSClient;
 };
 
-const IPAddress INADDR_NONE(0,0,0,0);
+const IP4Address INADDR_NONE(0,0,0,0);
 
 #endif

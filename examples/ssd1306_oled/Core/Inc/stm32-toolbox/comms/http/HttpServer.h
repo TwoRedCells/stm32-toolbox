@@ -61,7 +61,7 @@ public:
 			}
 
 			// Check for client connection.
-			EthernetClient client = this->available();
+			TcpIpClient client = this->available();
 			if (client)
 			{
 				handle_request(&client);
@@ -91,7 +91,7 @@ public:
 	 * @note	Each registered handler will be given an opportunity to handle the request.
 	 * @param	client A pointer to the client instance.
 	 */
-	void handle_request(EthernetClient* client)
+	void handle_request(TcpIpClient* client)
 	{
 		// Read the request from the client e.g. `GET /index.html HTTP/1.1`
 		String request = client->readStringUntil('\n');

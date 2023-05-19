@@ -204,7 +204,7 @@ struct ICMPEchoReply
 	ICMPEcho data;
 	uint8_t ttl;
 	Status status;
-	IPAddress addr;
+	IP4Address addr;
 };
 
 
@@ -246,7 +246,7 @@ public:
     @param nRetries: Number of times to rety before giving up.
     @param result: ICMPEchoReply that will hold the result.
 	 */
-	void operator()(const IPAddress& addr, int nRetries, ICMPEchoReply& result)
+	void operator()(const IP4Address& addr, int nRetries, ICMPEchoReply& result)
 	{
 		openSocket();
 
@@ -283,7 +283,7 @@ public:
     failed. If the request failed, the status indicates the reason for
     failure on the last retry.
 	 */
-	ICMPEchoReply operator()(const IPAddress& addr, int nRetries)
+	ICMPEchoReply operator()(const IP4Address& addr, int nRetries)
 	{
 		ICMPEchoReply reply;
 		operator()(addr, nRetries, reply);
@@ -368,7 +368,7 @@ private:
 
 
 
-	Status sendEchoRequest(const IPAddress& addr, const ICMPEcho& echoReq)
+	Status sendEchoRequest(const IP4Address& addr, const ICMPEcho& echoReq)
 	{
 		// I wish there were a better way of doing this, but if we use the uint32_t
 		// cast operator, we're forced to (1) cast away the constness, and (2) deal
@@ -401,7 +401,7 @@ private:
 	}
 
 
-	void receiveEchoReply(const ICMPEcho& echoReq, const IPAddress& addr, ICMPEchoReply& echoReply)
+	void receiveEchoReply(const ICMPEcho& echoReq, const IP4Address& addr, ICMPEchoReply& echoReply)
 	{
 		icmp_time_t start = millis();
 		while (millis() - start < ping_timeout)
@@ -455,7 +455,7 @@ private:
 				uint8_t * sourceIcmpHeader = echoReply.data.payload + ipHeaderSize;
 
 				// The destination ip address in the originating packet's IP header.
-				IPAddress sourceDestAddress(sourceIpHeader + ipHeaderSize - 4);
+				IP4Address sourceDestAddress(sourceIpHeader + ipHeaderSize - 4);
 
 				if (!(sourceDestAddress == addr))
 					continue;
@@ -519,7 +519,7 @@ private:
      @return: true on async request sent, false otherwise.
      @author: Pat Deegan, http://psychogenic.com
 	 */
-	bool asyncStart(const IPAddress& addr, int nRetries, ICMPEchoReply& result)
+	bool asyncStart(const IP4Address& addr, int nRetries, ICMPEchoReply& result)
 	{
 		openSocket();
 
@@ -605,7 +605,7 @@ private:
 	uint8_t _numRetries;
 	icmp_time_t _asyncstart;
 	Status _asyncstatus;
-	IPAddress	_addr;
+	IP4Address	_addr;
 #endif
 	uint8_t _id;
 	uint8_t _nextSeq;

@@ -20,7 +20,7 @@ class HttpHandler
 {
 public:
 	virtual bool can_handle(String uri) = 0; /// Implementers should evaluate the passed URI, and return true if they are able to handle it.
-	virtual uint16_t handle(String uri, EthernetClient *client) = 0;  /// Implementers should handle the request to the specified URI.
+	virtual uint16_t handle(String uri, TcpIpClient *client) = 0;  /// Implementers should handle the request to the specified URI.
 };
 
 #endif /* INC_STM32_TOOLBOX_COMMS_HTTPHANDLER_H_ */

@@ -7,16 +7,16 @@
 #include "Client.h"
 
 
-class EthernetClient : public Client
+class TcpIpClient : public Client
 {
 public:
-	EthernetClient();
-	EthernetClient(uint8_t sock);
+	TcpIpClient();
+	TcpIpClient(uint8_t sock);
 
 	using Print::print;
 
 	uint8_t status();
-	virtual int connect(IPAddress ip, uint16_t port);
+	virtual int connect(IP4Address ip, uint16_t port);
 	virtual int connect(const char *host, uint16_t port);
 	size_t write(const uint8_t *buf, size_t size);
 	size_t inline write(const char *buf, size_t size) { return write((const uint8_t *)buf, size); }
@@ -32,18 +32,18 @@ public:
 	virtual operator bool() { return _sock != MAX_SOCK_NUM; }
 	virtual bool operator==(const bool value) { return bool() == value; }
 	virtual bool operator!=(const bool value) { return bool() != value; }
-	virtual bool operator==(const EthernetClient& rhs)
+	virtual bool operator==(const TcpIpClient& rhs)
     				{ return _sock == rhs._sock && _sock != MAX_SOCK_NUM && rhs._sock != MAX_SOCK_NUM; }
-	virtual bool operator!=(const EthernetClient& rhs) { return !this->operator==(rhs); }
+	virtual bool operator!=(const TcpIpClient& rhs) { return !this->operator==(rhs); }
 	inline uint8_t getSocketNumber() { return _sock; }
 	inline void getRemoteIP(uint8_t * remoteIP) { socket.getRemoteIP(_sock, remoteIP); }
 
 
-	uint16_t EthernetClient::_srcport = 49152;      //Use IANA recommended ephemeral port range 49152-65535
+	uint16_t TcpIpClient::_srcport = 49152;      //Use IANA recommended ephemeral port range 49152-65535
 
-	EthernetClient::EthernetClient() : _sock(MAX_SOCK_NUM) { }
+	TcpIpClient::TcpIpClient() : _sock(MAX_SOCK_NUM) { }
 
-	EthernetClient::EthernetClient(uint8_t sock) : _sock(sock) { }
+	TcpIpClient::TcpIpClient(uint8_t sock) : _sock(sock) { }
 
 
 	int connect(const char* host, uint16_t port)
@@ -51,7 +51,7 @@ public:
 		// Look up the host first
 		int ret = 0;
 		DNSClient dns;
-		IPAddress remote_addr;
+		IP4Address remote_addr;
 
 		dns.begin(Ethernet.dnsServerIP());
 		ret = dns.getHostByName(host, remote_addr);
@@ -62,7 +62,7 @@ public:
 		}
 	}
 
-	int connect(IPAddress ip, uint16_t port)
+	int connect(IP4Address ip, uint16_t port)
 	{
 		if (_sock != MAX_SOCK_NUM)
 			return 0;

@@ -10,7 +10,7 @@
 #include "w5500.h"
 
 
-class SOCKETClass
+class Socket
 {
 public:
 	//void init(SPI_HandleTypeDef & spi, uint8_t sspin) { w5500.init(spi, sspin); }
@@ -75,8 +75,8 @@ public:
 	 */
 	uint8_t connect(SOCKET s, uint8_t * addr, uint16_t port)
 	{
-		if ( ( IPAddress(addr) == IPAddress((uint32_t)0xFFFFFFFF ) ) ||
-				( IPAddress(addr) == IPAddress((uint32_t)0 ) ) ||
+		if ( ( IP4Address(addr) == IP4Address((uint32_t)0xFFFFFFFF ) ) ||
+				( IP4Address(addr) == IP4Address((uint32_t)0 ) ) ||
 				(port == 0x00) )
 			return 0;
 
@@ -213,7 +213,7 @@ public:
 	{
 		if (len > w5500.SSIZE) len = w5500.SSIZE; // check size not to exceed MAX size.
 
-		if ( ( IPAddress(addr) == IPAddress((uint32_t)0) ) || (port == 0x00) || (len == 0) ) {
+		if ( ( IP4Address(addr) == IP4Address((uint32_t)0) ) || (port == 0x00) || (len == 0) ) {
 			/* +2008.01 [bj] : added return value */
 			return 0;
 		}
@@ -343,7 +343,7 @@ public:
 	 */
 	int startUDP(SOCKET s, uint8_t* addr, uint16_t port)
 	{
-		if ( (IPAddress(addr) == IPAddress((uint32_t)0)) || (port == 0) ) {
+		if ( (IP4Address(addr) == IP4Address((uint32_t)0)) || (port == 0) ) {
 			return 0;
 		}
 		else
@@ -409,6 +409,6 @@ private:
 
 };
 
-extern SOCKETClass socket;
+extern Socket socket;
 
 #endif /* _SOCKET_H_ */

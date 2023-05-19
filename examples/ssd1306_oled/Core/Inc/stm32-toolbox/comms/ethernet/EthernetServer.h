@@ -7,7 +7,7 @@
 
 
 extern EthernetClass Ethernet;
-class EthernetClient;
+class TcpIpClient;
 
 class EthernetServer : public Server {
 private:
@@ -26,7 +26,7 @@ public:
 	void begin()
 	{
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++) {
-			EthernetClient client(sock);
+			TcpIpClient client(sock);
 			if (client.status() == SnSR::CLOSED) {
 				socket.open(sock, SnMR::TCP, _port, 0);
 				socket.listen(sock);
@@ -37,12 +37,12 @@ public:
 	}
 
 
-	EthernetClient available()
+	TcpIpClient available()
 	{
 		accept();
 
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++) {
-			EthernetClient client(sock);
+			TcpIpClient client(sock);
 			if (Ethernet.server_port[sock] == _port) {
 				uint8_t s = client.status();
 				if (s == SnSR::ESTABLISHED || s == SnSR::CLOSE_WAIT) {
@@ -54,7 +54,7 @@ public:
 			}
 		}
 
-		return EthernetClient(MAX_SOCK_NUM);
+		return TcpIpClient(MAX_SOCK_NUM);
 	}
 
 
@@ -65,7 +65,7 @@ public:
 		accept();
 
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++) {
-			EthernetClient client(sock);
+			TcpIpClient client(sock);
 
 			if (Ethernet.server_port[sock] == _port &&
 					client.status() == SnSR::ESTABLISHED) {
@@ -81,7 +81,7 @@ private:
 		int listening = 0;
 
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++) {
-			EthernetClient client(sock);
+			TcpIpClient client(sock);
 
 			if (Ethernet.server_port[sock] == _port) {
 				if (client.status() == SnSR::LISTEN) {

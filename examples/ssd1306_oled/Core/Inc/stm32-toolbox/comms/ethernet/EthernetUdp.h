@@ -43,12 +43,12 @@
 #include "Dns.h"
 
 
-class EthernetUDP : public UDP
+class EthernetUDP : public Udp
 {
 private:
 	uint8_t _sock;  // socket ID for Wiz5100
 	uint16_t _port; // local port to listen on
-	IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
+	IP4Address _remoteIP; // remote IP address for the incoming packet whilst it's being processed
 	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
 	uint16_t _offset; // offset into the packet being sent
 	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
@@ -57,7 +57,7 @@ public:
 	using Print::write;
 
 	// Return the IP address of the host who sent the current incoming packet
-	virtual IPAddress remoteIP() { return _remoteIP; };
+	virtual IP4Address remoteIP() { return _remoteIP; };
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() { return _remotePort; };
 
@@ -115,7 +115,7 @@ public:
 		// Look up the host first
 		int ret = 0;
 		DNSClient dns;
-		IPAddress remote_addr;
+		IP4Address remote_addr;
 
 		dns.begin(Ethernet.dnsServerIP());
 		ret = dns.getHostByName(host, remote_addr);
@@ -127,7 +127,7 @@ public:
 	}
 
 
-	int beginPacket(IPAddress ip, uint16_t port)
+	int beginPacket(IP4Address ip, uint16_t port)
 	{
 		_offset = 0;
 		return socket.startUDP(_sock, rawIPAddress(ip), port);
@@ -259,7 +259,7 @@ public:
 
 
 	/* Start EthernetUDP socket, listening at local port PORT */
-	uint8_t beginMulticast(IPAddress ip, uint16_t port)
+	uint8_t beginMulticast(IP4Address ip, uint16_t port)
 	{
 		if (_sock != MAX_SOCK_NUM)
 			return 0;

@@ -16,7 +16,7 @@
 class EthernetClass
 {
 private:
-	IPAddress _dnsServerAddress;
+	IP4Address _dnsServerAddress;
 public:
 
 	//void init(SPI_HandleTypeDef &spi, const uint8_t cs_pin) { socket.init(spi, cs_pin); }
@@ -37,7 +37,7 @@ public:
 	{
 		// Initialise the basic info
 		socket.setMACAddress(mac_address);
-		socket.setIPAddress(IPAddress(0,0,0,0).raw_address());
+		socket.setIPAddress(IP4Address(0,0,0,0).raw_address());
 
 		// Now try to get our config info from a DHCP server
 		int ret = _dhcp.beginWithDHCP(mac_address, timeout, responseTimeout);
@@ -54,31 +54,31 @@ public:
 		return ret;
 	}
 
-	void begin(uint8_t *mac_address, IPAddress local_ip)
+	void begin(uint8_t *mac_address, IP4Address local_ip)
 	{
 		// Assume the DNS server will be the machine on the same network as the local IP
 		// but with last octet being '1'
-		IPAddress dns_server = local_ip;
+		IP4Address dns_server = local_ip;
 		dns_server[3] = 1;
 		begin(mac_address, local_ip, dns_server);
 	}
 
-	void begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server)
+	void begin(uint8_t *mac_address, IP4Address local_ip, IP4Address dns_server)
 	{
 		// Assume the gateway will be the machine on the same network as the local IP
 		// but with last octet being '1'
-		IPAddress gateway = local_ip;
+		IP4Address gateway = local_ip;
 		gateway[3] = 1;
 		begin(mac_address, local_ip, dns_server, gateway);
 	}
 
-	void begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server, IPAddress gateway)
+	void begin(uint8_t *mac_address, IP4Address local_ip, IP4Address dns_server, IP4Address gateway)
 	{
-		IPAddress subnet(255, 255, 255, 0);
+		IP4Address subnet(255, 255, 255, 0);
 		begin(mac_address, local_ip, dns_server, gateway, subnet);
 	}
 
-	void begin(uint8_t *mac, IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet)
+	void begin(uint8_t *mac, IP4Address local_ip, IP4Address dns_server, IP4Address gateway, IP4Address subnet)
 	{
 		socket.setMACAddress(mac);
 		socket.setIPAddress(local_ip.raw_address());
@@ -111,33 +111,33 @@ public:
 		return rc;
 	}
 
-	IPAddress localIP()
+	IP4Address localIP()
 	{
-		IPAddress ret;
+		IP4Address ret;
 		socket.getIPAddress(ret.raw_address());
 		return ret;
 	}
 
-	IPAddress subnetMask()
+	IP4Address subnetMask()
 	{
-		IPAddress ret;
+		IP4Address ret;
 		socket.getSubnetMask(ret.raw_address());
 		return ret;
 	}
 
-	IPAddress gatewayIP()
+	IP4Address gatewayIP()
 	{
-		IPAddress ret;
+		IP4Address ret;
 		socket.getGatewayIp(ret.raw_address());
 		return ret;
 	}
 
-	IPAddress dnsServerIP()
+	IP4Address dnsServerIP()
 	{
 		return _dnsServerAddress;
 	}
 
-	friend class EthernetClient;
+	friend class TcpIpClient;
 	friend class EthernetServer;
 };
 

@@ -1,6 +1,4 @@
-BSD 3-Clause License
-
-Copyright (c) 2022, Yvan Rodrigues
+Copyright (c) 2022, Yvan Rodrigues < yvan at yvanrodrigues dot com >
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

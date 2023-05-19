@@ -164,11 +164,11 @@ private:
 	EthernetUDP _dhcpUdpSocket;
 
 public:
-	inline IPAddress getLocalIp() { return IPAddress(_dhcpLocalIp); }
-	inline IPAddress getSubnetMask() { return IPAddress(_dhcpSubnetMask); }
-	inline IPAddress getGatewayIp() { return IPAddress(_dhcpGatewayIp); }
-	inline IPAddress getDhcpServerIp() { return IPAddress(_dhcpDhcpServerIp); }
-	inline IPAddress getDnsServerIp() { return IPAddress(_dhcpDnsServerIp); }
+	inline IP4Address getLocalIp() { return IP4Address(_dhcpLocalIp); }
+	inline IP4Address getSubnetMask() { return IP4Address(_dhcpSubnetMask); }
+	inline IP4Address getGatewayIp() { return IP4Address(_dhcpGatewayIp); }
+	inline IP4Address getDhcpServerIp() { return IP4Address(_dhcpDhcpServerIp); }
+	inline IP4Address getDnsServerIp() { return IP4Address(_dhcpDnsServerIp); }
 
 
 	int beginWithDHCP(uint8_t *mac, unsigned long timeout, unsigned long responseTimeout)
@@ -301,7 +301,7 @@ public:
 	{
 		uint8_t buffer[32];
 		memset(buffer, 0, 32);
-		IPAddress dest_addr( 255, 255, 255, 255 ); // Broadcast address
+		IP4Address dest_addr( 255, 255, 255, 255 ); // Broadcast address
 
 		if (-1 == _dhcpUdpSocket.beginPacket(dest_addr, DHCP_SERVER_PORT))
 		{
@@ -496,8 +496,8 @@ public:
 
 				case dhcpServerIdentifier :
 					opt_len = _dhcpUdpSocket.read();
-					if( IPAddress(_dhcpDhcpServerIp) == IPAddress((uint32_t)0) ||
-							IPAddress(_dhcpDhcpServerIp) == _dhcpUdpSocket.remoteIP())
+					if( IP4Address(_dhcpDhcpServerIp) == IP4Address((uint32_t)0) ||
+							IP4Address(_dhcpDhcpServerIp) == _dhcpUdpSocket.remoteIP())
 					{
 						_dhcpUdpSocket.read(_dhcpDhcpServerIp, sizeof(_dhcpDhcpServerIp));
 					}

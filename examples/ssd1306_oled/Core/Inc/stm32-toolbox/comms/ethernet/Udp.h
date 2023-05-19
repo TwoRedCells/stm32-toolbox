@@ -38,11 +38,11 @@
 #include "Stream.h"
 #include "IPAddress.h"
 
-class UDP: public Stream
+class Udp: public Stream
 {
 
 public:
-	virtual ~UDP() {};
+	virtual ~Udp() {};
 	virtual uint8_t begin(uint16_t) =0;	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual void stop() =0;  // Finish with the UDP socket
 
@@ -50,7 +50,7 @@ public:
 
 	// Start building up a packet to send to the remote host specific in ip and port
 	// Returns 1 if successful, 0 if there was a problem with the supplied IP address or port
-	virtual int beginPacket(IPAddress ip, uint16_t port) =0;
+	virtual int beginPacket(IP4Address ip, uint16_t port) =0;
 	// Start building up a packet to send to the remote host specific in host and port
 	// Returns 1 if successful, 0 if there was a problem resolving the hostname or port
 	virtual int beginPacket(const char *host, uint16_t port) =0;
@@ -80,12 +80,12 @@ public:
 	virtual void flush() =0;	// Finish reading the current packet
 
 	// Return the IP address of the host who sent the current incoming packet
-	virtual IPAddress remoteIP() =0;
+	virtual IP4Address remoteIP() =0;
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() =0;
 protected:
 
-	uint8_t* rawIPAddress(IPAddress& addr) {
+	uint8_t* rawIPAddress(IP4Address& addr) {
 		return addr.raw_address();
 	}
 	/*
