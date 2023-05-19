@@ -8,6 +8,7 @@
  */
 
 #include "w5500.h"
+#include "toolbox.h"
 #include "utility/Timer.h"
 
 void SPI_transmitir8(SPI_HandleTypeDef spi, uint8_t _data);
@@ -71,16 +72,6 @@ void SPI_recibir_buf(SPI_HandleTypeDef spi, uint8_t *dato_recibido, uint16_t _le
 }
 
 
-void W5500Class::init(SPI_HandleTypeDef &_spi, uint8_t _ss_pin) {
-	initSS(_ss_pin);
-	hspi = _spi;
-	/* No haria falta esta linea porque configuramos SPI en el main
-	 mSPI.beginTransaction(SPISettings(42000000));
-	 */
-	writeMR(0x80); // software reset the W5500 chip
-	Timer t;
-	t.block(milliseconds(100));
-}
 
 uint16_t W5500Class::getTXFreeSize(SOCKET s) {
 	uint16_t val = 0, val1;

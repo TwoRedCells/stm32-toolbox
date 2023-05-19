@@ -63,3 +63,12 @@
 // StringBuilder
 #define ENABLE_STRINGBUILDER_MALLOC (0)
 #define STRINGBUILDER_BLOCK_SIZE (0x40)  // StringBuilder will allocate memory in these increments.
+
+// Chip
+#define MCU_STM32F4
+
+#ifdef MCU_STM32F4
+#include "main.h"
+//#include "stm32f4xx_hal_conf.h"
+//#include "stm32f4xx_hal.h"
+#endif
