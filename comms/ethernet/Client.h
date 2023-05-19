@@ -16,8 +16,8 @@
 
 #ifndef client_h
 #define client_h
-#include "stm32-toolbox/utility/Print.h"
-#include "stm32-toolbox/utility/Stream.h"
+#include "Print.h"
+#include "Stream.h"
 #include "IPAddress.h"
 
 class Client: public Stream {

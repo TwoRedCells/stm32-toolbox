@@ -11,7 +11,6 @@
 #define	W5500_H_INCLUDED
 
 //#include <SPI.h>
-#include "main.h"
 #include "util.h"
 //#include "variant.h"
 

@@ -3,7 +3,7 @@
 
 #include "Dhcp.h"
 #include "main.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 
 int DhcpClass::beginWithDHCP(uint8_t *mac, unsigned long timeout, unsigned long responseTimeout)
 {

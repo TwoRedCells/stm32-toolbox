@@ -8,8 +8,7 @@
  */
 
 #include "w5500.h"
-#include "main.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 
 void SPI_transmitir8(SPI_HandleTypeDef spi, uint8_t _data);
 void SPI_transmitir16(uint16_t _data);

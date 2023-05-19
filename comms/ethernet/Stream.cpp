@@ -24,7 +24,7 @@
 
 //#include "Arduino.h"
 #include "Stream.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 
 #define PARSE_TIMEOUT 1000  // default number of milli-seconds to wait
 

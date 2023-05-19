@@ -21,8 +21,8 @@
 #define IPAddress_h
 
 #include <stdint.h>
-#include "stm32-toolbox/utility/Printable.h"
-#include "stm32-toolbox/utility/WString.h"
+#include "Printable.h"
+#include "WString.h"
 
 // A class to make it easier to handle and pass around IP addresses
 

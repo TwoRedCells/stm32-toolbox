@@ -4,8 +4,7 @@
 
 
 #include "Dns.h"
-#include "main.h"
-#include "stm32-toolbox/utility/Timer.h"
+#include "utility/Timer.h"
 #include "cmsis_os.h"
 
 #define SOCKET_NONE	255
