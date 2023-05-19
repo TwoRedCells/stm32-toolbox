@@ -7,8 +7,6 @@
 #ifndef INC_COMMS_CANBUS_H_
 #define INC_COMMS_CANBUS_H_
 
-extern CAN_HandleTypeDef hcan;
-
 class CanBus
 {
 public:
@@ -53,22 +51,9 @@ public:
 
 		if (HAL_CAN_ActivateNotification(hcan, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
 			return HAL_CAN_GetError(hcan);
+		return HAL_OK;
 	}
 
-
-//	/**
-//	 * Polls the receive buffer, and reads data if it is available.
-//	 */
-//	void loop(void)
-//	{
-//		while (HAL_CAN_GetRxFifoFillLevel(hcan, CAN_RX_FIFO0) > 0)
-//		{
-//			HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, data);
-//			//log_d("CAN received %u bytes for %x: %x %x %x %x %x %x %x %x", can_rx_header.DLC, can_rx_header.StdId, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-//			on_message(can_rx_header.StdId, data, can_rx_header.DLC);
-//			//		osDelay(5);
-//		}
-//	}
 
 	bool is_data(void)
 	{
@@ -119,12 +104,9 @@ public:
 protected:
 	CAN_HandleTypeDef *hcan;
 
-
 private:
 	CAN_TxHeaderTypeDef can_tx_header;
 	uint32_t can_tx_mailbox;
-//	uint8_t data[8] = { 0 };
 };
-
 
 #endif /* INC_COMMS_CANBUS_H_ */

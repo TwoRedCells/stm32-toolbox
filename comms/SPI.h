@@ -22,31 +22,23 @@ public:
 	 * @param	hspi The SPI instance to use.
 	 * @param	ss_pin The pin to use for SPI CS.
 	 */
-	SPI(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	void init(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 	{
 		this->hspi = hspi;
 		this->cs_port = cs_port;
 		this->cs_pin = cs_pin;
 	}
 
-
-	/**
-	 * @brief Enables the CS pin.
-	 */
 	void cs_select(void)
 	{
 		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
 	}
 
 
-	/**
-	 * @brief Disables the CS pin.
-	 */
 	void cs_deselect(void)
 	{
 		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 	}
-
 
 	/**
 	 * @brief	Writes a byte to the port.
