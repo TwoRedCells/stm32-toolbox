@@ -43,33 +43,38 @@ public:
 	 *        of the battery class should be allocated based on the battery
 	 *        IDs that will be responding on the bus.
 	 */
-	Inventus(InventusBattery* battery, CAN_HandleTypeDef* port) : CanOpen(port)
+	Inventus(CAN_HandleTypeDef* port) : CanOpen(port, roles::Master, true)
 	{
 		set_callback(this);
-		this->battery = battery;
+		memset(batteries, 0, sizeof(InventusBattery) * maximum_parallel_batteries);
+		master_battery = &batteries[0];
 	}
 
 
 	/**
 	 * Sends SDO requests for CiA objects e.g. manufacturer, serial number, etc.
 	 */
-	void poll_metadata(void)
+	void poll_metadata(uint8_t node)
 	{
-		sdo(0x31, Index_DeviceType);
-		sdo(0x31, 0x1008); // Mfr device name
-		sdo(0x31, Index_HardwareVersion);
-		sdo(0x31, Index_SoftwareVersion);
-		sdo(0x31, Index_Manufacturer, Subindex_VendorId); // Vendor ID
-		sdo(0x31, Index_Manufacturer, Subindex_ProductCode); // Product code
-		sdo(0x31, Index_Manufacturer, 0x03); // Revision no
-		sdo(0x31, Index_Manufacturer, 0x04); // Serial no
+		sdo(node, Index_DeviceType);
+		sdo(node, 0x1008); // Mfr device name
+		sdo(node, Index_HardwareVersion);
+		sdo(node, Index_SoftwareVersion);
+		sdo(node, Index_Manufacturer, Subindex_VendorId); // Vendor ID
+		sdo(node, Index_Manufacturer, Subindex_ProductCode); // Product code
+		sdo(node, Index_Manufacturer, 0x03); // Revision no
+		sdo(node, Index_Manufacturer, 0x04); // Serial no
 	}
 
+	InventusBattery* master_battery;
 
 private:
-	void on_sdo(uint16_t address, uint16_t index, uint8_t subindex, uint8_t* data)
+	void on_sdo(uint16_t cob, uint16_t index, uint8_t subindex, uint8_t* data)
 	{
-		uint8_t node = address & 0xff;
+		uint8_t node = cob_to_node(cob);
+		assert(node >= 0x31 && node <= 0x3f);
+		InventusBattery* battery = &batteries[node - master_node_id];
+
 		if (index == 0x1000)
 			battery->device_type = lsb_uint32_to_uint32(data);
 		else if (index == 0x1008)
@@ -93,34 +98,43 @@ private:
 	}
 
 
-	void on_nmt(uint16_t node, uint8_t data)
+	void on_nmt(uint8_t data)
 	{
-		battery->last_message = Timer::now();
-		if (!battery->metadata_received)
-			poll_metadata();
 	}
 	
 
-	void on_pdo(uint16_t cob, uint8_t* data)
+	void on_heartbeat(uint8_t node)
 	{
-		uint8_t node = ((cob & 0xff) - 0x90) | 0x10;
-		uint16_t pdo = cob - node;
-		if (pdo == 0x290)
-			on_tpdo6(data);
-		else if (pdo == 0x190)
-			on_tpdo5(data);
-		else if (pdo == 0x480)
-			on_tpdo4(data);
-		else if (pdo == 0x380)
-			on_tpdo3(data);
-		else if (pdo == 0x280)
-			on_tpdo2(data);
-		else if (pdo == 0x180)
-			on_tpdo1(data);
+		assert(node >= 0x31 && node <= 0x3f);
+		InventusBattery* battery = &batteries[node - master_node_id];
+		battery->last_message = Timer::now();
+		if (!battery->metadata_received)
+			poll_metadata(node);
 	}
 
 
-	void on_tpdo1(uint8_t* data)
+	void on_pdo(uint16_t cob, uint8_t* data)
+	{
+		uint8_t node = cob_to_node(cob);
+		uint16_t pdo = cob - node;
+		assert(node >= 0x31 && node <= 0x3f);
+		InventusBattery* battery = &batteries[node - master_node_id];
+		if (pdo == 0x290)
+			on_tpdo6(battery, data);
+		else if (pdo == 0x190)
+			on_tpdo5(battery, data);
+		else if (pdo == 0x480)
+			on_tpdo4(battery, data);
+		else if (pdo == 0x380)
+			on_tpdo3(battery, data);
+		else if (pdo == 0x280)
+			on_tpdo2(battery, data);
+		else if (pdo == 0x180)
+			on_tpdo1(battery, data);
+	}
+
+
+	void on_tpdo1(InventusBattery* battery, uint8_t* data)
 	{
 		battery->number_of_batteries = lsb_uint8_to_uint8(data+0);
 		battery->virtual_state_of_charge = lsb_uint8_to_uint8(data+1);
@@ -131,7 +145,7 @@ private:
 	}
 
 
-	void on_tpdo2(uint8_t* data)
+	void on_tpdo2(InventusBattery* battery, uint8_t* data)
 	{
 		battery->virtual_voltage = lsb_uint16_to_float(data+0, 1000);
 		battery->virtual_current = lsb_int16_to_float(data+2, 10);
@@ -142,7 +156,7 @@ private:
 	}
 
 
-	void on_tpdo3(uint8_t* data)
+	void on_tpdo3(InventusBattery* battery, uint8_t* data)
 	{
 		battery->virtual_battery_temperature = lsb_int16_to_float(data+0, 8);
 		battery->virtual_discharge_cutoff_voltage = lsb_uint16_to_float(data+2, 1000);
@@ -152,7 +166,7 @@ private:
 	}
 	
 
-	void on_tpdo4(uint8_t* data)
+	void on_tpdo4(InventusBattery* battery, uint8_t* data)
 	{
 		battery->virtual_state_of_health = lsb_uint8_to_uint8(data+0);
 		battery->number_of_faulted_batteries = lsb_uint8_to_uint8(data+1);
@@ -164,7 +178,7 @@ private:
 	}
 
 
-	void on_tpdo5(uint8_t* data)
+	void on_tpdo5(InventusBattery* battery, uint8_t* data)
 	{
 		battery->virtual_regen_current_limit = lsb_uint16_to_float(data+0, 10);
 		battery->virtual_minimum_cell_voltage = lsb_uint16_to_float(data+2, 1000);
@@ -174,7 +188,7 @@ private:
 	}
 	
 
-	void on_tpdo6(uint8_t* data)
+	void on_tpdo6(InventusBattery* battery, uint8_t* data)
 	{
 		// Unlike TPDO2, these include faulted batteries.
 		battery->virtual_all_voltage = lsb_uint16_to_float(data+0, 1000);
@@ -186,7 +200,9 @@ private:
 	}
 
 
-	InventusBattery* battery = { 0 };
+	static constexpr uint8_t maximum_parallel_batteries = 15;
+	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3a
+	static constexpr uint8_t master_node_id = 0x31;
 };
 
 #endif /* INC_COMMS_NECCANOPEN_H_ */
