@@ -31,7 +31,7 @@ public:
 	static constexpr uint8_t Subindex_BatterySerial2 = 0x02;
 	static constexpr uint16_t Index_CumulativeCharge = 0x6050;
 	static constexpr uint16_t Index_CurrentExpendedSinceLastCharge = 0x6051;
-	static constexpr uint16_t Index_CurrentReturnedSinceLastCharge = 0x6051;
+	static constexpr uint16_t Index_CurrentReturnedSinceLastCharge = 0x6052;
 	static constexpr uint16_t Index_BatteryVoltage = 0x6060;
 	static constexpr uint16_t Index_ChargeCurrentRequested = 0x6070;
 	static constexpr uint16_t Index_BatterySoC = 0x6081;
@@ -56,27 +56,14 @@ public:
 	}
 
 
-	/**
-	 * Sends SDO requests for CiA objects e.g. manufacturer, serial number, etc.
-	 */
-	void poll_metadata(uint8_t node)
-	{
-		sdo(node, Index_DeviceType);
-		sdo(node, 0x1008); // Mfr device name
-		sdo(node, Index_HardwareVersion);
-		sdo(node, Index_SoftwareVersion);
-		sdo(node, Index_Manufacturer, Subindex_VendorId); // Vendor ID
-		sdo(node, Index_Manufacturer, Subindex_ProductCode); // Product code
-		sdo(node, Index_Manufacturer, 0x03); // Revision no
-		sdo(node, Index_Manufacturer, 0x04); // Serial no
-	}
-
 	InventusBattery* get_batteries(void)
 	{
 		return batteries;
 	}
 
 	InventusBattery* master_battery;
+	static constexpr uint8_t master_node_id = 0x31;
+	static constexpr uint8_t maximum_parallel_batteries = 15;
 
 private:
 	void on_sdo(uint16_t cob, uint16_t index, uint8_t subindex, uint8_t* data)
@@ -85,24 +72,51 @@ private:
 		assert(node >= 0x31 && node <= 0x3f);
 		InventusBattery* battery = &batteries[node - master_node_id];
 
-		if (index == 0x1000)
-			battery->device_type = lsb_uint32_to_uint32(data);
-		else if (index == 0x1008)
-			bytes_to_string(data, battery->manufacturer_device_name, 4);
-		else if (index == 0x1009)
-			bytes_to_string(data, battery->manufacturer_hardware_version, 4);
-		else if (index == 0x100a)
-			battery->manufacturer_software_version = lsb_uint32_to_uint32(data);
-		else if (index == 0x1018)
+		switch (index)
 		{
-			if (subindex == 0x01)
-				battery->vendor_id = lsb_uint32_to_uint32(data);
-			else if (subindex == 0x02)
-				bytes_to_string(data, battery->product_code, 4);
-			else if (subindex == 0x03)
-				bytes_to_string(data, battery->revision_number, 4);
-			else if (subindex == 0x04)
-				bytes_to_string(data, battery->serial_number, 4);
+		case Index_BatteryStatus:
+			break;
+		case Index_ChargerStatus:
+			break;
+		case Index_Temperature:
+			battery->temperature = lsb_int16_to_float(data) * 0.125f;
+			break;
+		case Index_BatteryInformation:
+			switch (subindex)
+			{
+			case Subindex_BatteryType:
+				break;
+			case Subindex_Capacity:
+				break;
+			case Subindex_MaxChargeCurrent:
+				break;
+			case Subindex_NumberOfCells:
+				break;
+			}
+			break;
+		case Index_BatterySerial:
+			switch (subindex)
+			{
+			case Subindex_BatterySerial1:
+				break;
+			case Subindex_BatterySerial2:
+				break;
+			}
+			break;
+		case Index_CumulativeCharge:
+			break;
+		case Index_CurrentExpendedSinceLastCharge:
+			break;
+		case Index_CurrentReturnedSinceLastCharge:
+			break;
+		case Index_BatteryVoltage:
+			break;
+		case Index_ChargeCurrentRequested:
+			break;
+		case Index_BatterySoC:
+			battery->state_of_charge = lsb_uint8_to_uint8(data);
+			break;
+
 		}
 		battery->metadata_received = true;
 	}
@@ -118,8 +132,6 @@ private:
 		assert(node >= 0x31 && node <= 0x3f);
 		InventusBattery* battery = &batteries[node - master_node_id];
 		battery->last_message = Timer::now();
-		if (!battery->metadata_received)
-			poll_metadata(node);
 	}
 
 
@@ -206,13 +218,12 @@ private:
 		battery->virtual_all_temperature = lsb_int16_to_int16(data+3);
 		battery->heater_status = lsb_uint16_to_uint16(data+5);
 		battery->master_node_id = lsb_uint8_to_uint8(data+7);
+		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
+			batteries[i].master_node_id = battery->master_node_id;
 		battery->timestamp_tpdo6 = Timer::now();
 	}
 
-
-	static constexpr uint8_t maximum_parallel_batteries = 15;
 	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3a
-	static constexpr uint8_t master_node_id = 0x31;
 };
 
 #endif /* INC_COMMS_NECCANOPEN_H_ */

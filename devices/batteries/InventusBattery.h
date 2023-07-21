@@ -15,17 +15,16 @@ struct InventusBattery
 {
 public:
 	uint8_t node_id;
-	bool is_master;
 
-	//CiA 301
-	uint32_t device_type;
-	char manufacturer_device_name[15];
-	char manufacturer_hardware_version[5];
-	uint32_t manufacturer_software_version;
-	uint32_t vendor_id;
-	char product_code[5];
-	char revision_number[5];
-	char serial_number[5];
+//	//CiA 301
+//	uint32_t device_type;
+//	char manufacturer_device_name[15];
+//	char manufacturer_hardware_version[5];
+//	uint32_t manufacturer_software_version;
+//	uint32_t vendor_id;
+//	char product_code[5];
+//	char revision_number[5];
+//	char serial_number[5];
 
 	// TPDO1
 	uint8_t number_of_batteries;
@@ -78,6 +77,22 @@ public:
 	uint32_t timestamp_tpdo4 = 0;
 	uint32_t timestamp_tpdo5 = 0;
 	uint32_t timestamp_tpdo6 = 0;
+
+	// Detail CiA 418
+	uint8_t state_of_charge;
+	float charge_current_requested;
+	float voltage;
+	float charge_returned_during_last_charge;
+	float charge_expended_during_last_charge;
+	uint32_t cumulative_charge;
+	uint64_t serial_number;
+	uint16_t number_of_cells;
+	uint16_t max_charge_current;
+	uint16_t capacity;
+	uint8_t battery_type;
+	float temperature;
+	uint8_t charger_status;
+	uint8_t battery_status;
 };
 
 
