@@ -46,8 +46,13 @@ public:
 	Inventus(CAN_HandleTypeDef* port) : CanOpen(port, roles::Master, true)
 	{
 		set_callback(this);
-		memset(batteries, 0, sizeof(InventusBattery) * maximum_parallel_batteries);
 		master_battery = &batteries[0];
+		master_battery->master_node_id = master_node_id;
+		for (uint8_t i=0; i<16; i++)
+		{
+			batteries[i] = {0};
+			batteries[i].node_id = 0x31 + i;
+		}
 	}
 
 
@@ -64,6 +69,11 @@ public:
 		sdo(node, Index_Manufacturer, Subindex_ProductCode); // Product code
 		sdo(node, Index_Manufacturer, 0x03); // Revision no
 		sdo(node, Index_Manufacturer, 0x04); // Serial no
+	}
+
+	InventusBattery* get_batteries(void)
+	{
+		return batteries;
 	}
 
 	InventusBattery* master_battery;
