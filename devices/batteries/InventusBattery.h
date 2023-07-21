@@ -62,9 +62,10 @@ public:
 	uint16_t cell_balance_status; // See datasheet.
 
 	// TPDO6
-	float virtual_average_voltage; // mV
-	uint8_t virtual_average_state_of_charge;
-	int8_t virtual_average_temperature; // 0.125C
+	// These include faulted batteries.
+	float virtual_all_voltage; // mV
+	uint8_t virtual_all_state_of_charge;
+	int8_t virtual_all_temperature; // 0.125C
 	uint16_t heater_status;
 	uint8_t master_node_id;
 

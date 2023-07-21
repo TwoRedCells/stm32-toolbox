@@ -176,9 +176,10 @@ private:
 
 	void on_tpdo6(uint8_t* data)
 	{
-		battery->virtual_average_voltage = lsb_uint16_to_float(data+0, 1000);
-		battery->virtual_average_state_of_charge = lsb_uint8_to_uint8(data+2);
-		battery->virtual_average_temperature = lsb_int16_to_int16(data+3);
+		// Unlike TPDO2, these include faulted batteries.
+		battery->virtual_all_voltage = lsb_uint16_to_float(data+0, 1000);
+		battery->virtual_all_state_of_charge = lsb_uint8_to_uint8(data+2);
+		battery->virtual_all_temperature = lsb_int16_to_int16(data+3);
 		battery->heater_status = lsb_uint16_to_uint16(data+5);
 		battery->master_node_id = lsb_uint8_to_uint8(data+7);
 		battery->timestamp_tpdo6 = Timer::now();
