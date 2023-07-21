@@ -1,13 +1,13 @@
 /**
- * @file      constants.h
+ * @file      toolbox.h
  * @author    Yvan Rodrigues <yvan.r@radskunkworks.com>
  * @brief     Constants used by stm32-toolbox.
  * @date      2021-08-15
  * @copyright Copyright (c) 2021 Robotic Assistance Devices
  */
 
-#ifndef INC_CONSTANTS_H_
-#define INC_CONSTANTS_H_
+#ifndef INC_TOOLBOX_H_
+#define INC_TOOLBOX_H_
 
 #include <stdint.h>
 
@@ -53,7 +53,6 @@
 
 // HTTPd
 #define HTTP_SERVER_MAX_HANDLERS (3)
-#endif /* INC_CONSTANTS_H_ */
 
 // One-time programmable
 #define OTP_BASE_ADDRESS 0x1fff7800  // The memory address of the first block of OTP memory. See your MCU reference manual.
@@ -67,11 +66,23 @@
 // Ethernet, DNS, DHCP, etc. using Wiznet W5500 modile.
 #define ENABLE_W5500 (1)
 
+// Displays
+#define ENABLE_ILI9488_DMA (1)
+
 // Chip
-#define MCU_STM32F4
+#define MCU_STM32L4
 
 #ifdef MCU_STM32F4
 #include "main.h"
-//#include "stm32f4xx_hal_conf.h"
-//#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_conf.h"
+#include "stm32f4xx_hal.h"
 #endif
+
+
+#ifdef MCU_STM32L4
+#include "main.h"
+#include "stm32l4xx_hal_conf.h"
+#include "stm32l4xx_hal.h"
+#endif
+#endif
+

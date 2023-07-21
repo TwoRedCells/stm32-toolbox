@@ -11,7 +11,7 @@
 #define INC_COMMS_NECCANOPEN_H_
 
 #include "comms/CanOpen.h"
-#include "devices/InventusBattery.h"
+#include "devices/batteries/InventusBattery.h"
 #include "utility/Timer.h"
 
 
