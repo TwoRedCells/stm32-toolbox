@@ -15,12 +15,12 @@
 #ifndef INC_COMMS_SERIAL_HPP_
 #define INC_COMMS_SERIAL_HPP_
 
-#include <utility/Print.h>
+#include "utility/PrintLite.h"
 
 /**
  * @brief	Wrapper for serial communications.
  */
-class Serial : public Print
+class Serial : public PrintLite
 {
 public:
     /**
@@ -31,6 +31,7 @@ public:
 	bool setup(UART_HandleTypeDef *handle)
 	{
 		this->handle = handle;
+		return true;
 	}
 
 

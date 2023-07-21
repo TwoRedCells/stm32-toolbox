@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
  * - 10 Apr. 2015
  * Added support for Arduino Ethernet Shield 2
@@ -357,3 +359,4 @@ int SOCKETClass::sendUDP(SOCKET s)
 
 SOCKETClass socket;
 
+#endif

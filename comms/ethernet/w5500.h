@@ -10,11 +10,11 @@
 #ifndef	W5500_H_INCLUDED
 #define	W5500_H_INCLUDED
 
-//#include <SPI.h>
 #include "util.h"
-//#include "variant.h"
+#include <stdint.h>
+#include "toolbox.h"
+#include "utility/Timer.h"
 
-#define CS ETH_CS_GPIO_Port, ETH_CS_Pin
 
 /** Total RAM buffer is 16 kBytes for Transmitter and 16 kBytes for receiver for 1 Socket.
  *  The Total W5500 RAM buffer is 32 kBytes (16 + 16).
@@ -114,7 +114,15 @@ class W5500Class
 {
 public:
 
-	void init(SPI_HandleTypeDef & _spi, uint8_t _ss_pin);
+	void init(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	{
+		this->hspi = _spi;
+		this->cs_port = cs_port;
+		this->cs_pin = cs_pin;
+		writeMR(0x80); // software reset the W5500 chip
+		Timer::Block(milliseconds(100));
+	}
+
 	inline uint8_t readVersion(void) { return readVERSIONR(); };
 
 	/**
@@ -296,24 +304,18 @@ public:
 	static const uint16_t SSIZE = 2048; // Max Tx buffer size
 
 private:
-	//SPIClass & mSPI = SPI;
 	SPI_HandleTypeDef hspi;
-	uint8_t SS;
-	volatile uint32_t * ssPortReg;
-	uint16_t ssBitMask;
-	inline void initSS(uint8_t ss_pin) {
-		/*SS = ss_pin;
-    pinMode(SS, OUTPUT);
-    ssPortReg = (volatile uint32_t *)portSetRegister(SS);
-    ssBitMask = digitalPinToBitMask(SS);*/
-		deselect_SS();
+	GPIO_TypeDef* cs_port;
+	uint16_t cs_pin;
 
-	};
-	inline void select_SS() {
-		HAL_GPIO_WritePin(CS, GPIO_PIN_RESET);
+	inline void select_SS()
+	{
+		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
 	}
-	inline void deselect_SS() {
-		HAL_GPIO_WritePin(CS, GPIO_PIN_SET);
+
+	inline void deselect_SS()
+	{
+		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 	}
 };
 

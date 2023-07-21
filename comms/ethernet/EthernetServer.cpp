@@ -1,4 +1,5 @@
-
+#include "toolbox.h"
+#if ENABLE_W5500
 #include "Ethernet.h"
 #include "socket.h"
 
@@ -80,3 +81,4 @@ size_t EthernetServer::write(const uint8_t *buffer, size_t size)
 
 	return n;
 }
+#endif

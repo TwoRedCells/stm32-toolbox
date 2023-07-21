@@ -11,7 +11,7 @@
 #define INC_DIAGNOSTICS_FAULT_H_
 
 #if FAULT_ENABLE_LED_SUPPORT
-#include "devices/Led.h"
+#include "devices/basic/Led.h"
 #endif
 
 /// <summary>

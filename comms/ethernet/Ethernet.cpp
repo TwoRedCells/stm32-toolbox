@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
  modified 12 Aug 2013
  by Soohwan Kim (suhwan@wiznet.co.kr)
@@ -118,3 +120,4 @@ IPAddress EthernetClass::dnsServerIP()
 
 EthernetClass Ethernet;
 
+#endif

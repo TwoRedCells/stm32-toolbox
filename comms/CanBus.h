@@ -61,6 +61,7 @@ public:
 		return (HAL_CAN_GetRxFifoFillLevel(hcan, CAN_RX_FIFO0) > 0);
 	}
 
+
 	uint32_t poll(CAN_RxHeaderTypeDef* can_rx_header, uint8_t* data)
 	{
 		if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, can_rx_header, data) != HAL_OK)
@@ -102,6 +103,8 @@ public:
 		uint8_t data[8];
 		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, data);
 	}
+	
+	
 protected:
 	CAN_HandleTypeDef *hcan;
 

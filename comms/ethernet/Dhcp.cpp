@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 // DHCP Library v0.3 - April 25, 2009
 // Author: Jordan Terrell - blog.jordanterrell.com
 
@@ -438,3 +440,4 @@ void DhcpClass::printByte(char * buf, uint8_t n ) {
 		*str-- = c < 10 ? c + '0' : c + 'A' - 10;
 	} while(n);
 }
+#endif

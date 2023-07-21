@@ -90,6 +90,7 @@ public:
 
 	enum roles { Master, Slave };
 
+
 	class ICanOpenCallback
 	{
 	public:
@@ -104,6 +105,7 @@ public:
 		{
 		}
 
+
 		/**
 		 * Called when an pdo message is received
 		 * @param address The address ID of the receiver.
@@ -114,6 +116,7 @@ public:
 		virtual void on_pdo(uint16_t cob, uint8_t* data)
 		{
 		}
+		
 
 		/**
 		 * Called when an nmt message is received

@@ -1,3 +1,5 @@
+#include "toolbox.h"
+#if ENABLE_W5500
 /*
   IPAddress.cpp - Base class that provides IPAddress
   Copyright (c) 2011 Adrian McEwen.  All right reserved.
@@ -112,3 +114,4 @@ size_t IPAddress::printTo(Print& p) const
 	return n;
 }
 
+#endif

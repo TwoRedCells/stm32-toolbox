@@ -14,6 +14,7 @@
 #include "devices/InventusBattery.h"
 #include "utility/Timer.h"
 
+
 class Inventus : public CanOpen, CanOpen::ICanOpenCallback
 {
 public:
@@ -47,6 +48,7 @@ public:
 		set_callback(this);
 		this->battery = battery;
 	}
+
 
 	/**
 	 * Sends SDO requests for CiA objects e.g. manufacturer, serial number, etc.
@@ -90,12 +92,14 @@ private:
 		battery->metadata_received = true;
 	}
 
+
 	void on_nmt(uint16_t node, uint8_t data)
 	{
 		battery->last_message = Timer::now();
 		if (!battery->metadata_received)
 			poll_metadata();
 	}
+	
 
 	void on_pdo(uint16_t cob, uint8_t* data)
 	{
@@ -115,6 +119,7 @@ private:
 			on_tpdo1(data);
 	}
 
+
 	void on_tpdo1(uint8_t* data)
 	{
 		battery->number_of_batteries = lsb_uint8_to_uint8(data+0);
@@ -124,6 +129,7 @@ private:
 		battery->virtual_remaining_charge_time =  lsb_uint16_to_uint16(data+6);
 		battery->timestamp_tpdo1 = Timer::now();
 	}
+
 
 	void on_tpdo2(uint8_t* data)
 	{
@@ -135,6 +141,7 @@ private:
 		battery->timestamp_tpdo2 = Timer::now();
 	}
 
+
 	void on_tpdo3(uint8_t* data)
 	{
 		battery->virtual_battery_temperature = lsb_int16_to_float(data+0, 8);
@@ -143,6 +150,7 @@ private:
 		battery->virtual_maximum_charge_voltage = lsb_uint16_to_float(data+6, 1000);
 		battery->timestamp_tpdo3 = Timer::now();
 	}
+	
 
 	void on_tpdo4(uint8_t* data)
 	{
@@ -155,6 +163,7 @@ private:
 		battery->timestamp_tpdo4 = Timer::now();
 	}
 
+
 	void on_tpdo5(uint8_t* data)
 	{
 		battery->virtual_regen_current_limit = lsb_uint16_to_float(data+0, 10);
@@ -163,6 +172,7 @@ private:
 		battery->cell_balance_status = lsb_uint16_to_uint16(data+6);
 		battery->timestamp_tpdo5 = Timer::now();
 	}
+	
 
 	void on_tpdo6(uint8_t* data)
 	{

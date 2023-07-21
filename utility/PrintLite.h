@@ -196,6 +196,7 @@ public:
 		return count;
 	}
 
+
 protected:
 	/**
 	 * Converts an integer to a string.
