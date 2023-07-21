@@ -2,12 +2,14 @@
  * \file       comms/CanOpen.h
  * \class      CanOpen
  * \brief      Encapsulates CANopen communications.
+ * \notes	Configure the CAN port using STM32CubeIDE normally. Create an interrupt, and put a call to on_message in the interrupt.
  */
 
 #ifndef INC_COMMS_CANOPEN_H_
 #define INC_COMMS_CANOPEN_H_
 
 #include "CanBus.h"
+#include "utility/FastDelegate.h"
 
 
 class CanOpen : public CanBus
@@ -98,9 +100,30 @@ public:
 		 * @param subindex The SDO subindex.
 		 * @param data The data (1-4 bytes).
 		 */
-		virtual void on_sdo(uint16_t address, uint16_t index, uint8_t subindex, uint8_t* data)
+		virtual void on_sdo(uint16_t node, uint16_t index, uint8_t subindex, uint8_t* data)
 		{
+		}
 
+		/**
+		 * Called when an pdo message is received
+		 * @param address The address ID of the receiver.
+		 * @param index The PDO index.
+		 * @param subindex The PDO subindex.
+		 * @param data The data (1-8 bytes).
+		 */
+		virtual void on_pdo(uint16_t cob, uint8_t* data)
+		{
+		}
+
+		/**
+		 * Called when an nmt message is received
+		 * @param address The address ID of the receiver.
+		 * @param index The PDO index.
+		 * @param subindex The PDO subindex.
+		 * @param data The data (1-8 bytes).
+		 */
+		virtual void on_nmt(uint16_t node, uint8_t data)
+		{
 		}
 	};
 
@@ -182,7 +205,6 @@ public:
 				0
 		};
 		uint32_t error = send(address, data, 3 + size);
-		//osDelay(10);
 		return error;
 	}
 
@@ -195,17 +217,32 @@ public:
 		CAN_RxHeaderTypeDef can_rx_header;
 		uint8_t data[8];
 		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, data);
-		uint16_t id = can_rx_header.StdId;
-		if (id & 0x580)
+		uint16_t cob = can_rx_header.StdId;
+		uint16_t node = cob & 0x7f;
+
+		if (cob & 0x780)
 		{
-			uint16_t address = id & ~0x580;
-			uint16_t index = data_to_uint16(data+1);
+			if (callback != nullptr)
+				callback->on_nmt(node, *data);
+		}
+
+		if (cob & 0x580)
+		{
+			uint16_t index = lsb_uint16_to_uint16(data+1);
 			uint8_t subindex = data[3];
 			if (callback != nullptr)
-				callback->on_sdo(address, index, subindex, data+4);
+				callback->on_sdo(node, index, subindex, data+4);
 		}
-	}
 
+		if (cob & 0x180 || cob & 0x280 || cob & 0x380 || cob & 0x480 || cob & 0x190 || cob & 0x290)
+		{
+			if (callback != nullptr)
+				callback->on_pdo(cob, data);
+		}
+
+		if (message_callback != nullptr)
+			message_callback(cob, data);
+	}
 
 
 	/**
@@ -216,15 +253,42 @@ public:
 		this->callback = instance;
 	}
 
+	void set_message_callback(fastdelegate::FastDelegate2<uint16_t, uint8_t*> callback)
+	{
+		this->message_callback = callback;
+	}
+
 
 	/**
 	 * Converts LSB word into uint16.
 	 * @param data Pointer to the first byte of the word.
 	 * @return The value.
 	 */
-	static uint16_t data_to_uint16(uint8_t* data)
+	static uint16_t lsb_uint16_to_uint16(uint8_t* data)
 	{
 		return data[0] | data[1] << 8;
+	}
+
+
+	/**
+	 * Converts uint8_t pointer to uint8_t.
+	 * @param data Pointer to the byte.
+	 * @return The value.
+	 */
+	static uint8_t lsb_uint8_to_uint8(uint8_t* data)
+	{
+		return *data;
+	}
+
+
+	/**
+	 * Converts uint8_t pointer to uint8_t.
+	 * @param data Pointer to the byte.
+	 * @return The value.
+	 */
+	static int8_t lsb_int8_to_int8(uint8_t* data)
+	{
+		return *data;
 	}
 
 
@@ -233,9 +297,9 @@ public:
      * @param data Pointer to the first byte of the word.
      * @return The value.
      */
-	static int16_t data_to_int16(uint8_t* data)
+	static int16_t lsb_int16_to_int16(uint8_t* data)
 	{
-		return data[0] | data[1];
+		return data[0] | data[1] << 8;
 	}
 
 
@@ -244,7 +308,7 @@ public:
 	 * @param data Pointer to the first byte of the word.
 	 * @return The value.
 	 */
-	static uint32_t data_to_uint32(uint8_t* data)
+	static uint32_t lsb_uint32_to_uint32(uint8_t* data)
 	{
 		return data[0] | data[1] << 8 | data[2] << 16 | data[3];
 	}
@@ -255,7 +319,7 @@ public:
      * @param data Pointer to the first byte of the word.
      * @return The value.
      */
-	static int32_t data_to_int32(uint8_t* data)
+	static int32_t lsb_int32_to_int32(uint8_t* data)
 	{
 		return data[0] | data[1] << 8 | data[2] << 16 | data[3];
 	}
@@ -268,18 +332,47 @@ public:
      *        The default is 1 (zero decimal places).
      * @return The value.
      */
-	static float data_to_float(uint8_t* data, uint16_t divisor=1)
+	static float lsb_int16_to_float(uint8_t* data, uint16_t divisor=1)
 	{
-		int16_t u = data_to_int16(data);
+		int16_t u = lsb_int16_to_int16(data);
 		return ((float)u) / (float)divisor;
 	}
 
+
+    /**
+     * Converts LSB word with implicit decimal into float.
+     * @param data Pointer to the first byte of the word.
+     * @param divisor Value to divide the integer value by to translate it to float.
+     *        The default is 1 (zero decimal places).
+     * @return The value.
+     */
+	static float lsb_uint16_to_float(uint8_t* data, uint16_t divisor=1)
+	{
+		uint16_t u = lsb_uint16_to_uint16(data);
+		return ((float)u) / (float)divisor;
+	}
+
+
+    /**
+     * Converts byte sequence into NUL terminated string.
+     * @param data Pointer to the first byte.
+     * @param dest Pointer to the destination.
+     * @param length The number of characyters, excluding the NUL termination.
+     * @return The value.
+     */
+	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length)
+	{
+		for (uint8_t i=0; i < length; i++)
+			dest[i] = (char)data[i];
+		dest[length] = '\0';
+	}
 
 
 private:
 	uint32_t sync_count = 0;
 	ICanOpenCallback* callback = nullptr;
 	roles role = Master;
+	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
 };
 
 
