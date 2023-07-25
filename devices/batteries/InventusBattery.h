@@ -51,8 +51,8 @@ public:
 	uint8_t number_of_faulted_batteries;
 	uint8_t number_of_active_batteries;
 	uint8_t virtual_operation_mode;
-	uint16_t charge_faults;
-	uint16_t discharge_faults;
+	uint16_t virtual_charge_faults;
+	uint16_t virtual_discharge_faults;
 
 	// TPDO5
 	float virtual_regen_current_limit; // 100 mA
@@ -81,18 +81,32 @@ public:
 	// Detail CiA 418
 	uint8_t state_of_charge;
 	float charge_current_requested;
-	float voltage;
+	float battery_voltage;
 	float charge_returned_during_last_charge;
 	float charge_expended_during_last_charge;
 	uint32_t cumulative_charge;
-	uint64_t serial_number;
+	char serial_number[9];
 	uint16_t number_of_cells;
 	uint16_t max_charge_current;
-	uint16_t capacity;
+	uint16_t battery_capacity;
 	uint8_t battery_type;
 	float temperature;
 	uint8_t charger_status;
 	uint8_t battery_status;
+
+	// Proprietary
+	uint8_t state_of_health;
+	uint16_t operational_mode;
+	uint16_t charge_fault;
+	uint16_t discharge_fault;
+	float current;
+	float regen_current_limit;
+	float charge_current_limit;
+	float discharge_current_limit;
+	float minimum_cell_temperature;
+	float maximum_cell_temperature;
+	float minimum_cell_voltage;
+	float maximum_cell_voltage;
 };
 
 

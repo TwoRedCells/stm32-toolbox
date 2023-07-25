@@ -35,6 +35,19 @@ public:
 	static constexpr uint16_t Index_BatteryVoltage = 0x6060;
 	static constexpr uint16_t Index_ChargeCurrentRequested = 0x6070;
 	static constexpr uint16_t Index_BatterySoC = 0x6081;
+	static constexpr uint16_t Index_BatterySoH = 0x4800;
+	static constexpr uint16_t Index_BatteryMode = 0x4801;
+	static constexpr uint16_t Index_BatteryChargeFault = 0x4802;
+	static constexpr uint16_t Index_BatteryDischargeFault = 0x4803;
+	static constexpr uint16_t Index_BatteryCurrent = 0x4804;
+	static constexpr uint16_t Index_BatteryRegenCurrentLimit = 0x4805;
+	static constexpr uint16_t Index_BatteryChargeCurrentLimit = 0x4806;
+	static constexpr uint16_t Index_BatteryDischargeCurrentLimit = 0x4807;
+	static constexpr uint16_t Index_BatteryMinimumCellTemperature = 0x4808;
+	static constexpr uint16_t Index_BatteryMaximumCellTemperature= 0x4809;
+	static constexpr uint16_t Index_BatteryMinimumCellVoltage = 0x480a;
+	static constexpr uint16_t Index_BatteryMaximumCellVoltage = 0x480b;
+
 
 
 	/**
@@ -72,52 +85,68 @@ private:
 		assert(node >= 0x31 && node <= 0x3f);
 		InventusBattery* battery = &batteries[node - master_node_id];
 
-		switch (index)
+		if (index == Index_BatteryStatus)
+			battery->battery_status = lsb_uint8_to_uint8(data);
+		else if (index == Index_ChargerStatus)
+			battery->charger_status = lsb_uint8_to_uint8(data);
+		else if (index == Index_Temperature)
+			battery->temperature = lsb_int16_to_float(data, 8);
+		else if (index == Index_BatteryInformation)
 		{
-		case Index_BatteryStatus:
-			break;
-		case Index_ChargerStatus:
-			break;
-		case Index_Temperature:
-			battery->temperature = lsb_int16_to_float(data) * 0.125f;
-			break;
-		case Index_BatteryInformation:
-			switch (subindex)
-			{
-			case Subindex_BatteryType:
-				break;
-			case Subindex_Capacity:
-				break;
-			case Subindex_MaxChargeCurrent:
-				break;
-			case Subindex_NumberOfCells:
-				break;
-			}
-			break;
-		case Index_BatterySerial:
-			switch (subindex)
-			{
-			case Subindex_BatterySerial1:
-				break;
-			case Subindex_BatterySerial2:
-				break;
-			}
-			break;
-		case Index_CumulativeCharge:
-			break;
-		case Index_CurrentExpendedSinceLastCharge:
-			break;
-		case Index_CurrentReturnedSinceLastCharge:
-			break;
-		case Index_BatteryVoltage:
-			break;
-		case Index_ChargeCurrentRequested:
-			break;
-		case Index_BatterySoC:
-			battery->state_of_charge = lsb_uint8_to_uint8(data);
-			break;
-
+			if (subindex == Subindex_BatteryType)
+				battery->battery_type = lsb_uint8_to_uint8(data);
+			else if (subindex == Subindex_Capacity)
+				battery->battery_capacity = lsb_uint16_to_uint16(data);
+			else if (subindex == Subindex_MaxChargeCurrent)
+				battery->max_charge_current = lsb_uint16_to_uint16(data);
+			else if (subindex == Subindex_NumberOfCells)
+				battery->number_of_cells = lsb_uint16_to_uint16(data);
 		}
+		else if (index == Index_BatterySerial)
+		{
+			battery->serial_number[8] = 0;
+			if (subindex == Subindex_BatterySerial1)
+				bytes_to_string(data, battery->serial_number, 4);
+			else if (subindex == Subindex_BatterySerial2)
+				bytes_to_string(data, battery->serial_number+4, 4);
+		}
+		else if (index == Index_CumulativeCharge)
+			battery->cumulative_charge = lsb_uint32_to_uint32(data);
+		else if (index == Index_CurrentExpendedSinceLastCharge)
+			battery->charge_expended_during_last_charge = lsb_uint16_to_float(data, 8);
+		else if (index == Index_CurrentReturnedSinceLastCharge)
+			battery->charge_returned_during_last_charge = lsb_uint16_to_float(data, 8);
+		else if (index == Index_BatteryVoltage)
+			battery->battery_voltage = lsb_uint32_to_float(data, 1024);
+		else if (index == Index_ChargeCurrentRequested)
+			battery->charge_current_requested = lsb_uint16_to_float(data, 16);
+		else if (index == Index_BatterySoC)
+			battery->state_of_charge = lsb_uint8_to_uint8(data);
+		else if (index == Index_BatterySoH)
+			battery->state_of_health = lsb_uint8_to_uint8(data);
+		else if (index == Index_BatteryMode)
+			battery->operational_mode = lsb_uint16_to_uint16(data);
+		else if (index == Index_BatteryChargeFault)
+			battery->charge_fault = lsb_uint16_to_uint16(data);
+		else if (index == Index_BatteryDischargeFault)
+			battery->discharge_fault = lsb_uint16_to_uint16(data);
+		else if (index == Index_BatteryCurrent)
+			battery->current = lsb_int16_to_float(data, 10);
+		else if (index == Index_BatteryRegenCurrentLimit)
+			battery->regen_current_limit = lsb_uint16_to_float(data, 10);
+		else if (index == Index_BatteryChargeCurrentLimit)
+			battery->charge_current_limit = lsb_uint16_to_float(data, 10);
+		else if (index == Index_BatteryDischargeCurrentLimit)
+			battery->discharge_current_limit = lsb_uint16_to_float(data, 10);
+		else if (index == Index_BatteryMinimumCellTemperature)
+			battery->minimum_cell_temperature = lsb_uint16_to_float(data, 8);
+		else if (index == Index_BatteryMaximumCellTemperature)
+			battery->maximum_cell_temperature = lsb_uint16_to_float(data, 8);
+		else if (index == Index_BatteryMinimumCellVoltage)
+			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 8);
+		else if (index == Index_BatteryMaximumCellVoltage)
+			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 8);
+
 		battery->metadata_received = true;
 	}
 
@@ -194,8 +223,8 @@ private:
 		battery->number_of_faulted_batteries = lsb_uint8_to_uint8(data+1);
 		battery->number_of_active_batteries = lsb_uint8_to_uint8(data+2);
 		battery->virtual_operation_mode = lsb_uint8_to_uint8(data+3);
-		battery->charge_faults = lsb_uint16_to_uint16(data+4);
-		battery->discharge_faults = lsb_uint16_to_uint16(data+6);
+		battery->virtual_charge_faults = lsb_uint16_to_uint16(data+4);
+		battery->virtual_discharge_faults = lsb_uint16_to_uint16(data+6);
 		battery->timestamp_tpdo4 = Timer::now();
 	}
 

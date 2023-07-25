@@ -390,6 +390,20 @@ public:
 
 
     /**
+     * Converts LSB double word with implicit decimal into float.
+     * @param data Pointer to the first byte of the word.
+     * @param divisor Value to divide the integer value by to translate it to float.
+     *        The default is 1 (zero decimal places).
+     * @return The value.
+     */
+	static float lsb_uint32_to_float(uint8_t* data, uint16_t divisor=1)
+	{
+		uint32_t u = lsb_uint32_to_uint32(data);
+		return ((float)u) / (float)divisor;
+	}
+
+
+    /**
      * Converts byte sequence into NUL terminated string.
      * @param data Pointer to the first byte.
      * @param dest Pointer to the destination.
