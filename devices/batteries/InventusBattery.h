@@ -15,16 +15,7 @@ struct InventusBattery
 {
 public:
 	uint8_t node_id;
-
-//	//CiA 301
-//	uint32_t device_type;
-//	char manufacturer_device_name[15];
-//	char manufacturer_hardware_version[5];
-//	uint32_t manufacturer_software_version;
-//	uint32_t vendor_id;
-//	char product_code[5];
-//	char revision_number[5];
-//	char serial_number[5];
+	uint8_t change_node_id;  // If set to non-zero, there is an outstanding request to change this node to the id set by this field.
 
 	// TPDO1
 	uint8_t number_of_batteries;

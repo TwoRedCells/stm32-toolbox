@@ -90,12 +90,11 @@ public:
 
 	enum roles { Master, Slave };
 
-
 	class ICanOpenCallback
 	{
 	public:
 		/**
-		 * Called when an sdo message is received
+		 * Called when an sdo message is received.
 		 * @param address The address ID of the receiver.
 		 * @param index The SDO index.
 		 * @param subindex The SDO subindex.
@@ -107,7 +106,7 @@ public:
 
 
 		/**
-		 * Called when an pdo message is received
+		 * Called when an pdo message is received.
 		 * @param address The address ID of the receiver.
 		 * @param index The PDO index.
 		 * @param subindex The PDO subindex.
@@ -119,7 +118,7 @@ public:
 
 
 		/**
-		 * Called when an heartbeat message is received
+		 * Called when an heartbeat message is received.
 		 * @param node The node ID of the recipient.
 		 */
 		virtual void on_heartbeat(uint8_t node)
@@ -128,10 +127,18 @@ public:
 		
 
 		/**
-		 * Called when an nmt message is received
+		 * Called when an nmt message is received.
 		 * @param data The data (1-8 bytes).
 		 */
 		virtual void on_nmt(uint8_t data)
+		{
+		}
+
+
+		/**
+		 * Called when an unrecognized message is received.
+		 */
+		virtual void on_other_message(uint16_t cob, uint8_t* data)
 		{
 		}
 	};
@@ -259,6 +266,12 @@ public:
 		{
 			if (callback != nullptr)
 				callback->on_pdo(cob, data);
+		}
+
+		else
+		{
+			if (callback != nullptr)
+				callback->on_other_message(cob, data);
 		}
 
 		if (message_callback != nullptr)

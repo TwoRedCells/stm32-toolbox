@@ -68,7 +68,7 @@ public:
 					write(va_arg(a, char*));
 					break;
 				case 'c':                       // Char
-					write(va_arg(a, int8_t));
+					write(va_arg(a, int));
 					count++;
 					break;
 				case 'd':

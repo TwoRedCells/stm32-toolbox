@@ -16,6 +16,8 @@
 
 #define MAX_DURATION (seconds(10))   // HACK!
 
+#include "toolbox.h"
+
 /// <summary>
 /// A general purpose timer that can be used as a stopwatch or a means to coordinate asynchonous events.
 /// </summary>
