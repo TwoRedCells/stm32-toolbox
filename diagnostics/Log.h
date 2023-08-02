@@ -9,7 +9,7 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include "stm32-toolbox/comms/Serial.h"
+#include "comms/Serial.h"
 
 #define DEC 10
 #define HEX 16

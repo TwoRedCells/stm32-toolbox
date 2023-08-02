@@ -90,12 +90,11 @@ public:
 
 	enum roles { Master, Slave };
 
-
 	class ICanOpenCallback
 	{
 	public:
 		/**
-		 * Called when an sdo message is received
+		 * Called when an sdo message is received.
 		 * @param address The address ID of the receiver.
 		 * @param index The SDO index.
 		 * @param subindex The SDO subindex.
@@ -107,7 +106,7 @@ public:
 
 
 		/**
-		 * Called when an pdo message is received
+		 * Called when an pdo message is received.
 		 * @param address The address ID of the receiver.
 		 * @param index The PDO index.
 		 * @param subindex The PDO subindex.
@@ -116,24 +115,45 @@ public:
 		virtual void on_pdo(uint16_t cob, uint8_t* data)
 		{
 		}
+
+
+		/**
+		 * Called when an heartbeat message is received.
+		 * @param node The node ID of the recipient.
+		 */
+		virtual void on_heartbeat(uint8_t node)
+		{
+		}
 		
 
 		/**
-		 * Called when an nmt message is received
-		 * @param address The address ID of the receiver.
-		 * @param index The PDO index.
-		 * @param subindex The PDO subindex.
+		 * Called when an nmt message is received.
 		 * @param data The data (1-8 bytes).
 		 */
-		virtual void on_nmt(uint16_t node, uint8_t data)
+		virtual void on_nmt(uint8_t data)
+		{
+		}
+
+
+		/**
+		 * Called when an unrecognized message is received.
+		 */
+		virtual void on_other_message(uint16_t cob, uint8_t* data)
 		{
 		}
 	};
 
 
-	CanOpen(CAN_HandleTypeDef *hcan, roles role=Master) : CanBus(hcan)
+	/**
+	 * Constructs a CanOpen object.
+	 * @param hcan Pointer to CAN device handle.
+	 * @param roles The role to assume.
+	 * @param allow_tpdo5 If true, TPDO5 (and higher) can be expected at 0x190 etc. at the cost of having fewer possible nodes.
+	 */
+	CanOpen(CAN_HandleTypeDef *hcan, roles role=Master, bool allow_tpdo5=false) : CanBus(hcan)
 	{
 		this->role = role;
+		this->allow_tpdo5 = allow_tpdo5;
 	}
 
 
@@ -151,11 +171,10 @@ public:
 	/**
 	 * Sends the CANopen NMT message.
 	 * @param state The state to transition to.
-	 * @param node The node ID that is the recipient of this message, or zero for all.
 	 */
-	uint32_t nmt(uint8_t state, uint8_t node=0)
+	uint32_t nmt(uint8_t state)
 	{
-		uint8_t data[] = { state, node };
+		uint8_t data[] = { state, 0x00 };
 		return send(0x000, data, 2);
 	}
 
@@ -169,9 +188,9 @@ public:
 	 * @param size The number of value bytes.
 	 * @returns 0 on success; otherwise the error value.
 	 */
-	uint32_t sdo(uint16_t address, uint16_t index, uint8_t subindex=0, uint32_t value=0, uint8_t size=0)
+	uint32_t sdo(uint16_t cob, uint16_t index, uint8_t subindex=0, uint32_t value=0, uint8_t size=0)
 	{
-		address += role==Master ? 0x600 : 0x580;
+		cob += role==Master ? 0x600 : 0x580;
 		uint8_t data[] = {
 				//size == 0 ? 0x40 : 0x2f-size,
 				size == 1 ? 0x2f : size == 2 ? 0x2b : size == 4 ? 0x23 : 0x40,
@@ -183,7 +202,7 @@ public:
 				(value & 0x00ff0000) >> 16,
 				(value & 0xff000000) >> 24
 		};
-		uint32_t error = send(address, data, size == 0 ? 8 : 4 + size);
+		uint32_t error = send(cob, data, size == 0 ? 8 : 4 + size);
 		osDelay(1);
 		return error;
 	}
@@ -221,15 +240,21 @@ public:
 		uint8_t data[8];
 		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, data);
 		uint16_t cob = can_rx_header.StdId;
-		uint16_t node = cob & 0x7f;
+		uint16_t node = cob_to_node(cob);
 
-		if (cob & 0x780)
+		if (cob == 0x000)
 		{
 			if (callback != nullptr)
-				callback->on_nmt(node, *data);
+				callback->on_nmt(*data);
 		}
 
-		if (cob & 0x580)
+		else if ((cob & 0x700) == 0x700)
+		{
+			if (callback != nullptr)
+				callback->on_heartbeat(node);
+		}
+
+		else if ((cob & 0x580) == 0x580)
 		{
 			uint16_t index = lsb_uint16_to_uint16(data+1);
 			uint8_t subindex = data[3];
@@ -237,10 +262,16 @@ public:
 				callback->on_sdo(node, index, subindex, data+4);
 		}
 
-		if (cob & 0x180 || cob & 0x280 || cob & 0x380 || cob & 0x480 || cob & 0x190 || cob & 0x290)
+		else if ((cob & 0x180) == 0x180 || (cob & 0x280) == 0x280 || (cob & 0x380) == 0x380 || (cob & 0x480) == 0x480 || (cob & 0x190) == 0x190 || (cob & 0x290) == 0x290)
 		{
 			if (callback != nullptr)
 				callback->on_pdo(cob, data);
+		}
+
+		else
+		{
+			if (callback != nullptr)
+				callback->on_other_message(cob, data);
 		}
 
 		if (message_callback != nullptr)
@@ -261,6 +292,21 @@ public:
 		this->message_callback = callback;
 	}
 
+
+	/**
+	 * Extracts the node ID from a COB.
+	 * @param cob The COB.
+	 * @returns The node ID.
+	 */
+	uint8_t cob_to_node(uint16_t cob)
+	{
+		if (allow_tpdo5)
+		{
+		    if ((cob & 0x90) == 0x80) cob -= 0x10;
+		    return cob & 0x3f;
+		}
+		return cob & 0x7f;
+	}
 
 	/**
 	 * Converts LSB word into uint16.
@@ -357,6 +403,20 @@ public:
 
 
     /**
+     * Converts LSB double word with implicit decimal into float.
+     * @param data Pointer to the first byte of the word.
+     * @param divisor Value to divide the integer value by to translate it to float.
+     *        The default is 1 (zero decimal places).
+     * @return The value.
+     */
+	static float lsb_uint32_to_float(uint8_t* data, uint16_t divisor=1)
+	{
+		uint32_t u = lsb_uint32_to_uint32(data);
+		return ((float)u) / (float)divisor;
+	}
+
+
+    /**
      * Converts byte sequence into NUL terminated string.
      * @param data Pointer to the first byte.
      * @param dest Pointer to the destination.
@@ -376,6 +436,7 @@ private:
 	ICanOpenCallback* callback = nullptr;
 	roles role = Master;
 	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
+	bool allow_tpdo5 = false;
 };
 
 

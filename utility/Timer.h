@@ -16,6 +16,8 @@
 
 #define MAX_DURATION (seconds(10))   // HACK!
 
+#include "toolbox.h"
+
 /// <summary>
 /// A general purpose timer that can be used as a stopwatch or a means to coordinate asynchonous events.
 /// </summary>
@@ -28,7 +30,6 @@
 class Timer
 {
 public:
-
 	/// <summary>
 	/// Constructs an instance of the Timer class.
 	/// </summary>
@@ -165,9 +166,9 @@ public:
 	}
 
 private:
-	uint32_t started;  /// The time when the timer was started.
-	uint32_t alarm;  /// The time when the alarm should be invoked.
-	uint32_t duration;  /// The duration of the timer.
+	uint32_t started = 0;  /// The time when the timer was started.
+	uint32_t alarm = 0;  /// The time when the alarm should be invoked.
+	uint32_t duration = 0;  /// The duration of the timer.
 	inline static bool initialized;  /// Whether or not the timer has been initialized.
 };
 
