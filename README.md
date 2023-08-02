@@ -45,6 +45,15 @@ I chose this strategy because:
 * Code is only compiled if you use (#include) it. You don't have to manage a directory of files and hope that if you
   missed something, the compiler will optimize out any unused code.
 
+
+Usage
+-----
+
+You can copy individual classes to your project, but they easiest way it to `git submodule add <repo-url>`. This allows
+you to easily keep the libraries up-to-date.
+
+Some classes refer to `toolbox.h` for configuration parameters.
+
 Classes
 -------
 
@@ -55,6 +64,9 @@ usage, example, and dependencies.
 
 `PrintLite` is an abstract class for adding `printf`-style functionality to classes that output text, such as serial
 communications, LED and LCD displays, logging, HTTP output, etc.
+
+`Rtc` abstracts the system real-time clock, allowing it to be read and set, either as a date or time structure or
+as a UNIX timestamp.
 
 `Timer` is a general purpose microsecond timer for timing how long something takes to execute, executing code at
 regular intervals, and returning to execution after an amount of time. By using the processor's DWT (data watchpoint
@@ -109,49 +121,75 @@ including PHY, sockets, ICMP, TCP/IP, TCP and UDP, Ethernet, IP addressing, and 
 interwoven. Sure the W5500 implements a TCP/IP stack but, especially in C++, one can still keep the OSI layers
 mostly distinct.
 
-"http/*" is my implementation of an `HttpServer` and `HttpHandler` which makes it easy to implement an application
+`http/*` is my implementation of an `HttpServer` and `HttpHandler` which makes it easy to implement an application
 or API layer based on URI query string parsing.
 
 
 ### Basic Devices
 
-`basic/Pwm` aids configuration of a PWM timer and is inherited by some other classes.
+`devices/basic/Pwm` aids configuration of a PWM timer and is inherited by some other classes.
 
-`basic/Led` is a simple LED abstraction. It knows whether your logic is inverted (`false` state is *ON*). You can `set()` the
-device's state, turn it `on()` or `off()`, or `flip()` it's state.
+`devices/basic/Led` is a simple LED abstraction. It knows whether your logic is inverted (`false` state is *ON*). 
+You can `set()` the device's state, turn it `on()` or `off()`, or `flip()` it's state.
 
-`basic/Relay` is a simple relay abstraction, however it is particularly useful for contactors or relays in which you want to
+`devices/basic/Relay` is a simple relay abstraction, however it is particularly useful for contactors or relays in 
+which you want to
 monitor secondary contacts for feedback.
 
-`basic/Encoder` implements a simple pushbutton/rotary encoder device.
+`devices/basic/Encoder` implements a simple pushbutton/rotary encoder device.
 
 ### Batteries
 
-`batteries/Nec12V35i` interfaces with an NEC 12V35i battery that communicates using CANOpen. This is probably broken.
+`devices/batteries/Nec12V35i` interfaces with an NEC 12V35i battery that communicates using CANOpen. 
+This is probably broken.
 
-`batteries/Inventus` interfaces the the PROTRXion line of batteries from Inventus.
+`devices/batteries/Inventus` interfaces the the PROTRXion line of batteries from Inventus.
 
 ### Internal Memory Devices
 
-`flash/internal/FlashMemory` is an abstract class for reading and writing the FLASH memory that is embedded into STM32 MCUs.
+`devices/flash/internal/FlashMemory` is an abstract class for reading and writing the FLASH memory that is embedded 
+into STM32 MCUs.
 
-`flash/internal/Sector` is implementation of `FlashMemory` specifically for those MCUs that organize memory into sectors.
+`devices/flash/internal/Sector` is implementation of `FlashMemory` specifically for those MCUs that organize memory 
+into sectors.
 
-`flash/internal/FlashFileSystem` is an abstract class for organizing FLASH memory into a simple filesystem, using 
-`Directory`, `DirectoryEntry`, and `DirectoryHeader`.
+`devices/flash/internal/FlashFileSystem` is an abstract class for organizing FLASH memory into a simple filesystem, 
+using `Directory`, `DirectoryEntry`, and `DirectoryHeader`.
 
-`flash/internal/SectorFlashFileSystem` is an implementation of a filesystem for MCUs that organize FLASH memory into sectors.
+`devices/flash/internal/SectorFlashFileSystem` is an implementation of a filesystem for MCUs that organize FLASH memory
+into sectors.
 
-`flash/internal/OneTimeProgrammable` is an interface to read and write one-time programmable memory.
+`devices/flash/internal/OneTimeProgrammable` is an interface to read and write one-time programmable memory.
 
 ### External Memory Devices
 
-`flash/external/SpiFlashMemory` is an interface to read and write commodity SPI NOR FLASH memory.
-`flash/external/SpiFlashMemoryFileSystem` allows SPI flash memory to be used like a filesystem.
+`devices/flash/external/SpiFlashMemory` is an interface to read and write commodity SPI NOR FLASH memory.
+`devices/flash/external/SpiFlashMemoryFileSystem` allows SPI flash memory to be used like a filesystem.
 
-This table lists the classes included in the library, the last time they were updated, and their subjec
+### Displays
 
-tive maturity.
+`devices/displays/Hd44780` is an interface to write to commodity Hitachi 2-line or 4-line alphanumeric displays.
 
-Class                                 | Functionality                                   | Updated   | Maturity
---------------------------------------|-------------------------------------------------|-----------|-------------
+`devices/displays/OledSsd1306` is an interface to write to commodity 320x240 pixel displays.
+
+`devices/displays/NeoPixel` is an interface to output to addressible RGB and RGBW LEDs.
+
+`devices/displays/Ili9488` is an interface to write to 3 to 4 inch RGB TFT LCD panels. It includes some basic drawing
+functionality, but is intended to be used with the `PicoGFX` class.
+
+### Graphics
+
+`PicoFGX` is a minimalist graphics drawing library for drawing lines, rectangles, circles, text, etc. to a dot matrix
+display. It is designed to be hardware agnostic. As long as you can write an interface that turns on a pixel for any
+hardware, you can hook it up to `PicoGFX` and draw to that canvas.
+
+
+Class Summary
+-------------
+
+This table lists the classes included in the library, the last time they were updated, and their subjective maturity.
+
+
+
+Class                        | Functionality                         | Size    | Updated   | Maturity
+-----------------------------|---------------------------------------|---------|-----------|-------------
