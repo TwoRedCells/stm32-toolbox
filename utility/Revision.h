@@ -52,6 +52,16 @@ public:
 		return (value + 75) / 150;
 	}
 
+
+	/**
+	 * Gets the revision as a letter, where A=1, B=2, etc.
+	 * @returns The letter revision.
+	 */
+	char get_letter(void)
+	{
+		return '@' + get();
+	}
+
 private:
 	ADC_HandleTypeDef* hadc;
 };
