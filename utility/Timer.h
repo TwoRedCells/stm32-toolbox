@@ -14,8 +14,6 @@
 #define seconds(x) (x*1000000)
 #define millis() (Timer::now()/1000)
 
-#define MAX_DURATION (seconds(10))   // HACK!
-
 #include "toolbox.h"
 
 /// <summary>
@@ -162,7 +160,14 @@ public:
 	/// <returns>The current timestamp.</returns>
 	static uint32_t now(void)
 	{
-		return DWT->CYCCNT / (HAL_RCC_GetHCLKFreq() / 1000000);
+		static uint32_t last = 0;
+		static uint32_t accumulator = 0;
+
+		uint32_t n = DWT->CYCCNT / (HAL_RCC_GetHCLKFreq() / 1000000);
+		if (n < last)
+			accumulator += 0xffffffff / HAL_RCC_GetHCLKFreq() * 1000000 + 1;
+		last = n;
+		return n + accumulator;
 	}
 
 private:
