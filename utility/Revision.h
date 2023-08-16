@@ -36,7 +36,9 @@ public:
 		HAL_ADCEx_Calibration_SetValue(hadc, ADC_SINGLE_ENDED, factor);
 		HAL_ADC_Start(hadc);
 		HAL_ADC_PollForConversion(hadc, 100);
-		return HAL_ADC_GetValue(hadc);
+		uint16_t value = HAL_ADC_GetValue(hadc);
+		HAL_ADC_Stop(hadc);
+		return value;
 	}
 
 

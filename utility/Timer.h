@@ -24,6 +24,9 @@
 /// microcontrollers. This timer ticks approximately once per microsecond, however each tick is only as accurate as the
 /// resolution of the main clock speed of the processor. For example, a 72MHz processor will have an error of up to
 /// 14 nanoseconds. Any critical timing should use a dedicated hardware timer tuned for its application.
+///
+/// Since the DWT will overflow every 2^32/cpu_frequency seconds (e.g. 52 seconds at 80 MHz.), the class maintains an
+/// accumulator to allow the timer to run to a maximum of 2^32 microseconds, or about 71.5 minutes.
 /// </remarks>
 class Timer
 {
