@@ -38,9 +38,11 @@ public:
 	/// Configures the watchdog.
 	/// </summary>
 	/// <param name="expected_flags">The ORed valuethat is expected during healthy operation.</param>
-	void setup(uint32_t expected_flags)
+	/// <param name="prescaler">The prescalar constant to use for the watchdog timer e.g. IWDG_PRESCALER_128</param>
+	void setup(uint32_t expected_flags, uint32_t prescaler=IWDG_PRESCALER_128)
 	{
 		expected = expected_flags;
+		hiwdg.Init.Prescaler = prescaler;
 	}
 
 
@@ -50,11 +52,9 @@ public:
 	void start(void)
 	{
 		hiwdg.Instance = IWDG;
-		hiwdg.Init.Prescaler = IWDG_PRESCALER_128; // About 16 seconds.
+		hiwdg.Init.Window = 4095;
 		hiwdg.Init.Reload = 4095;
 		HAL_IWDG_Init(&hiwdg);
-//		if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
-//			fault.alert(Fault::Watchdog);
 	}
 
 
