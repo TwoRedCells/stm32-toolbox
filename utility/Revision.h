@@ -10,6 +10,8 @@
 #ifndef LIB_STM32_TOOLBOX_UTILITY_REVISION_H_
 #define LIB_STM32_TOOLBOX_UTILITY_REVISION_H_
 
+#include "toolbox.h"
+#include "main.h"
 
 class Revision
 {
@@ -31,9 +33,11 @@ public:
 	uint16_t get_raw(void)
 	{
 		// Prepare ADC for reading.
+#if ENABLE_ADC_CALIBRATION
 		HAL_ADCEx_Calibration_Start(hadc, ADC_SINGLE_ENDED);
 		uint32_t factor = HAL_ADCEx_Calibration_GetValue(hadc, ADC_SINGLE_ENDED);
 		HAL_ADCEx_Calibration_SetValue(hadc, ADC_SINGLE_ENDED, factor);
+#endif
 		HAL_ADC_Start(hadc);
 		HAL_ADC_PollForConversion(hadc, 100);
 		uint16_t value = HAL_ADC_GetValue(hadc);
