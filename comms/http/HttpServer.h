@@ -44,7 +44,8 @@ public:
 	void listen(void)
 	{
 		uint8_t gw[4];
-		uint32_t tick = 0;
+		Timer ping_timer;
+		ping_timer.start(seconds(15));
 
 		for(;;)
 		{
@@ -59,12 +60,13 @@ public:
 			if (link)
 			{
 				// See if we are online.
-				if (tick++ % 50 == 0)  // Every 5-10 seconds.
+				if (ping_timer.is_elapsed())  // Every 5-10 seconds.
 				{
 					Ping::ICMPPing ping(4, 0xff);  // 4 is socket number.
 					socket.getGatewayIp(gw);
 					Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
 					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != Ping::SUCCESS);
+					ping_timer.restart();
 				}
 
 				// Check for client connection.
@@ -80,7 +82,6 @@ public:
 #ifdef DEBUG
 			uint32_t uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
 #endif
-			osDelay(100);
 		}
 	}
 
