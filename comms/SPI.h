@@ -10,6 +10,8 @@
 #ifndef INC_STM32_TOOLBOX_DEVICES_SPI_H_
 #define INC_STM32_TOOLBOX_DEVICES_SPI_H_
 
+#include "spi.h"
+#include "gpio.h"
 
 /**
  *	@brief Abstracts SPI hardware.

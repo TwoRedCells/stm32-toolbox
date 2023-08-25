@@ -10,12 +10,13 @@
 #ifndef INC_STM32_TOOLBOX_DEVICES_OLEDSSD1306_H_
 #define INC_STM32_TOOLBOX_DEVICES_OLEDSSD1306_H_
 
-#include "utility/Print.h"
-#include <fonts/Font6x8.h>
+#include "utility/PrintLite.h"
+#include <graphics/Font6x8.h>
+#include "i2c.h"
 #include <stdint.h>
 #include <memory.h>
 
-class OledSsd1306 : public Print
+class OledSsd1306 : public PrintLite
 {
 public:
 	static constexpr uint8_t MemoryMode = 0x20;
