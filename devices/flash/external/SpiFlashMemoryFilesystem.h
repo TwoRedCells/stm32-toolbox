@@ -11,7 +11,6 @@
 #define INC_STM32_TOOLBOX_DEVICES_FLASH_SPIFLASHMEMORYFILESYSTEM_H_
 
 #include <math.h>
-#include <toolbox.h>
 #include "tinycrypt/tiny_md5.h"
 #include "SpiFlashMemory.h"
 
@@ -80,15 +79,13 @@ public:
 	} IndexEntry;
 
 
-	/**
-	 * @brief	Initializes this instance with SPI port parameters.
-	 * @param	hspi The SPI instance to use.
-	 * @param	ss_pin The pin to use for SPI CS.
-	 */
-	SpiFlashMemoryFilesystem(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin) : SpiFlashMemory(hspi, cs_port, cs_pin)
-	{
-	}
+	using SpiFlashMemory::SPI;
 
+	SpiFlashMemoryFilesystem(SPI_HandleTypeDef* hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+		: SpiFlashMemory(hspi, cs_port, cs_pin)
+	{
+		loop_callback = nullptr;
+	}
 
 	/**
 	 * @brief	Checks if the filesystem is initialized, and initializes it if it isn't.
@@ -100,6 +97,15 @@ public:
 		if (!rdid.is_valid())
 			return false;
 		capacity = pow(2, rdid.capacity);
+
+		// Determine used and free space.
+		DirectoryEntry* entry = iterate_directory(true);
+		while (entry != nullptr)
+		{
+			if (entry->is_valid() && !entry->is_deleted())
+				used += SectorSize;
+			entry = iterate_directory();
+		}
 		return true;
 	}
 
@@ -110,6 +116,7 @@ public:
 	void wipe(void)
 	{
 		chip_erase();
+		used = 0;
 	}
 
 
@@ -177,8 +184,24 @@ public:
 			entry.address = get_free_sector();
 			written += size;
 			remaining -= size;
+			used += SectorSize;
 		}
 		return ErrorNone;
+	}
+
+	/**
+	 * @brief Writes a file to the filesystem.
+	 * @param filename The name of the file.
+	 * @param data Pointer to the data to write.
+	 * @param length Length of the file.
+	 * @returns The error code, if any.
+	 */
+	error write_directory_entry(uint32_t address, DirectoryEntry* entry)
+	{
+		error e = write(address, entry, sizeof(SpiFlashMemoryFilesystem::DirectoryEntry));
+		if (e == SpiFlashMemoryFilesystem::ErrorNone)
+			used += SectorSize;
+		return e;
 	}
 
 
@@ -295,6 +318,10 @@ public:
 
 		if (sector >= capacity)
 			return nullptr;
+
+		if (loop_callback != nullptr)
+			loop_callback();
+
 		DirectoryEntry* entry = read_directory(sector);
 		if (!entry->is_valid())
 			entry->address = sector;
@@ -313,6 +340,9 @@ public:
 		DirectoryEntry* entry = iterate_directory(reset);
 		while (entry != nullptr)
 		{
+			if (loop_callback != nullptr)
+				loop_callback();
+
 			if (entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
 				return entry;
 			entry = iterate_directory();
@@ -331,8 +361,10 @@ public:
 		while (entry != nullptr)
 		{
 			if (entry->is_valid() && entry->id == id)
+			{
 				sector_erase(entry->address);
-
+				used -= SectorSize;
+			}
 			entry = iterate_directory();
 		}
 	}
@@ -348,8 +380,10 @@ public:
 		while (entry != nullptr)
 		{
 			if (entry->is_valid() && !strcmp(filename, entry->filename))
+			{
 				sector_erase(entry->address);
-
+				used -= SectorSize;
+			}
 			entry = iterate_directory();
 		}
 	}
@@ -361,16 +395,7 @@ public:
 	 */
 	uint32_t get_free(void)
 	{
-		uint32_t free_space = capacity;
-		DirectoryEntry* entry = iterate_directory(true);
-		while (entry != nullptr)
-		{
-			if (entry->is_valid())
-				free_space -= SectorSize;
-
-			entry = iterate_directory();
-		}
-		return free_space;
+		return capacity - used;
 	}
 
 
@@ -415,7 +440,7 @@ public:
 	 */
 	uint32_t get_used(void)
 	{
-		return capacity - get_free();
+		return used;
 	}
 
 
@@ -439,6 +464,7 @@ public:
 
 private:
 	uint32_t capacity = 0;
+	uint32_t used = 0;
 	uint8_t buffer[PageSize];
 	void (*loop_callback)(void);
 };

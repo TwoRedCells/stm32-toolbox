@@ -107,7 +107,6 @@ public:
 	/// <returns>True if the timer has elapsed; otherwise false.</returns>
 	bool is_elapsed(void)
 	{
-		// HACK: We check now() < started because the DWT timer overflows about once a minute.
 		return alarm != 0 && (now() >= alarm || now() < started);
 	}
 

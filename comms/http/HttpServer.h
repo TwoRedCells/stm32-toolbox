@@ -77,11 +77,9 @@ public:
 					client.print(S_LF);
 					client.stop();
 				}
-				ethernet->maintain();  // Manage DHCP leases, if applicable.
+//				ethernet->maintain();  // Manage DHCP leases, if applicable.
 			}
-#ifdef DEBUG
-			uint32_t uxHighWaterMark = uxTaskGetStackHighWaterMark( NULL );
-#endif
+			osDelay(1);
 		}
 	}
 

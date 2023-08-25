@@ -66,28 +66,6 @@ public:
 		this->i2cadr = i2cadr << 1;
 		this->width = width;
 		this->height = height;
-
-//		command(DisplayOff);
-//		command(SetDisplayClockDiv, 0x80);
-//		command(SetMultiplex);
-//		//command(height - 1);
-//		command(SetDisplayOffset, 0x00);
-//		command(SetStartLine);
-//		command(ChargePump);
-//		command(MemoryMode, 0x00);
-//		command(SegRemap | 0x01);
-//		command(ComScanDec);
-//		command(SetComPins, 0x12);
-//		command(SetContrast, 0x9f);
-//		command(SetPreCharge, 0x22);
-//		command(SetVcomDetect, 0x40);
-//		command(DisplayAllOnResume);
-//		command(NormalDisplay);
-//		command(DeactivateScroll);
-//		command(DisplayOn);
-
-
-
 	}
 
 	void initialize(void)
