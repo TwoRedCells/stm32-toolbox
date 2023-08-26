@@ -14,7 +14,7 @@
 #include <graphics/Font6x8.h>
 #include "i2c.h"
 #include <stdint.h>
-#include <memory.h>
+#include "toolbox.h"
 
 class OledSsd1306 : public PrintLite
 {
@@ -61,13 +61,14 @@ public:
 	 * @brief	Initializes this instance.
 	 * @param	i2c A pointer to the i2c handle.
 	 */
-	OledSsd1306(I2C_HandleTypeDef* i2c, uint16_t i2cadr, uint8_t width=128, uint8_t height=64)
+	OledSsd1306(I2C_HandleTypeDef* i2c, uint16_t i2cadr)
 	{
 		this->i2c = i2c;
 		this->i2cadr = i2cadr << 1;
-		this->width = width;
-		this->height = height;
+		this->width = OLED_SSD1306_WIDTH;
+		this->height = OLED_SSD1306_HEIGHT;
 	}
+
 
 	void initialize(void)
 	{
@@ -90,19 +91,12 @@ public:
 			DisplayOn
 		};
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, init_commands, sizeof(init_commands), timeout);
-
-		pixels[0] = 0xff;
-		pixels[1] = 0xff;
-		pixels[2] = 0xff;
-		pixels[3] = 0xff;
-		pixels[4] = 0xff;
-		pixels[5] = 0xff;
 	}
 
 	void pixel(uint16_t x, uint16_t y, Colour colour)
 	{
-		uint16_t address = y / 8 * 0x80 + x;
-		if (colour == Black) pixels[address] &= ~1 << y%8;
+		uint16_t address = y / 8 * width + x;
+		if (colour == Black) pixels[address] &= ~(1 << (y%8));
 		else pixels[address] |= 1 << (y%8);
 	}
 
@@ -111,19 +105,18 @@ public:
 		if (fill)
 		{
 			for (uint8_t b=y; b<y+h; b++)
-				for (uint8_t a=x; a<x+w; a++)
-					pixel(a, b, colour);
+				hline(x, b, w-1);
 		}
 		else
 		{
-			hline(x, w-1, y);
-			hline(x, w-1, y+h-1);
+			hline(x, y, w-1);
+			hline(x, y+h-1, w-1);
 			vline(x, y, h-1);
 			vline(x+w-1, y, h-1);
 		}
 	}
 
-	void hline(uint8_t x, uint8_t w, uint8_t )
+	void hline(uint8_t x, uint8_t y, uint8_t w)
 	{
 		for (uint8_t a=x; a<x+w; a++)
 			pixel(a, y, colour);
@@ -150,14 +143,20 @@ public:
 		refresh();
 	}
 
+	void clear_line(void)
+	{
+		Colour c = colour;
+		set_colour(c == Black ? White : Black);
+		rectangle(0, y, width-1, font6x8.height, true);
+		set_colour(c);
+	}
+
 	void refresh(void)
 	{
 		command(MemoryMode, 0x00);
 		command(PageAddr, 0, 7);
 		command(ColumnAddr, 0, width-1);
-
-		//HAL_I2C_Mem_Write_DMA(i2c, i2cadr, 0x40, 1, pixels, sizeof(pixels));
-		HAL_I2C_Mem_Write(i2c, i2cadr, 0x40, 1, pixels, 1024, timeout);
+		HAL_I2C_Mem_Write(i2c, i2cadr, 0x40, 1, pixels, width/8 * height, timeout);
 	}
 
 	void string(uint8_t x, uint8_t y, const char* str)
@@ -190,9 +189,7 @@ public:
 	}
 
 
-private:
-
-	size_t write(uint8_t ch)
+	size_t write(uint8_t ch) override
 	{
 		if (ch == '\r')
 		{
@@ -201,6 +198,10 @@ private:
 		else if (ch == '\n')
 		{
 			y += font6x8.height;
+		}
+		else if (ch == '\b')
+		{
+			clear_line();
 		}
 		else
 		{
@@ -211,8 +212,10 @@ private:
 						pixel(x+j, i+y, colour);
 			x += font6x8.width;
 		}
+		return 1;
 	}
 
+private:
 	void command(uint8_t cmd)
 	{
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, &cmd, 1, timeout);
@@ -230,27 +233,12 @@ private:
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, msg, 3, timeout);
 	}
 
-//	void command(uint8_t cmd)
-//	{
-//		HAL_I2C_Mem_Write(i2c, i2cadr, cmd, sizeof(uint8_t), 0, 0, timeout);
-//	}
-//
-//	void command(uint8_t cmd, uint8_t arg)
-//	{
-//		HAL_I2C_Mem_Write(i2c, i2cadr, cmd, sizeof(uint8_t), &arg, sizeof(uint8_t), timeout);
-//	}
-//
-//	void command(uint8_t cmd, uint8_t arg1, uint8_t arg2)
-//	{
-//		uint8_t msg[2] { arg1, arg2 };
-//		HAL_I2C_Mem_Write(i2c, i2cadr, cmd, sizeof(uint8_t), msg, sizeof(uint8_t)*2, timeout);
-//	}
 
 	I2C_HandleTypeDef* i2c;
 	uint16_t width, height;
 	uint16_t i2cadr;
 	uint32_t timeout = DefaultTimeout;
-	uint8_t pixels[128/8*64];
+	uint8_t pixels[OLED_SSD1306_WIDTH/8 * OLED_SSD1306_HEIGHT];
 	uint8_t x=0, y=0;
 	Colour colour = White;
 	Font6x8 font6x8;

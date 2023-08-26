@@ -72,6 +72,9 @@
 // Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
 #define ENABLE_ADC_CALIBRATION (0)
 
+// Used by `OledSsd1306`
+#define OLED_SSD1306_WIDTH (128)
+#define OLED_SSD1306_HEIGHT (64)
 
 // Add as a define symbol to your compiler command line.
 

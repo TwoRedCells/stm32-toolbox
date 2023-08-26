@@ -77,9 +77,8 @@ public:
 					client.print(S_LF);
 					client.stop();
 				}
-//				ethernet->maintain();  // Manage DHCP leases, if applicable.
 			}
-			osDelay(1);
+			osDelay(10);
 		}
 	}
 
