@@ -16,7 +16,7 @@
 #include "utility/Timer.h"
 
 
-class Fan : public Pwm
+class Fan
 {
 public:
 	/**
@@ -56,6 +56,15 @@ public:
 			}
 			tach_timer.restart();
 		}
+	}
+
+
+	/**
+	 * Starts the PWM timer.
+	 */
+	void start(void)
+	{
+		HAL_TIM_PWM_Start(htim, channel);
 	}
 
 
@@ -167,7 +176,8 @@ public:
 		if (duty <= 0) duty = 0;
 		else if (duty > PERIOD) duty = PERIOD;
 		this->duty = duty;
-		PWM(htim, channel, PERIOD, duty);
+		//PWM(htim, channel, PERIOD, duty);
+		__HAL_TIM_SET_COMPARE(htim, channel, duty/5);
 	}
 
 private:
