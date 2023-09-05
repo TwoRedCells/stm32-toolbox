@@ -413,7 +413,7 @@ private:
 	 * Draws a character using the current font and colour at the cursor position.
 	 * @param ch The character to draw.
 	 */
-	size_t write(uint8_t ch)
+	size_t write(uint8_t ch) override
 	{
 		if (ch == '\r')
 		{
@@ -445,6 +445,7 @@ private:
 //			cx += font6x8.width * font_scale;
 			cx += 6 * font_scale;
 		}
+		return 1;
 	}
 
 

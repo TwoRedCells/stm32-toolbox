@@ -67,7 +67,7 @@
 #define ENABLE_W5500 (1)
 
 // Displays
-#define ENABLE_ILI9488_DMA (1)
+#define ENABLE_ILI9488_DMA (0)
 
 // Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
 #define ENABLE_ADC_CALIBRATION (0)
@@ -76,7 +76,15 @@
 #define OLED_SSD1306_WIDTH (128)
 #define OLED_SSD1306_HEIGHT (64)
 
-// Add as a define symbol to your compiler command line.
+// Graphics
+#define ICANVAS_MAX_WIDGETS (100)
+
+// Generics
+#define GENERICS_ALLOW_NEW (1)   // Whether the generics are allowed to use dynamic memory allocations.
+
+// Whether to allow classes to call malloc for dynamic memory allocation.
+// Chip
+#define MCU_STM32L4
 
 #ifdef MCU_STM32F4
 #include "main.h"

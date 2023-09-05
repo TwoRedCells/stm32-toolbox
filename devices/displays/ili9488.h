@@ -37,7 +37,7 @@
 	#define delay(x) HAL_Delay(x)
 #endif
 
-#ifdef ILI9488_DMA
+#if ENABLE_ILI9488_DMA
 	#define WriteSPI(port, data, len)  HAL_SPI_Transmit_DMA(port, data, len)
 #else
 	#define WriteSPI(port, data, len)  HAL_SPI_Transmit(port, data, len, 1)
@@ -47,7 +47,6 @@
 #define fast_vline(x, y, h, hue) fast_fill(x, y, 1, h, hue)
 
 #include <stdint.h>
-#include <malloc.h>
 
 struct RGB
 {
