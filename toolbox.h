@@ -67,7 +67,7 @@
 #define ENABLE_W5500 (1)
 
 // Displays
-#define ENABLE_ILI9488_DMA (0)
+#define ENABLE_ILI9488_DMA (0)  // Stopped working.
 
 // Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
 #define ENABLE_ADC_CALIBRATION (0)
