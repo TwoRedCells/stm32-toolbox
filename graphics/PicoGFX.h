@@ -431,7 +431,7 @@ private:
 			bool fast = required_buffer <= buffer_size;
 			if (fast) clear_fast(required_buffer);
 
-			uint8_t* glyph = font6x8.glyphs[ch];
+			const uint8_t* glyph = Font6x8::glyphs[ch];
 			for (TCoordinate j=0; j<glyph_height; j++)
 				for (TCoordinate i=0; i<glyph_width-1; i++)
 					if (glyph[j] & (1 << i+2))  // The right two pixels are empty (6 bits wide).
