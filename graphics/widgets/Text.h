@@ -93,7 +93,7 @@ public:
 	 * @param y2 The y-coordinate of the second point.
 	 * @param colour The colour.
 	 */
-	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, char* format, ...)
+	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, ...)
 	{
 		uint32_t cx = x;
 		uint32_t cy = y;
@@ -149,12 +149,15 @@ public:
 	 * @param y2 The y-coordinate of the second point.
 	 * @param colour The colour.
 	 */
-	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, char* format, ...)
+	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
 	{
+		if (w == 0)
+			w = strlen(format) * font6x8.width * scale;
 		surface->start_region(x, y, w, font6x8.height*scale);
+		surface->fill_region(background);
 		va_list args;
 		va_start(args, format);
-		render(surface, x, y, w, a, colour, scale, format, args);
+		render(surface, x, y, w, a, foreground, scale, format, args);
 		va_end(args);
 		surface->end_region();
 	}
