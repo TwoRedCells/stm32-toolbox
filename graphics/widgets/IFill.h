@@ -12,6 +12,17 @@
 template <class TColour>
 class IFill
 {
+public:
+	/**
+	 * Sets the fill colour.
+	 * @param colour The fill colour.
+	 */
+	void set_fill_colour(TColour colour)
+	{
+		fill_colour = colour;
+	}
+
+
 protected:
 	TColour fill_colour;
 };

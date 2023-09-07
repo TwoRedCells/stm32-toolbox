@@ -13,13 +13,14 @@
 #include <stdint.h>
 #include "IWidget.h"
 #include "IOutline.h"
+#include "IFill.h"
 #include "Line.h"
 #include "math.h"
 #include "Rectangle.h"
 
 
 template <class TColour>
-class FilledRectangle : public Rectangle<TColour>
+class FilledRectangle : public Rectangle<TColour>, public IFill<TColour>
 {
 
 
@@ -47,16 +48,15 @@ public:
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
-		render(surface, this->x1, this->y1, this->x2, this->y2, this->thickness, this->outline_colour, this->fill_colour);
+		if (this->enabled)
+			render(surface, this->x1, this->y1, this->x2, this->y2, this->thickness, this->outline_colour, this->fill_colour);
 	}
 
 	static void render(IPaintable<TColour>* surface, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t thickness, TColour outline_colour, TColour fill_colour)
 	{
 		Rectangle<TColour>::render(surface, x1, y1, x2, y2, thickness, outline_colour);
-		surface->start_region(x1, y1, x2-x1+1, y2-y1+1);
 		for (uint32_t y=y1+thickness; y<y2-thickness+1; y++)
 			Line<TColour>::render(surface, x1+thickness, y, x2-thickness, y, fill_colour);
-		surface->end_region();
 	}
 
 
@@ -78,10 +78,6 @@ public:
 	{
 		this->fill_colour = colour;
 	}
-
-
-protected:
-	TColour fill_colour;
 };
 
 #endif /* LIB_STM32_TOOLBOX_GRAPHICS_RECTANGLE_H_ */

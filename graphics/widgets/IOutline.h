@@ -12,8 +12,19 @@
 template <class TColour>
 class IOutline
 {
+public:
+	/**
+	 * Sets the outline colour.
+	 * @param colour The outline colour.
+	 */
+	void set_outline_colour(TColour colour)
+	{
+		outline_colour = colour;
+	}
+
 protected:
 	TColour outline_colour;
+	uint32_t thickness;
 };
 
 #endif /* LIB_STM32_TOOLBOX_GRAPHICS_WIDGETS_IOUTLINE_H_ */

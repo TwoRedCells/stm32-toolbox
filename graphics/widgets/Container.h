@@ -14,11 +14,12 @@
 #include <stdint.h>
 #include "IWidget.h"
 
+
 template <class TColour>
-class Canvas : public ICanvas<TColour>, public IWidget<TColour>
+class Container : public ICanvas<TColour>, public IWidget<TColour>
 {
 public:
-	Canvas(uint32_t x_origin, uint32_t y_origin)
+	Container(uint32_t x_origin, uint32_t y_origin)
 	{
 		this->x_origin = x_origin;
 		this->y_origin = y_origin;
@@ -31,8 +32,9 @@ public:
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
-		for (uint32_t i=0; i<this->length; i++)
-			this->widgets[i]->render(surface);
+		if (this->enabled)
+			for (uint32_t i=0; i<this->length; i++)
+				this->widgets[i]->render(surface);
 	}
 
 
@@ -41,7 +43,8 @@ public:
 	 */
 	void render(void)
 	{
-		render(this);
+		if (this->enabled)
+			render(this);
 	}
 
 protected:

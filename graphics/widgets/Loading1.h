@@ -10,14 +10,14 @@
 #ifndef LIB_STM32_TOOLBOX_GRAPHICS_LOADING1_H_
 #define LIB_STM32_TOOLBOX_GRAPHICS_LOADING1_H_
 
-#include "Canvas.h"
+#include <graphics/widgets/Container.h>
 #include <stdint.h>
 #include "IAnimation.h"
 #include "generics/List.h"
 #include "FilledRectangle.h"
 
 template <class TColour>
-class Loading1 : public Canvas<TColour>, public IOutline<TColour>, public IAnimation
+class Loading1 : public Container<TColour>, public IOutline<TColour>, public IAnimation
 {
 public:
 	/**
@@ -30,7 +30,7 @@ public:
 	 * @param fill_colour THe colour of the full box.
 	 */
 	Loading1(uint32_t x_origin, uint32_t y_origin, uint32_t size, uint32_t across, TColour outline_colour, TColour empty_colour, TColour full_colour) :
-		Canvas<TColour>(x_origin, y_origin)
+		Container<TColour>(x_origin, y_origin)
 	{
 		this->x_origin = x_origin;
 		this->y_origin = y_origin;
@@ -86,17 +86,26 @@ public:
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
-		Canvas<TColour>::render(surface);
-		next();
+		if (this->enabled)
+		{
+			Container<TColour>::render(surface);
+			next();
+		}
 	}
 
 
-
+	/**
+	 * Moves to the first cell in the animation.
+	 */
 	void first(void) override
 	{
 		position = 0;
 	}
 
+
+	/**
+	 * Moves to the next cell in the animation.
+	 */
 	void next(void) override
 	{
 		for (uint32_t i=0; i<this->length; i++)

@@ -83,12 +83,12 @@ public:
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
-		render(surface, x1, y1, x2, y2, thickness, this->outline_colour);
+		if (this->enabled)
+			render(surface, x1, y1, x2, y2, this->thickness, this->outline_colour);
 	}
 
 	static void render(IPaintable<TColour>* surface, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t thickness, TColour colour)
 	{
-		surface->start_region(x1,  y1, x2-x1+1, y2-y1+1);
 		for(uint32_t t=0; t < thickness; t++)
 		{
 			Line<TColour>::render(surface, x1+t, y1+t, x2-t, y1+t, colour);  // Top.
@@ -96,7 +96,6 @@ public:
 			Line<TColour>::render(surface, x1+t, y2-t, x2-t, y2-t, colour);  // Bottom.
 			Line<TColour>::render(surface, x1+t, y1+t, x1+t, y2-t, colour);  // Left.
 		}
-		surface->end_region();
 	}
 
 
@@ -105,7 +104,6 @@ protected:
 	uint32_t y1;
 	uint32_t x2;
 	uint32_t y2;
-	uint32_t thickness;
 };
 
 #endif /* LIB_STM32_TOOLBOX_GRAPHICS_RECTANGLE_H_ */

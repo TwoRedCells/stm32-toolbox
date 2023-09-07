@@ -16,30 +16,9 @@
 
 
 template <class TColour>
-class ICanvas : public IPaintable<TColour>
+class ICanvas //: public IPaintable<TColour>
 {
 public:
-
-	/**
-	 * Gets the width.
-	 * @returns The width.
-	 */
-	uint32_t get_width(void)
-	{
-		return width;
-	}
-
-
-	/**
-	 * Gets the height.
-	 * @returns The height.
-	 */
-	uint32_t get_height(void)
-	{
-		return height;
-	}
-
-
 	/**
 	 * Adds a widget to the collection.
 	 * @param widget The widget.
@@ -52,16 +31,14 @@ public:
 	/**
 	 * Renders the collection of widgets onto the drawing surface.
 	 */
-	void render(void)
+	void render(IPaintable<TColour>* surface)
 	{
 		for (uint32_t i=0; i<this->length; i++)
-			this->widgets[i]->render(this);
+			this->widgets[i]->render(surface);
 	}
 
 
 protected:
-	uint32_t width;
-	uint32_t height;
 	uint32_t length = 0;
 	IWidget<TColour>* widgets[ICANVAS_MAX_WIDGETS];
 };

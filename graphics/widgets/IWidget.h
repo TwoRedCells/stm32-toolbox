@@ -68,11 +68,30 @@ public:
 	}
 
 
+	/**
+	 * Enables this widget.
+	 */
+	void enable(void)
+	{
+		enabled = true;
+	}
+
+
+	/**
+	 * Disables this widget.
+	 */
+	void disable(void)
+	{
+		enabled = false;
+	}
+
+
 protected:
 	uint32_t x_origin;
 	uint32_t y_origin;
 	uint32_t width;
 	uint32_t height;
+	bool enabled = true;
 };
 
 #endif /* LIB_STM32_TOOLBOX_GRAPHICS_IWIDGET_H_ */

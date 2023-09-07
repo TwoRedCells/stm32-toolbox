@@ -10,7 +10,7 @@
 #ifndef LIB_STM32_TOOLBOX_GRAPHICS_PIXEL_H_
 #define LIB_STM32_TOOLBOX_GRAPHICS_PIXEL_H_
 
-#include <graphics/widgets/Canvas.h>
+#include <graphics/widgets/Container.h>
 #include <stdint.h>
 #include "IWidget.h"
 #include "IMonochrome.h"
@@ -40,7 +40,8 @@ public:
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
-		surface->pixel(this->origin_x, this->origin_y, this->colour);
+		if (this->enabled)
+			surface->pixel(this->origin_x, this->origin_y, this->colour);
 	}
 
 protected:
