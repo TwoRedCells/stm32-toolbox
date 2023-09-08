@@ -79,6 +79,27 @@ public:
 	}
 
 
+	/**
+	 * Renders the control.
+	 * @param surface Pointer to the drawing surface.
+	 * @param x1 The upper-left x-coordinate.
+	 * @param y1 The upper-left y-coordinate.
+	 * @param x2 The lower-left x-coordinate.
+	 * @param y2 The lower-left y-coordinate.
+	 * @param scale The font size.
+	 * @param label The text label.
+	 * @param foreground The text colour.
+	 * @param inactive The background colour when inactive.
+	 * @param active The background colour when active.
+	 * @param state The control state.
+	 */
+	static void render_fast(IPaintable<TColour>* surface, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t scale, const char* label, TColour foreground, TColour inactive, TColour active, bool state)
+	{
+		surface->start_region(x1, y1, x2, y2);
+		render(surface, x1, y1, x2, y2, scale, label, foreground, inactive, active, state);
+		surface->end_region();
+	}
+
 
 	/**
 	 * Sets the state of this control.
