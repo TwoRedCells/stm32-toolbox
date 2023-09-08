@@ -12,8 +12,8 @@
 
 #include <stdint.h>
 #include <stdarg.h>
-#include <stdio.h>
 #include "IWidget.h"
+#include "utility/PrintLite.h"
 
 
 template <class TColour>
@@ -44,7 +44,7 @@ public:
 
 		va_list p;
 		va_start(p, format);
-		vsprintf(buffer, format, p);
+		PrintLite::vsprintf(buffer, format, p);
 		va_end(p);
 	}
 
@@ -68,7 +68,7 @@ public:
 
 		va_list p;
 		va_start(p, format);
-		uint32_t ret = vsprintf(buffer, format, p);
+		uint32_t ret = PrintLite::vsprintf(buffer, format, p);
 		va_end(p);
 	}
 
@@ -95,22 +95,43 @@ public:
 	 */
 	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, ...)
 	{
+		va_list args;
+		va_start(args, format);
+		render(surface, x, y, w, a, colour, scale, format, args);
+		va_end(args);
+	}
+
+	/**
+	 * Draws a line.
+	 * @param surface Pointer to the drawing surface.
+	 * @param x1 The x-coordinate of the first point
+	 * @param y1 The y-coordinate of the first point.
+	 * @param x2 The x-coordinate of the second point
+	 * @param y2 The y-coordinate of the second point.
+	 * @param colour The colour.
+	 */
+	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, va_list args)
+	{
 		uint32_t cx = x;
 		uint32_t cy = y;
 		const uint32_t cw = font6x8.width * scale;
 		const uint32_t ch = font6x8.height * scale;
 
 		char buffer[default_buffer_length];
-		va_list p;
-		va_start(p, format);
-		uint32_t len = vsprintf(buffer, format, p);
-		va_end(p);
+		uint32_t len = PrintLite::vsprintf(buffer, format, args);
 
 		if (w == 0)
 			w = cw * len;
 
-		if (a != Left)
+		if (a == Right)
 		{
+			uint32_t sw = text_width(buffer, scale);
+			cx = x + w - sw;
+		}
+		else if (a == Centre)
+		{
+			uint32_t sw = text_width(buffer, scale);
+			cx = x + (w - sw) / 2;
 		}
 
 		for (const char* s = buffer; *s != 0; s++)
@@ -118,7 +139,7 @@ public:
 			uint8_t c = *s;
 			if (c == '\r')
 			{
-				cx = 0;
+				cx = x;
 			}
 			else if (c == '\n')
 			{
@@ -151,17 +172,19 @@ public:
 	 */
 	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
 	{
-		if (w == 0)
-			w = strlen(format) * font6x8.width * scale;
-		surface->start_region(x, y, w, font6x8.height*scale);
-		surface->fill_region(background);
 		va_list args;
 		va_start(args, format);
+		char buffer[default_buffer_length];
+		uint32_t len = PrintLite::vsprintf(buffer, format, args);
+
+		if (w == 0)
+			w = len * font6x8.width * scale;
+		surface->start_region(x, y, w, font6x8.height*scale);
+		surface->fill_region(background);
 		render(surface, x, y, w, a, foreground, scale, format, args);
 		va_end(args);
 		surface->end_region();
 	}
-
 
 
 	/**
@@ -186,7 +209,7 @@ public:
 	{
 		va_list p;
 		va_start(p, format);
-		uint32_t ret = vsprintf(buffer, format, p);
+		uint32_t ret = PrintLite::vsprintf(buffer, format, p);
 		va_end(p);
 		return(ret);
 	}
@@ -216,6 +239,12 @@ public:
 
 
 protected:
+	static uint32_t text_width(char* str, uint8_t scale)
+	{
+		return scale * strlen(str) * font6x8.width;
+	}
+
+
 	uint32_t x;
 	uint32_t y;
 	uint32_t w;

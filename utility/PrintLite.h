@@ -43,6 +43,7 @@
 class PrintLite
 {
 public:
+
 	/**
 	 * @brief	Outputs a formatted string.
 	 * @param 	format A string that may include format specifiers.
@@ -119,10 +120,101 @@ public:
 			}
 			else
 				bad_fmt:
-			write(c);
+				write(c);
 		}
 		va_end(a);
 		return count;
+	}
+
+
+	/**
+	 * @brief	Outputs a formatted string.
+	 * @param 	format A string that may include format specifiers.
+	 * @param	... Value(s) to format.
+	 * @returns The number of characters printed.
+	 */
+	static uint16_t vsprintf(char* buffer, const char *format, va_list a)
+	{
+		char* p = buffer;  // Pointer to current character.
+
+		while(char c = *format++)
+		{
+			if(c == '%')
+			{
+				switch(c = *format++)
+				{
+				case 's':                       // String
+				{
+					char* str = va_arg(a, char*);
+					while (*str != '\0')
+						*p++ = *str++;
+				}
+				break;
+				case 'c':                       // Char
+					*p++ = va_arg(a, int);
+					break;
+				case 'd':
+				case 'i':                       // 16 bit signed integer
+				case 'u':                       // 16 bit unsigned integer
+				{
+					int32_t n = va_arg(a, int32_t);
+					if(c == 'i' && n < 0) n = -n, *p++ = '-';
+					p += xtoa((uint16_t)n, p);
+					break;
+				}
+				case 'l':                       // 32 bit long signed integer
+				case 'n':                       // 32 bit long unsigned integer
+				{
+					int32_t n = va_arg(a, int32_t);
+					if(c == 'l' && n < 0) n = -n, *p++ = '-';
+					p += xtoa((uint32_t)n, p);
+					break;
+				}
+				case 'x':                       // 16 bit heXadecimal
+				{
+					uint32_t u = va_arg(a, uint32_t);
+					*p++ = hex[u >> 12 & 0xf];
+					*p++ = hex[u >> 8 & 0xf];
+					*p++ = hex[u >> 4 & 0xf];
+					*p++ = hex[u & 0xf];
+					break;
+				}
+				case 'y':                       // 8 bit heXadecimal
+				{
+					uint32_t u = va_arg(a, uint32_t);
+					*p++ = hex[u >> 4 & 0xf];
+					*p++ = hex[u & 0xf];
+					break;
+				}
+				case '.':						// float
+				{
+					uint32_t dec = *format++ - 0x30;
+					double f = va_arg(a, double);
+					if(f < 0) f = -f, *p++ = '-';
+					p += xtoa((uint16_t)f, p);
+					if (dec > 0)
+					{
+						*p++ = '.';
+						p += xtoa((f - (int16_t)f) * pow(10, dec), p);
+					}
+					format++;
+					break;
+				}
+				case 0:
+					return p - buffer;
+				default:
+					goto bad_fmt;
+				}
+			}
+			else
+			{
+				bad_fmt:
+				*p++ = c;
+			}
+		}
+		va_end(a);
+		*p = '\0';
+		return p - buffer;
 	}
 
 
@@ -206,15 +298,14 @@ protected:
 	uint16_t xtoa(uint32_t value, const uint32_t *string)
 	{
 		uint16_t count = 0;
-		char c;
-		uint32_t d;
 		if(value)
 		{
+			uint32_t d;
 			while(value < *string) ++string;
 			do
 			{
 				d = *string++;
-				c = '0';
+				char c = '0';
 				while(value >= d)
 					++c, value -= d;
 				write(c);
@@ -224,6 +315,54 @@ protected:
 		else
 			write('0');
 		return count;
+	}
+
+	/**
+	 * Converts an integer to a string.
+	 * @param value The integer to convert.
+	 * @param string Pointer to place the string.
+	 */
+	static uint16_t xtoa(uint32_t value, char* p)
+	{
+//		const uint32_t *string = divisors;
+//		uint16_t count = 0;
+//		char c;
+//		uint32_t d;
+//		if(value)
+//		{
+//			while(value < *string) ++string;
+//			do
+//			{
+//				d = *string++;
+//				c = '0';
+//				while(value >= d)
+//					++c, value -= d;
+//				*p++ = c;
+//				count++;
+//			} while(!(d & 1));
+//		}
+//		else
+//			*p++ = '0';
+//		return count;
+		char* r = p;
+		const uint32_t* div = divisors;
+		if (value)
+		{
+			for (int8_t i=10; i>=0; i--)
+			{
+				uint32_t x = value / pow(10, i);
+				if (x > 0)
+				{
+					*p++ = '0'+x;
+					value -= (x * pow(10, i));
+				}
+			}
+		}
+		else
+		{
+			*p++ = '0';
+		}
+		return p-r;
 	}
 
 
@@ -249,9 +388,12 @@ protected:
 	 */
 	void puth(uint8_t value)
 	{
-		static const char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 		write(hex[value & 15]);
 	}
+
+private:
+	static constexpr char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+
 };
 
 #endif /* INC_PRINT_HPP_ */
