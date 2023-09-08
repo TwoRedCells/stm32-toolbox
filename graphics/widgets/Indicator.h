@@ -95,7 +95,7 @@ public:
 	 */
 	static void render_fast(IPaintable<TColour>* surface, uint32_t x1, uint32_t y1, uint32_t x2, uint32_t y2, uint32_t scale, const char* label, TColour foreground, TColour inactive, TColour active, bool state)
 	{
-		surface->start_region(x1, y1, x2, y2);
+		surface->start_region(x1, y1, x2-x1, y2-y1);
 		render(surface, x1, y1, x2, y2, scale, label, foreground, inactive, active, state);
 		surface->end_region();
 	}
