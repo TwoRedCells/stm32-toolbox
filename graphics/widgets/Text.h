@@ -15,12 +15,13 @@
 #include "IWidget.h"
 #include "utility/PrintLite.h"
 
+enum Alignment { Left, Centre, Right };
+
 
 template <class TColour>
 class Text : public IWidget<TColour>
 {
 public:
-	enum Alignment { Left, Centre, Right };
 	static constexpr uint32_t default_buffer_length = 100;
 	static const Font6x8 font6x8;
 
@@ -97,11 +98,11 @@ public:
 	 * @param format The format string.
 	 * @param args The arguments.
 	 */
-	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, ...)
+	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, Alignment a, TColour colour, uint8_t scale, const char* format, ...)
 	{
 		va_list args;
 		va_start(args, format);
-		render(surface, x, y, w, a, colour, scale, format, args);
+		render(surface, x, y, a, colour, scale, format, args);
 		va_end(args);
 	}
 
@@ -119,28 +120,22 @@ public:
 	 * @param format The format string.
 	 * @param args The arguments.
 	 */
-	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, va_list args)
+	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, Alignment a, TColour colour, uint8_t scale, const char* format, va_list args)
 	{
 		uint32_t cx = x;
 		uint32_t cy = y;
-		const uint32_t cw = font6x8.width * scale;
-		const uint32_t ch = font6x8.height * scale;
-
 		char buffer[default_buffer_length];
-		uint32_t len = PrintLite::vsprintf(buffer, format, args);
-
-		if (w == 0)
-			w = cw * len;
+		PrintLite::vsprintf(buffer, format, args);
 
 		if (a == Right)
 		{
 			uint32_t sw = text_width(buffer, scale);
-			cx = x + w - sw;
+			cx = x - sw;
 		}
 		else if (a == Centre)
 		{
 			uint32_t sw = text_width(buffer, scale);
-			cx = x + (w - sw) / 2;
+			cx = x - sw/2;
 		}
 
 		for (const char* s = buffer; *s != 0; s++)
@@ -182,47 +177,22 @@ public:
 	 * @param scale The font scale.
 	 * @param format The format string.
 	 */
-	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
+	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
 	{
+		uint32_t cx = x;
 		va_list args;
 		va_start(args, format);
 		char buffer[default_buffer_length];
-		uint32_t len = PrintLite::vsprintf(buffer, format, args);
+		PrintLite::vsprintf(buffer, format, args);
+		uint32_t sw = text_width(buffer, scale);
+		if (a == Right)
+			cx = x - sw;
+		else if (a == Centre)
+			cx = x - sw/2;
 
-		if (w == 0)
-			w = len * font6x8.width * scale;
-		surface->start_region(x, y, w, font6x8.height*scale);
+		surface->start_region(cx, y, sw, font6x8.height*scale);
 		surface->fill_region(background);
-		render(surface, x, y, w, a, foreground, scale, format, args);
-		va_end(args);
-		surface->end_region();
-	}
-
-
-	/**
-	 * Draws a string of characters.
-	 * @notes This function does not allow newline characters.
-	 * @param surface Pointer to the drawing surface.
-	 * @param x The x-coordinate of the first point
-	 * @param y The y-coordinate of the first point.
-	 * @param w Width of the area into which the text will be aligned.
-	 * @param a The text alignment.
-	 * @param foreground The foreground colour.
-	 * @param background The background colour.
-	 * @param scale The font scale.
-	 * @param format The format string.
-	 */
-	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
-	{
-		va_list args;
-		va_start(args, format);
-		char buffer[default_buffer_length];
-		uint32_t len = PrintLite::vsprintf(buffer, format, args);
-
-		uint32_t w = len * font6x8.width * scale;
-		surface->start_region(x, y, w, font6x8.height*scale);
-		surface->fill_region(background);
-		render(surface, x, y, w, Left, foreground, scale, format, args);
+		render(surface, x, y,  a, foreground, scale, format, args);
 		va_end(args);
 		surface->end_region();
 	}
