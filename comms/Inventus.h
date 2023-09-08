@@ -159,6 +159,16 @@ public:
 	}
 
 
+	/**
+	 * Gets the string associated with the specified mode number.
+	 * @param mode The mode number.
+	 */
+	static const char* get_mode_string(uint8_t mode)
+	{
+		return mode_strings[mode];
+	}
+
+
 	InventusBattery* master_battery;
 	static constexpr uint8_t master_node_id = 0x31;
 	static constexpr uint8_t maximum_parallel_batteries = 15;
@@ -243,11 +253,11 @@ private:
 		{
 			if (data[0] == 0x11 && data[1] == 0x00)  // Successful return value.
 			{
-//				uint8_t old_id = get_single_battery_id();
-//				InventusBattery* old_battery = &batteries[old_id - master_node_id];
-//				uint8_t new_id = get_changing_node_id();
-//				InventusBattery* new_battery = &batteries[new_id - master_node_id];
-//				old_battery->last_message = 0;
+				//				uint8_t old_id = get_single_battery_id();
+				//				InventusBattery* old_battery = &batteries[old_id - master_node_id];
+				//				uint8_t new_id = get_changing_node_id();
+				//				InventusBattery* new_battery = &batteries[new_id - master_node_id];
+				//				old_battery->last_message = 0;
 
 				// Make it permanent.
 
@@ -259,7 +269,7 @@ private:
 	void on_nmt(uint8_t data)
 	{
 	}
-	
+
 
 	void on_heartbeat(uint8_t node)
 	{
@@ -322,7 +332,7 @@ private:
 		battery->virtual_maximum_charge_voltage = lsb_uint16_to_float(data+6, 1000);
 		battery->timestamp_tpdo3 = Timer::now();
 	}
-	
+
 
 	void on_tpdo4(InventusBattery* battery, uint8_t* data)
 	{
@@ -344,7 +354,7 @@ private:
 		battery->cell_balance_status = lsb_uint16_to_uint16(data+6);
 		battery->timestamp_tpdo5 = Timer::now();
 	}
-	
+
 
 	void on_tpdo6(InventusBattery* battery, uint8_t* data)
 	{
@@ -360,9 +370,22 @@ private:
 		battery->timestamp_tpdo6 = Timer::now();
 	}
 
-
 	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3f
 	uint8_t single_battery_id; // When there is only one battery connected, this is its ID.
+
+private:
+
+	static constexpr const char* mode_strings[] = {
+		"NONE",
+		"BALANCING",
+		"SHIP",
+		"PRE-DISCHARGE",
+		"STANDBY",
+		"DISCHARGE",
+		"CHARGE",
+		"FAULT",
+		"PRE-CHARGE"
+	};
 };
 
 #endif /* INC_COMMS_NECCANOPEN_H_ */

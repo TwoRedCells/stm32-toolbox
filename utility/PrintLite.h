@@ -148,8 +148,8 @@ public:
 					char* str = va_arg(a, char*);
 					while (*str != '\0')
 						*p++ = *str++;
+					break;
 				}
-				break;
 				case 'c':                       // Char
 					*p++ = va_arg(a, int);
 					break;
@@ -188,16 +188,16 @@ public:
 				}
 				case '.':						// float
 				{
-					uint32_t dec = *format++ - 0x30;
+					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
 					double f = va_arg(a, double);
-					if(f < 0) f = -f, *p++ = '-';
-					p += xtoa((uint16_t)f, p);
+					if (f < 0) f = -f, *p++ = '-';  // Negative.
+					p += xtoa((uint32_t)f, p);
 					if (dec > 0)
 					{
 						*p++ = '.';
 						p += xtoa((f - (int16_t)f) * pow(10, dec), p);
 					}
-					format++;
+					format++;  // Discard the f.
 					break;
 				}
 				case 0:
@@ -209,11 +209,11 @@ public:
 			else
 			{
 				bad_fmt:
-				*p++ = c;
+				*p++ = c;  // Add the character verbatim.
 			}
 		}
 		va_end(a);
-		*p = '\0';
+		*p = '\0';  // Terminate with NUL.
 		return p - buffer;
 	}
 
@@ -321,42 +321,25 @@ protected:
 	 * Converts an integer to a string.
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
+	 * @param force Whether to return leading zeros.
 	 */
-	static uint16_t xtoa(uint32_t value, char* p)
+	static uint16_t xtoa(uint32_t value, char *p)
 	{
-//		const uint32_t *string = divisors;
-//		uint16_t count = 0;
-//		char c;
-//		uint32_t d;
-//		if(value)
-//		{
-//			while(value < *string) ++string;
-//			do
-//			{
-//				d = *string++;
-//				c = '0';
-//				while(value >= d)
-//					++c, value -= d;
-//				*p++ = c;
-//				count++;
-//			} while(!(d & 1));
-//		}
-//		else
-//			*p++ = '0';
-//		return count;
-		char* r = p;
-		const uint32_t* div = divisors;
+		char *r = p;
+		const uint32_t* div = &divisors[0];
 		if (value)
 		{
-			for (int8_t i=10; i>=0; i--)
+			uint32_t d;
+			while(value < *div)
+				++div;
+			do
 			{
-				uint32_t x = value / pow(10, i);
-				if (x > 0)
-				{
-					*p++ = '0'+x;
-					value -= (x * pow(10, i));
-				}
-			}
+				d = *div++;
+				char c = '0';
+				while(value >= d)
+					++c, value -= d;
+				*p++ = c;
+			} while(!(d & 1));
 		}
 		else
 		{
