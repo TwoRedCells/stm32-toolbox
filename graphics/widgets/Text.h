@@ -85,13 +85,17 @@ public:
 
 
 	/**
-	 * Draws a line.
+	 * Draws a string of characters.
+	 * @notes This function does not allow newline characters.
 	 * @param surface Pointer to the drawing surface.
-	 * @param x1 The x-coordinate of the first point
-	 * @param y1 The y-coordinate of the first point.
-	 * @param x2 The x-coordinate of the second point
-	 * @param y2 The y-coordinate of the second point.
-	 * @param colour The colour.
+	 * @param x The x-coordinate of the first point
+	 * @param y The y-coordinate of the first point.
+	 * @param w Width of the area into which the text will be aligned.
+	 * @param a The text alignment.
+	 * @param colour The text colour.
+	 * @param scale The font scale.
+	 * @param format The format string.
+	 * @param args The arguments.
 	 */
 	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, ...)
 	{
@@ -101,14 +105,19 @@ public:
 		va_end(args);
 	}
 
+
 	/**
-	 * Draws a line.
+	 * Draws a string of characters.
+	 * @notes This function does not allow newline characters.
 	 * @param surface Pointer to the drawing surface.
-	 * @param x1 The x-coordinate of the first point
-	 * @param y1 The y-coordinate of the first point.
-	 * @param x2 The x-coordinate of the second point
-	 * @param y2 The y-coordinate of the second point.
-	 * @param colour The colour.
+	 * @param x The x-coordinate of the first point
+	 * @param y The y-coordinate of the first point.
+	 * @param w Width of the area into which the text will be aligned.
+	 * @param a The text alignment.
+	 * @param colour The text colour.
+	 * @param scale The font scale.
+	 * @param format The format string.
+	 * @param args The arguments.
 	 */
 	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour colour, uint8_t scale, const char* format, va_list args)
 	{
@@ -161,14 +170,17 @@ public:
 
 
 	/**
-	 * Draws a line.
+	 * Draws a string of characters.
 	 * @notes This function does not allow newline characters.
 	 * @param surface Pointer to the drawing surface.
-	 * @param x1 The x-coordinate of the first point
-	 * @param y1 The y-coordinate of the first point.
-	 * @param x2 The x-coordinate of the second point
-	 * @param y2 The y-coordinate of the second point.
-	 * @param colour The colour.
+	 * @param x The x-coordinate of the first point
+	 * @param y The y-coordinate of the first point.
+	 * @param w Width of the area into which the text will be aligned.
+	 * @param a The text alignment.
+	 * @param foreground The foreground colour.
+	 * @param background The background colour.
+	 * @param scale The font scale.
+	 * @param format The format string.
 	 */
 	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, uint32_t w, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
 	{
@@ -182,6 +194,35 @@ public:
 		surface->start_region(x, y, w, font6x8.height*scale);
 		surface->fill_region(background);
 		render(surface, x, y, w, a, foreground, scale, format, args);
+		va_end(args);
+		surface->end_region();
+	}
+
+
+	/**
+	 * Draws a string of characters.
+	 * @notes This function does not allow newline characters.
+	 * @param surface Pointer to the drawing surface.
+	 * @param x The x-coordinate of the first point
+	 * @param y The y-coordinate of the first point.
+	 * @param w Width of the area into which the text will be aligned.
+	 * @param a The text alignment.
+	 * @param foreground The foreground colour.
+	 * @param background The background colour.
+	 * @param scale The font scale.
+	 * @param format The format string.
+	 */
+	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		char buffer[default_buffer_length];
+		uint32_t len = PrintLite::vsprintf(buffer, format, args);
+
+		uint32_t w = len * font6x8.width * scale;
+		surface->start_region(x, y, w, font6x8.height*scale);
+		surface->fill_region(background);
+		render(surface, x, y, w, Left, foreground, scale, format, args);
 		va_end(args);
 		surface->end_region();
 	}
