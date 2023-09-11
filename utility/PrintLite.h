@@ -58,6 +58,7 @@ public:
 		uint32_t u;
 		uint16_t count = 0;
 		double f;
+		bool zero_before_decimal = false;
 
 		while(char c = *format++)
 		{
@@ -77,13 +78,13 @@ public:
 				case 'u':                       // 16 bit unsigned integer
 					n = va_arg(a, int32_t);
 					if(c == 'i' && n < 0) n = -n, write('-');
-					count += xtoa((uint16_t)n, divisors + 5);
+					count += xtoa((uint16_t)n);
 					break;
 				case 'l':                       // 32 bit long signed integer
 				case 'n':                       // 32 bit long unsigned integer
 					n = va_arg(a, int32_t);
 					if(c == 'l' && n < 0) n = -n, write('-');
-					count += xtoa((uint32_t)n, divisors);
+					count += xtoa((uint32_t)n);
 					break;
 				case 'x':                       // 16 bit heXadecimal
 					u = va_arg(a, uint32_t);
@@ -99,19 +100,27 @@ public:
 					puth(u);
 					count += 2;
 					break;
+				case '0':
+					zero_before_decimal = true;
+					format++;
 				case '.':						// float
-					dec = *format++ - 0x30;
-					f = va_arg(a, double);
-					if(f < 0) f = -f, write('-');
-					print((int16_t)f, DEC);
+				{
+					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
+					double f = va_arg(a, double);
+					if (f < 0) f = -f, write('-'), count++;  // Negative.
+					uint32_t whole = (uint32_t)f;
+					if (count_digits(whole) == 0 && zero_before_decimal)
+						write('0'), count++;
+					count += xtoa(f);
 					if (dec > 0)
 					{
-						write('.');
-						count++;
-						print((f - (int16_t)f) * pow(10, dec), DEC);
+						write('.'), count++;
+						count += xtoa((f - (int16_t)f) * pow(10, dec), dec);
 					}
-					format++;
+					format++;  // Discard the f.
+					zero_before_decimal = false;
 					break;
+				}
 				case 0:
 					return count;
 				default:
@@ -136,6 +145,7 @@ public:
 	static uint16_t vsprintf(char* buffer, const char *format, va_list a)
 	{
 		char* p = buffer;  // Pointer to current character.
+		bool zero_before_decimal = false;
 
 		while(char c = *format++)
 		{
@@ -186,18 +196,25 @@ public:
 					*p++ = hex[u & 0xf];
 					break;
 				}
+				case '0':
+					zero_before_decimal = true;
+					format++;
 				case '.':						// float
 				{
 					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
 					double f = va_arg(a, double);
 					if (f < 0) f = -f, *p++ = '-';  // Negative.
-					p += xtoa((uint32_t)f, p);
+					uint32_t whole = (uint32_t)f;
+					if (count_digits(whole) == 0 && zero_before_decimal)
+						*p++ = '0';
+					p += xtoa(f, p);
 					if (dec > 0)
 					{
 						*p++ = '.';
-						p += xtoa((f - (int16_t)f) * pow(10, dec), p);
+						p += xtoa((f - (int16_t)f) * pow(10, dec), p, dec);
 					}
 					format++;  // Discard the f.
+					zero_before_decimal = false;
 					break;
 				}
 				case 0:
@@ -295,74 +312,54 @@ protected:
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
 	 */
-	uint16_t xtoa(uint32_t value, const uint32_t *string)
+	uint16_t xtoa(uint32_t value, int8_t digits=10)
 	{
-		uint16_t count = 0;
-		if(value)
+		uint32_t v = value;
+		for (uint8_t d=digits; d>=0; d--)
 		{
-			uint32_t d;
-			while(value < *string) ++string;
-			do
-			{
-				d = *string++;
-				char c = '0';
-				while(value >= d)
-					++c, value -= d;
-				write(c);
-				count++;
-			} while(!(d & 1));
+			uint32_t exp = pow(10, d);
+			char x = v / exp;
+			write('0'+x);
+			v -= x * exp;
 		}
-		else
-			write('0');
-		return count;
 	}
+
 
 	/**
 	 * Converts an integer to a string.
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
-	 * @param force Whether to return leading zeros.
+	 * @param digits Number of digits to force (10 for automatic).
 	 */
-	static uint16_t xtoa(uint32_t value, char *p)
+	static uint16_t xtoa(uint32_t value, char *p, int8_t digits=Auto)
 	{
-		char *r = p;
-		const uint32_t* div = &divisors[0];
-		if (value)
+		if (digits == -1)
+			digits = count_digits(value);
+		char* q = p;
+		uint32_t v = value;
+		for (int8_t d=digits-1; d>=0; d--)
 		{
-			uint32_t d;
-			while(value < *div)
-				++div;
-			do
-			{
-				d = *div++;
-				char c = '0';
-				while(value >= d)
-					++c, value -= d;
-				*p++ = c;
-			} while(!(d & 1));
+			uint32_t exp = pow(10, d);
+			char x = v / exp;
+			*q++ = '0'+x;
+			v -= x * exp;
 		}
-		else
-		{
-			*p++ = '0';
-		}
-		return p-r;
+		return digits;
 	}
 
 
-	static inline const uint32_t divisors[] = {
-			//  4294967296      // 32 bit unsigned max
-			1000000000,     // +0
-			100000000,     // +1
-			10000000,     // +2
-			1000000,     // +3
-			100000,     // +4
-			//       65535      // 16 bit unsigned max
-			10000,     // +5
-			1000,     // +6
-			100,     // +7
-			10,     // +8
-			1,     // +9
-	};
+	/**
+	 * Returns the number of digits in the specified value.
+	 * @param value The value as assess.
+	 * @returns The number of digits.
+	 */
+	static uint8_t count_digits(uint32_t value)
+	{
+		uint8_t d;
+		for (d=0; value>0; d++)
+			value /= 10;
+		return d;
+	}
 
 
 	/**
@@ -376,7 +373,7 @@ protected:
 
 private:
 	static constexpr char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-
+	static constexpr const int8_t Auto = -1;
 };
 
 #endif /* INC_PRINT_HPP_ */

@@ -60,6 +60,20 @@ public:
 
 
 	/**
+	 * Gets the revision.
+	 * @param revision The raw value from the ADC.
+	 * @returns -1 if invalid, otherwise the zero-based revision (0=A, 1=B, etc.)
+	 */
+	static int8_t get(uint16_t revision)
+	{
+		uint16_t value = revision;
+		if (value < 75 || value > 3975)
+			return -1;
+		return (value + 75) / 150;
+	}
+
+
+	/**
 	 * Gets the revision as a letter, where A=1, B=2, etc.
 	 * @returns The letter revision.
 	 */
@@ -67,6 +81,18 @@ public:
 	{
 		return '@' + get();
 	}
+
+
+	/**
+	 * Gets the revision as a letter, where A=1, B=2, etc.
+	 * @param revision The numerical revision.
+	 * @returns The letter revision.
+	 */
+	static char get_letter(uint8_t revision)
+	{
+		return '@' + revision;
+	}
+
 
 private:
 	ADC_HandleTypeDef* hadc;
