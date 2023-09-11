@@ -358,7 +358,7 @@ protected:
 		uint8_t d;
 		for (d=0; value>0; d++)
 			value /= 10;
-		return d;
+		return d == 0 ? 1 : d;
 	}
 
 

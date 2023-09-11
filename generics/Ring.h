@@ -101,6 +101,24 @@ public:
         return this->buffer[position];
     }
 
+
+    /**
+     * Goes to the first item that has the specified value.
+     * @param value The value to go to.
+     * @returns true if the value is found; otherise false.
+     */
+    bool find(T value)
+    {
+    	for (uint32_t p=0; p < this->length; p++)
+    		if (this->buffer[p] == value)
+    		{
+    			position = p;
+    			return true;
+    		}
+    	return false;
+    }
+
+
     void clear(void) override
     {
     	ICollection<T>::clear();
