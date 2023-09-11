@@ -14,15 +14,16 @@
 #include <stdarg.h>
 #include "IWidget.h"
 #include "utility/PrintLite.h"
+#include "graphics/Font6x8.h"
 
 enum Alignment { Left, Centre, Right };
-
+static constexpr const uint32_t AutoWidth = 0;
 
 template <class TColour>
 class Text : public IWidget<TColour>
 {
 public:
-	static constexpr uint32_t default_buffer_length = 100;
+	static constexpr const uint32_t default_buffer_length = 100;
 	static const Font6x8 font6x8;
 
 	/**
@@ -126,17 +127,12 @@ public:
 		uint32_t cy = y;
 		char buffer[default_buffer_length];
 		PrintLite::vsprintf(buffer, format, args);
+		uint32_t sw = text_width(buffer, scale);
 
 		if (a == Right)
-		{
-			uint32_t sw = text_width(buffer, scale);
 			cx = x - sw;
-		}
 		else if (a == Centre)
-		{
-			uint32_t sw = text_width(buffer, scale);
 			cx = x - sw/2;
-		}
 
 		for (const char* s = buffer; *s != 0; s++)
 		{
@@ -177,14 +173,14 @@ public:
 	 * @param scale The font scale.
 	 * @param format The format string.
 	 */
-	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, Alignment a, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
+	static void render_fast(IPaintable<TColour>* surface, uint32_t x, uint32_t y, Alignment a, uint32_t w, TColour foreground, TColour background, uint8_t scale, const char* format, ...)
 	{
 		uint32_t cx = x;
 		va_list args;
 		va_start(args, format);
 		char buffer[default_buffer_length];
 		PrintLite::vsprintf(buffer, format, args);
-		uint32_t sw = text_width(buffer, scale);
+		uint32_t sw = w == AutoWidth ? text_width(buffer, scale) : w;
 		if (a == Right)
 			cx = x - sw;
 		else if (a == Centre)
