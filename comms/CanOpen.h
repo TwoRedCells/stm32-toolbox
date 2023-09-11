@@ -417,17 +417,18 @@ public:
 
 
     /**
-     * Converts byte sequence into NUL terminated string.
+     * Converts byte sequence into a string.
      * @param data Pointer to the first byte.
      * @param dest Pointer to the destination.
      * @param length The number of characyters, excluding the NUL termination.
      * @return The value.
      */
-	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length)
+	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length, bool terminate=true)
 	{
 		for (uint8_t i=0; i < length; i++)
-			dest[i] = (char)data[i];
-		dest[length] = '\0';
+			dest[i] = (char)data[length-1-i];
+		if (terminate)
+			dest[length] = '\0';
 	}
 
 

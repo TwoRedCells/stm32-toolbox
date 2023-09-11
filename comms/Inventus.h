@@ -159,16 +159,6 @@ public:
 	}
 
 
-	/**
-	 * Gets the string associated with the specified mode number.
-	 * @param mode The mode number.
-	 */
-	static const char* get_mode_string(uint8_t mode)
-	{
-		return mode_strings[mode];
-	}
-
-
 	InventusBattery* master_battery;
 	static constexpr uint8_t master_node_id = 0x31;
 	static constexpr uint8_t maximum_parallel_batteries = 15;
@@ -202,9 +192,9 @@ private:
 		{
 			battery->serial_number[8] = 0;
 			if (subindex == Subindex_BatterySerial1)
-				bytes_to_string(data, battery->serial_number, 4);
+				bytes_to_string(data, battery->serial_number, 4, false);
 			else if (subindex == Subindex_BatterySerial2)
-				bytes_to_string(data, battery->serial_number+4, 4);
+				bytes_to_string(data, battery->serial_number+4, 4, false);
 		}
 		else if (index == Index_CumulativeCharge)
 			battery->cumulative_charge = lsb_uint32_to_uint32(data);
@@ -239,9 +229,9 @@ private:
 		else if (index == Index_BatteryMaximumCellTemperature)
 			battery->maximum_cell_temperature = lsb_uint16_to_float(data, 8);
 		else if (index == Index_BatteryMinimumCellVoltage)
-			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 8);
+			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 1000);
 		else if (index == Index_BatteryMaximumCellVoltage)
-			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 8);
+			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 1000);
 
 		battery->metadata_received = true;
 	}
@@ -375,17 +365,6 @@ private:
 
 private:
 
-	static constexpr const char* mode_strings[] = {
-		"NONE",
-		"BALANCING",
-		"SHIP",
-		"PRE-DISCHARGE",
-		"STANDBY",
-		"DISCHARGE",
-		"CHARGE",
-		"FAULT",
-		"PRE-CHARGE"
-	};
 };
 
 #endif /* INC_COMMS_NECCANOPEN_H_ */
