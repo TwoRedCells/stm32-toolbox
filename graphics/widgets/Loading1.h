@@ -34,19 +34,22 @@ public:
 	{
 		this->x_origin = x_origin;
 		this->y_origin = y_origin;
+		this->width = size;
+		this->height = size;
 		this->size = size;
 		this->across = across;
 		this->outline_colour = outline_colour;
 		this->empty_colour = empty_colour;
 		this->full_colour = full_colour;
 
-		uint32_t box_size = size / (across*2);
+		uint32_t box_size = size / (across*2-1);
+		uint32_t gap_size = box_size;
 
 		// Top side.
 		for (int32_t a=0; a <across; a++)
 		{
-			uint32_t x = x_origin - size/2 + a*box_size*2;
-			uint32_t y = y_origin - size/2 + 0*box_size*2;
+			uint32_t x = x_origin - size/2 + a * (box_size + gap_size);
+			uint32_t y = y_origin - size/2 + 0 * (box_size + gap_size);
 			FilledRectangle<TColour>* box = new FilledRectangle<TColour>(cxywh, x, y, box_size, box_size, 1, outline_colour, empty_colour);
 			this->add(box);
 		}
@@ -54,8 +57,8 @@ public:
 		// Right side.
 		for (int32_t b=1; b <across; b++)
 		{
-			uint32_t x = x_origin - size/2 + (across-1)*box_size*2;
-			uint32_t y = y_origin - size/2 + b*box_size*2;
+			uint32_t x = x_origin - size/2 + (across-1)*(box_size + gap_size);
+			uint32_t y = y_origin - size/2 + b * (box_size + gap_size);
 			FilledRectangle<TColour>* box = new FilledRectangle<TColour>(cxywh, x, y, box_size, box_size, 1, outline_colour, empty_colour);
 			this->add(box);
 		}
@@ -63,8 +66,8 @@ public:
 		// Bottom side.
 		for (int32_t a=across-2; a >= 0; a--)
 		{
-			uint32_t x = x_origin - size/2 + a*box_size*2;
-			uint32_t y = y_origin - size/2 + (across-1)*box_size*2;
+			uint32_t x = x_origin - size/2 + a * (box_size + gap_size);
+			uint32_t y = y_origin - size/2 + (across-1) * (box_size + gap_size);
 			FilledRectangle<TColour>* box = new FilledRectangle<TColour>(cxywh, x, y, box_size, box_size, 1, outline_colour, empty_colour);
 			this->add(box);
 		}
@@ -72,8 +75,8 @@ public:
 		// Left side.
 		for (int32_t b=across-2; b >= 1; b--)
 		{
-			uint32_t x = x_origin - size/2 + 0*box_size*2;
-			uint32_t y = y_origin - size/2 + b*box_size*2;
+			uint32_t x = x_origin - size/2 + 0 * (box_size + gap_size);
+			uint32_t y = y_origin - size/2 + b * (box_size + gap_size);
 			FilledRectangle<TColour>* box = new FilledRectangle<TColour>(cxywh, x, y, box_size, box_size, 1, outline_colour, empty_colour);
 			this->add(box);
 		}
