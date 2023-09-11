@@ -29,7 +29,7 @@ public:
 	 * @param outline_colour The colour of the empty boxes.
 	 * @param fill_colour THe colour of the full box.
 	 */
-	Loading1(uint32_t x_origin, uint32_t y_origin, uint32_t size, uint32_t across, TColour outline_colour, TColour empty_colour, TColour full_colour) :
+	Loading1(uint32_t x_origin, uint32_t y_origin, uint32_t size, int32_t across, TColour outline_colour, TColour empty_colour, TColour full_colour) :
 		Container<TColour>(x_origin, y_origin)
 	{
 		this->x_origin = x_origin;

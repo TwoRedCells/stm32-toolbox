@@ -110,7 +110,7 @@ public:
 
 	/**
 	 * Draws a string of characters.
-	 * @notes This function does not allow newline characters.
+	 * @notes This function does not allow newline characters. \t can be used to represent a half-space.
 	 * @param surface Pointer to the drawing surface.
 	 * @param x The x-coordinate of the first point
 	 * @param y The y-coordinate of the first point.
@@ -144,6 +144,10 @@ public:
 			else if (c == '\n')
 			{
 				cy += font6x8.height * scale;
+			}
+			else if (c == '\t')
+			{
+				cx += scale * font6x8.width /2;
 			}
 			else
 			{
@@ -248,7 +252,13 @@ public:
 protected:
 	static uint32_t text_width(char* str, uint8_t scale)
 	{
-		return scale * strlen(str) * font6x8.width;
+		// Count half spaces.
+		uint16_t len = strlen(str);
+		uint16_t halfs = 0;
+		for (uint16_t i=0; i < len; i++)
+			if (str[i] == '\t')
+				halfs++;
+		return scale * strlen(str) * font6x8.width - halfs * font6x8.width * scale / 2;
 	}
 
 
