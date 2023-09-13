@@ -53,6 +53,51 @@ public:
 
 
 	/**
+	 * Tiles a drawing region by calling start_region() and end_region dynamically, based on available memory.
+	 * @notes Call tile_region from a while loop and put drawing commands inside the loop.
+	 * @param x The upper-left x-coordinate.
+	 * @param y The upper-left y-coordinate.
+	 * @param w The width.
+	 * @param h The height.
+	 * @returns True if there are more tiles to draw; otherwise false.
+	 */
+	bool tile_region(uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+	{
+		static bool tiling = false;
+		static uint32_t tile_count = 0;
+		static uint32_t tile_rasters = 0;
+		static uint32_t current_tile = 0;
+
+		if (tiling)
+		{
+			end_region();
+			if (current_tile == tile_count)
+			{
+				tiling = false;
+				current_tile = 0;
+				tile_count = 0;
+				tile_rasters = 0;
+				return false;
+			}
+		}
+
+		if (!tiling)
+		{
+			uint32_t required_buffer = w * h * sizeof(TColour);
+			uint32_t actual_buffer = get_buffer_size();
+			tile_count = required_buffer / actual_buffer + 1;
+			tile_rasters = h / tile_count;
+			current_tile = 0;
+			tiling = true;
+		}
+
+		start_region(x, y+current_tile*tile_rasters, w, tile_rasters);
+		current_tile++;
+		return true;;
+	}
+
+
+	/**
 	 * Ends a fast painting transaction.
 	 */
 	virtual void end_region(void)

@@ -117,10 +117,12 @@ protected:
 	/// </summary>
 	void update_fault_led()
 	{
+#if FAULT_ENABLE_LED_SUPPORT
 		if (fault & fatal_faults)
 			led->flash();
 		else
 			led->set(this->fault > 0);
+#endif
 	}
 };
 

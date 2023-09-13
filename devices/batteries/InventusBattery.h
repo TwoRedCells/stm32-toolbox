@@ -108,8 +108,8 @@ public:
 	static const char* get_chemistry(uint8_t battery_type)
 	{
 		uint8_t type = battery_type >> 4;
-		assert(type > 0 && type < 15);
-		const char* long_strings[] = { "Lead acid", "Nickel cadmium", "Nickel zinc", "Nickel iron", "Silver oxide", "Nickel hydrogen", "Nickel metal hydride", "Zinc/Alkaline/Manganese dioxide", "Lithium-ion", "Zinc bromine", "Metal air", "Lithium/Iron sulfide", "Sodium beta" };
+		assert(type >= 0 && type < 14);
+		const char* long_strings[] = { "Unknown", "Lead acid", "Nickel cadmium", "Nickel zinc", "Nickel iron", "Silver oxide", "Nickel hydrogen", "Nickel metal hydride", "Zinc/Alkaline/Manganese dioxide", "Lithium-ion", "Zinc bromine", "Metal air", "Lithium/Iron sulfide", "Sodium beta" };
 		return long_strings[type];
 	}
 
@@ -120,6 +120,7 @@ public:
 	 */
 	static const char* get_mode_string(uint8_t mode)
 	{
+		assert(mode < 8);
 		const char* mode_strings[] = { "NONE", "BALANCING",	"SHIP",	"PRE-DISCHARGE", "STANDBY",	"DISCHARGE", "CHARGE", "FAULT",	"PRE-CHARGE" };
 		return mode_strings[mode];
 	}

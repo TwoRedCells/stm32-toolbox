@@ -10,7 +10,7 @@
 
 #include "CanBus.h"
 #include "utility/FastDelegate.h"
-
+#include "toolbox.h"
 
 class CanOpen : public CanBus
 {
@@ -203,7 +203,6 @@ public:
 				(value & 0xff000000) >> 24
 		};
 		uint32_t error = send(cob, data, size == 0 ? 8 : 4 + size);
-		osDelay(1);
 		return error;
 	}
 
