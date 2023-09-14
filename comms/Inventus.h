@@ -51,6 +51,10 @@ public:
 	static constexpr uint8_t State_Waiting = 0x00;
 	static constexpr uint8_t State_Configuration = 0x01;
 
+	static constexpr uint8_t first_node_id = 0x31;
+	static constexpr uint8_t maximum_parallel_batteries = 15;
+
+
 	/**
 	 * Instantiates the battery CANopen class.
 	 * @param batteries A pointer to the array of batteries. Enough instances
@@ -60,7 +64,7 @@ public:
 	Inventus(CAN_HandleTypeDef* port) : CanOpen(port, roles::Master, true)
 	{
 		set_callback(this);
-		for (uint8_t i=0; i<16; i++)
+		for (uint8_t i=0; i<maximum_parallel_batteries; i++)
 		{
 			batteries[i] = {0};
 			batteries[i].node_id = 0x31 + i;
@@ -194,7 +198,6 @@ public:
 	 */
 	InventusBattery* get_master_battery(void)
 	{
-		uint8_t count = 0;
 		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
 			if (batteries[i].master_node_id == batteries[i].node_id)
 				return &batteries[i];
@@ -210,13 +213,10 @@ public:
 	{
 		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
 			if (batteries[i].change_node_id)
-				return batteries[i].change_node_id;
+				return batteries[i].node_id;
 		return 0x00;
 	}
 
-
-	static constexpr uint8_t first_node_id = 0x31;
-	static constexpr uint8_t maximum_parallel_batteries = 15;
 
 
 private:
@@ -294,19 +294,19 @@ private:
 
 	void on_other_message(uint16_t cob, uint8_t* data)
 	{
+	}
+
+
+	void on_lss(uint16_t cob, uint8_t* data)
+	{
+		uint8_t node = get_changing_node_id() - first_node_id;
+		InventusBattery* battery = &batteries[node];
 		if (cob == 0x7e4) // Response to node ID change.
 		{
-			if (data[0] == 0x11 && data[1] == 0x00)  // Successful return value.
-			{
-				//				uint8_t old_id = get_single_battery_id();
-				//				InventusBattery* old_battery = &batteries[old_id - master_node_id];
-				//				uint8_t new_id = get_changing_node_id();
-				//				InventusBattery* new_battery = &batteries[new_id - master_node_id];
-				//				old_battery->last_message = 0;
-
-				// Make it permanent.
-
-			}
+			if (data[0] == 0x11)
+				battery->configure_node_id_response = data[1];
+			else if (data[0] == 0x17)
+				battery->store_configuration_response = data[1];
 		}
 	}
 

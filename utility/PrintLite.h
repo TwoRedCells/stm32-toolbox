@@ -54,10 +54,10 @@ public:
 	{
 		va_list a;
 		va_start(a, format);
-		int32_t n, dec;
+		int32_t n;
 		uint32_t u;
 		uint16_t count = 0;
-		double f;
+
 		bool zero_before_decimal = false;
 
 		while(char c = *format++)
@@ -135,6 +135,21 @@ public:
 		return count;
 	}
 
+
+	/**
+	 * @brief	Outputs a formatted string.
+	 * @param 	format A string that may include format specifiers.
+	 * @param	... Value(s) to format.
+	 * @returns The number of characters printed.
+	 */
+	static uint16_t vsprintf(char* buffer, const char *format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		uint16_t ret = vsprintf(buffer, format, args);
+		va_end(args);
+		return ret;
+	}
 
 	/**
 	 * @brief	Outputs a formatted string.
@@ -315,13 +330,16 @@ protected:
 	uint16_t xtoa(uint32_t value, int8_t digits=10)
 	{
 		uint32_t v = value;
+		uint16_t count = 0;
 		for (uint8_t d=digits; d>=0; d--)
 		{
 			uint32_t exp = pow(10, d);
 			char x = v / exp;
 			write('0'+x);
+			count++;
 			v -= x * exp;
 		}
+		return count;
 	}
 
 

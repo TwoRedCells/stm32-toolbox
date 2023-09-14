@@ -68,6 +68,8 @@ public:
 	uint32_t timestamp_tpdo4 = 0;
 	uint32_t timestamp_tpdo5 = 0;
 	uint32_t timestamp_tpdo6 = 0;
+	uint8_t configure_node_id_response = 0xff;
+	uint8_t store_configuration_response = 0xff;
 
 	// Detail CiA 418
 	uint8_t state_of_charge;

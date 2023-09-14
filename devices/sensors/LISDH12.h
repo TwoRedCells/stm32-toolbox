@@ -58,9 +58,9 @@ public:
 		HAL_I2C_Mem_Read(i2c, address, 0x2c, 1, &zl, 1, timeout);
 		HAL_I2C_Mem_Read(i2c, address, 0x2d, 1, &zh, 1, timeout);
 		return AccelerometerData {
-			.x = xl | xh << 8,
-			.y = yl | yh << 8,
-			.z = zl | zh << 8
+			.x = (int16_t)(xl | xh << 8),
+			.y = (int16_t)(yl | yh << 8),
+			.z = (int16_t)(zl | zh << 8)
 		};
 	}
 

@@ -59,7 +59,7 @@ public:
             return this->_default;
 
         position++;
-        if (position == this->length)
+        if (position == (int32_t)this->length)
             position = 0;
         return this->buffer[position];
     }
