@@ -125,7 +125,7 @@ struct RGB
 	static constexpr uint16_t Orange =      0xfd20;
 	static constexpr uint16_t GreenYellow = 0xafe5;
 	static constexpr uint16_t Pink =        0xf81f;
-	static constexpr uint16_t LightPink =   0xfd5f;
+	static constexpr uint16_t LightPink =   0xfaaf;
 };
 
 
