@@ -139,7 +139,9 @@ typedef struct _RIP_MSG_FIXED
 	uint8_t  chaddr[6];
 }RIP_MSG_FIXED;
 
-class DhcpClass {
+
+class DhcpClass
+{
 private:
 	uint32_t _dhcpInitialTransactionId;
 	uint32_t _dhcpTransactionId;
@@ -157,7 +159,7 @@ private:
 	uint32_t _responseTimeout;
 	uint32_t _lastCheckLeaseMillis;
 	uint8_t _dhcp_state;
-	EthernetUDP _dhcpUdpSocket;
+	EthernetUDP* _dhcpUdpSocket;
 
 	int request_DHCP_lease();
 	void reset_DHCP_lease();
@@ -167,6 +169,11 @@ private:
 
 	uint8_t parseDHCPResponse(unsigned long responseTimeout, uint32_t& transactionId);
 public:
+	DhcpClass(EthernetUDP* udp)
+	{
+		this->_dhcpUdpSocket = udp;
+	}
+
 	inline IPAddress getLocalIp() { return IPAddress(_dhcpLocalIp); }
 	inline IPAddress getSubnetMask() { return IPAddress(_dhcpSubnetMask); }
 	inline IPAddress getGatewayIp() { return IPAddress(_dhcpGatewayIp); }

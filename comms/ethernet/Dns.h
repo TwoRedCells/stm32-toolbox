@@ -13,6 +13,11 @@
 class DNSClient
 {
 public:
+	DNSClient(EthernetUDP* udp)
+	{
+		this->iUdp = udp;
+	}
+
 	// ctor
 	void begin(const IPAddress& aDNSServer);
 
@@ -38,7 +43,7 @@ protected:
 
 	IPAddress iDNSServer;
 	uint16_t iRequestId;
-	EthernetUDP iUdp;
+	EthernetUDP* iUdp;
 };
 
 #endif

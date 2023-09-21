@@ -3,9 +3,9 @@
 
 
 #include "Server.h"
-
-
-class EthernetClient;
+#include "Socket.h"
+#include "Ethernet.h"
+#include "EthernetClient.h"
 
 class EthernetServer : 
 		public Server {
@@ -13,12 +13,14 @@ private:
 	uint16_t _port;
 	void accept();
 public:
-	EthernetServer(uint16_t port);
+	EthernetServer(Ethernet* ethernet, uint16_t port);
 	EthernetClient available();
 	virtual void begin();
 	inline size_t write(uint8_t b) { return write(&b, 1); }
 	virtual size_t write(const uint8_t *buf, size_t size);
 	using Print::write;
+
+	Ethernet* ethernet;
 };
 
 #endif

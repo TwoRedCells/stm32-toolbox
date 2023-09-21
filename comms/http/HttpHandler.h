@@ -10,7 +10,7 @@
 #ifndef INC_STM32_TOOLBOX_COMMS_HTTPHANDLER_H_
 #define INC_STM32_TOOLBOX_COMMS_HTTPHANDLER_H_
 
-#include <comms/ethernet/Ethernet.h>
+#include <comms/ethernet/EthernetClient.h>
 
 
 /**

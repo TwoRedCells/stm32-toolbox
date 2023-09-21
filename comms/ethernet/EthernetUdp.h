@@ -38,9 +38,8 @@
 #define ETHERNETUDP_H
 
 
+#include <comms/ethernet/Socket.h>
 #include "Udp.h"
-//#include <wirish.h>
-
 
 class EthernetUDP : public UDP {
 private:
@@ -52,7 +51,7 @@ private:
 	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
 
 public:
-	EthernetUDP();  // Constructor
+	EthernetUDP(Socket* socket);  // Constructor
 	virtual uint8_t begin(uint16_t);	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual uint8_t beginMulticast(IPAddress, uint16_t);	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual void stop();  // Finish with the UDP socket
@@ -96,6 +95,9 @@ public:
 	virtual IPAddress remoteIP() { return _remoteIP; };
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() { return _remotePort; };
+
+private:
+	Socket* socket;
 };
 
 #endif

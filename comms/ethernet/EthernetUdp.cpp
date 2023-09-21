@@ -2,7 +2,7 @@
 #if ENABLE_W5500
 /*
  *  Udp.cpp: Library to send/receive UDP packets with the Arduino ethernet shield.
- *  This version only offers minimal wrapping of socket.c/socket.h
+ *  This version only offers minimal wrapping of socket->c/socket->h
  *  Drop Udp.h/.cpp into the Ethernet library directory at hardware/libraries/Ethernet/ 
  *
  * MIT License:
@@ -30,10 +30,13 @@
 
 #include "Ethernet.h"
 #include "EthernetUdp.h"
-
+#include "Socket.h"
 
 /* Constructor */
-EthernetUDP::EthernetUDP() : _sock(MAX_SOCK_NUM) {}
+EthernetUDP::EthernetUDP(Socket* socket) : _sock(MAX_SOCK_NUM)
+{
+this->socket = socket;
+}
 
 /* Start EthernetUDP socket, listening at local port PORT */
 uint8_t EthernetUDP::begin(uint16_t port) {
@@ -41,7 +44,7 @@ uint8_t EthernetUDP::begin(uint16_t port) {
 		return 0;
 
 	for (int i = 0; i < MAX_SOCK_NUM; i++) {
-		uint8_t s = socket.status(i);
+		uint8_t s = socket->status(i);
 		if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
 			_sock = i;
 			break;
@@ -53,7 +56,7 @@ uint8_t EthernetUDP::begin(uint16_t port) {
 
 	_port = port;
 	_remaining = 0;
-	socket.open(_sock, SnMR::UDP, _port, 0);
+	socket->open(_sock, SnMR::UDP, _port, 0);
 
 	return 1;
 }
@@ -70,37 +73,37 @@ void EthernetUDP::stop()
 	if (_sock == MAX_SOCK_NUM)
 		return;
 
-	socket.close(_sock);
+	socket->close(_sock);
 
-	EthernetClass::server_port[_sock] = 0;
+	Ethernet::server_port[_sock] = 0;
 	_sock = MAX_SOCK_NUM;
 }
 
-int EthernetUDP::beginPacket(const char *host, uint16_t port)
-{
-	// Look up the host first
-	int ret = 0;
-	DNSClient dns;
-	IPAddress remote_addr;
-
-	dns.begin(Ethernet.dnsServerIP());
-	ret = dns.getHostByName(host, remote_addr);
-	if (ret == 1) {
-		return beginPacket(remote_addr, port);
-	} else {
-		return ret;
-	}
-}
+//int EthernetUDP::beginPacket(const char *host, uint16_t port)
+//{
+//	// Look up the host first
+//	int ret = 0;
+//	DNSClient dns;
+//	IPAddress remote_addr;
+//
+//	dns.begin(Ethernet.dnsServerIP());
+//	ret = dns.getHostByName(host, remote_addr);
+//	if (ret == 1) {
+//		return beginPacket(remote_addr, port);
+//	} else {
+//		return ret;
+//	}
+//}
 
 int EthernetUDP::beginPacket(IPAddress ip, uint16_t port)
 {
 	_offset = 0;
-	return socket.startUDP(_sock, rawIPAddress(ip), port);
+	return socket->startUDP(_sock, rawIPAddress(ip), port);
 }
 
 int EthernetUDP::endPacket()
 {
-	return socket.sendUDP(_sock);
+	return socket->sendUDP(_sock);
 }
 
 size_t EthernetUDP::write(uint8_t byte)
@@ -110,7 +113,7 @@ size_t EthernetUDP::write(uint8_t byte)
 
 size_t EthernetUDP::write(const uint8_t *buffer, size_t size)
 {
-	uint16_t bytes_written = socket.bufferData(_sock, _offset, buffer, size);
+	uint16_t bytes_written = socket->bufferData(_sock, _offset, buffer, size);
 	_offset += bytes_written;
 	return bytes_written;
 }
@@ -120,13 +123,13 @@ int EthernetUDP::parsePacket()
 	// discard any remaining bytes in the last packet
 	flush();
 
-	if (socket.recvAvailable(_sock) > 0)
+	if (socket->recvAvailable(_sock) > 0)
 	{
 		//HACK - hand-parse the UDP packet using TCP recv method
 		uint8_t tmpBuf[8];
 		int ret =0;
 		//read 8 header bytes and get IP and port from it
-		ret = socket.recv(_sock,tmpBuf,8);
+		ret = socket->recv(_sock,tmpBuf,8);
 		if (ret > 0)
 		{
 			_remoteIP = tmpBuf;
@@ -146,7 +149,7 @@ int EthernetUDP::read()
 {
 	uint8_t byte;
 
-	if ((_remaining > 0) && (socket.recv(_sock, &byte, 1) > 0))
+	if ((_remaining > 0) && (socket->recv(_sock, &byte, 1) > 0))
 	{
 		// We read things without any problems
 		_remaining--;
@@ -168,13 +171,13 @@ int EthernetUDP::read(unsigned char* buffer, size_t len)
 		if (_remaining <= len)
 		{
 			// data should fit in the buffer
-			got = socket.recv(_sock, buffer, _remaining);
+			got = socket->recv(_sock, buffer, _remaining);
 		}
 		else
 		{
 			// too much data for the buffer,
 			// grab as much as will fit
-			got = socket.recv(_sock, buffer, len);
+			got = socket->recv(_sock, buffer, len);
 		}
 
 		if (got > 0)
@@ -198,7 +201,7 @@ int EthernetUDP::peek()
 	// may get the UDP header
 	if (!_remaining)
 		return -1;
-	socket.peek(_sock, &b);
+	socket->peek(_sock, &b);
 	return b;
 }
 
@@ -221,7 +224,7 @@ uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
 		return 0;
 
 	for (int i = 0; i < MAX_SOCK_NUM; i++) {
-		uint8_t s = socket.status(i);
+		uint8_t s = socket->status(i);
 		if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
 			_sock = i;
 			break;
@@ -238,14 +241,16 @@ uint8_t EthernetUDP::beginMulticast(IPAddress ip, uint16_t port)
 	mac[4] = ip[2];
 	mac[5] = ip[3];
 
-	socket.set(_sock, mac, rawIPAddress(ip), port);
+	socket->set(_sock, mac, rawIPAddress(ip), port);
 	//W5100.writeSnDIPR(_sock, rawIPAddress(ip));
 	//W5100.writeSnDPORT(_sock, port);
 	//W5100.writeSnDHAR(_sock,mac);
 
 	_remaining = 0;
-	socket.open(_sock, SnMR::UDP, port, SnMR::MULTI);
+	socket->open(_sock, SnMR::UDP, port, SnMR::MULTI);
 	return 1;
+
+
 }
 
 #endif

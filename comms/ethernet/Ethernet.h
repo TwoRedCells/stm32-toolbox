@@ -7,16 +7,22 @@
 
 
 #include "IPAddress.h"
-#include "EthernetClient.h"
-#include "EthernetServer.h"
 #include "EthernetUdp.h"
 
 
-class EthernetClass
+class Ethernet
 {
 private:
 	IPAddress _dnsServerAddress;
+	Socket* socket;
+
+
 public:
+	Ethernet(Socket* socket)
+	{
+		this->socket = socket;
+	}
+
 	static uint8_t _state[MAX_SOCK_NUM];
 	static uint16_t server_port[MAX_SOCK_NUM];
 	//void init(SPI_HandleTypeDef &spi, const uint8_t cs_pin) { socket.init(spi, cs_pin); }
@@ -36,10 +42,10 @@ public:
 	IPAddress gatewayIP();
 	IPAddress dnsServerIP();
 
-	friend class EthernetClient;
-	friend class EthernetServer;
+	Socket* get_socket(void)
+	{
+		return socket;
+	}
 };
 
 #endif
-
-extern EthernetClass Ethernet;

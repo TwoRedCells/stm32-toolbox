@@ -1,32 +1,40 @@
 #include "toolbox.h"
 #if ENABLE_W5500
 #include "Ethernet.h"
-#include "main.h"
+#include "EthernetClient.h"
 #include "utility/Timer.h"
 
 
 uint16_t EthernetClient::_srcport = 49152;      //Use IANA recommended ephemeral port range 49152-65535
 
-EthernetClient::EthernetClient() : _sock(MAX_SOCK_NUM) { }
-
-EthernetClient::EthernetClient(uint8_t sock) : _sock(sock) { }
-
-
-int EthernetClient::connect(const char* host, uint16_t port)
+EthernetClient::EthernetClient(Ethernet* ethernet) : _sock(MAX_SOCK_NUM)
 {
-	// Look up the host first
-	int ret = 0;
-	DNSClient dns;
-	IPAddress remote_addr;
-
-	dns.begin(Ethernet.dnsServerIP());
-	ret = dns.getHostByName(host, remote_addr);
-	if (ret == 1) {
-		return connect(remote_addr, port);
-	} else {
-		return ret;
-	}
+	this->ethernet = ethernet;
+	this->socket = ethernet->get_socket();
 }
+
+EthernetClient::EthernetClient(Ethernet* ethernet, uint8_t sock) : _sock(sock)
+{
+	this->ethernet = ethernet;
+	this->socket = ethernet->get_socket();
+}
+
+
+//int EthernetClient::connect(const char* host, uint16_t port)
+//{
+//	// Look up the host first
+//	int ret = 0;
+//	DNSClient dns;
+//	IPAddress remote_addr;
+//
+//	dns.begin(Ethernet.dnsServerIP());
+//	ret = dns.getHostByName(host, remote_addr);
+//	if (ret == 1) {
+//		return connect(remote_addr, port);
+//	} else {
+//		return ret;
+//	}
+//}
 
 int EthernetClient::connect(IPAddress ip, uint16_t port)
 {
@@ -34,7 +42,7 @@ int EthernetClient::connect(IPAddress ip, uint16_t port)
 		return 0;
 
 	for (int i = 0; i < MAX_SOCK_NUM; i++) {
-		uint8_t s = socket.status(i);
+		uint8_t s = socket->status(i);
 		if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT || s == SnSR::CLOSE_WAIT) {
 			_sock = i;
 			break;
@@ -46,10 +54,10 @@ int EthernetClient::connect(IPAddress ip, uint16_t port)
 
 	_srcport++;
 	if (_srcport == 0) _srcport = 49152;          //Use IANA recommended ephemeral port range 49152-65535
-	socket.open(_sock, SnMR::TCP, _srcport, 0);
+	socket->open(_sock, SnMR::TCP, _srcport, 0);
 
 
-	if (!socket.connect(_sock, rawIPAddress(ip), port)) {
+	if (!socket->connect(_sock, rawIPAddress(ip), port)) {
 		_sock = MAX_SOCK_NUM;
 		return 0;
 	}
@@ -74,7 +82,7 @@ size_t EthernetClient::write(const uint8_t *buf, size_t size)
 		setWriteError();
 		return 0;
 	}
-	if (!socket.send(_sock, buf, size)) {
+	if (!socket->send(_sock, buf, size)) {
 		setWriteError();
 		return 0;
 	}
@@ -84,14 +92,14 @@ size_t EthernetClient::write(const uint8_t *buf, size_t size)
 int EthernetClient::available()
 {
 	if (_sock != MAX_SOCK_NUM)
-		return socket.recvAvailable(_sock);
+		return socket->recvAvailable(_sock);
 	return 0;
 }
 
 int EthernetClient::read()
 {
 	uint8_t b;
-	if ( socket.recv(_sock, &b, 1) > 0 )
+	if ( socket->recv(_sock, &b, 1) > 0 )
 	{
 		// recv worked
 		return b;
@@ -109,7 +117,7 @@ int EthernetClient::peek()
 	// Unlike recv, peek doesn't check to see if there's any data available, so we must
 	if (!available())
 		return -1;
-	socket.peek(_sock, &b);
+	socket->peek(_sock, &b);
 	return b;
 }
 
@@ -121,7 +129,7 @@ void EthernetClient::stop()
 	flush();
 
 	// attempt to close the connection gracefully (send a FIN to other side)
-	socket.disconnect(_sock);
+	socket->disconnect(_sock);
 	unsigned long start = millis();
 
 	// wait up to a second for the connection to close
@@ -135,9 +143,9 @@ void EthernetClient::stop()
 
 	// if it hasn't closed, close it forcefully
 	if (s != SnSR::CLOSED)
-		socket.close(_sock);
+		socket->close(_sock);
 
-	Ethernet.server_port[_sock] = 0;
+	ethernet->server_port[_sock] = 0;
 	_sock = MAX_SOCK_NUM;
 }
 
@@ -153,6 +161,6 @@ uint8_t EthernetClient::connected()
 uint8_t EthernetClient::status()
 {
 	if (_sock == MAX_SOCK_NUM) return SnSR::CLOSED;
-	return socket.status(_sock);
+	return socket->status(_sock);
 }
 #endif

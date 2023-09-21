@@ -111,11 +111,11 @@ public:
 };
 
 
-class W5500Class
+class W5500
 {
 public:
 
-	W5500Class(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	W5500(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 	{
 		this->hspi = _spi;
 		this->cs_port = cs_port;
@@ -484,6 +484,6 @@ private:
 	}
 };
 
-extern W5500Class w5500;
+extern W5500 w5500;
 
 #endif

@@ -12,7 +12,8 @@
 #define INC_STM32_TOOLBOX_COMMS_HTTPSERVER_H_
 
 #include "comms/ethernet/Ethernet.h"
-#include "comms/ethernet/Ping.h"
+#include "comms/ethernet/EthernetServer.h"
+//#include "comms/ethernet/Ping.h"
 #include "HttpHandler.h"
 #include "generics/List.h"
 #include "string.h"
@@ -30,7 +31,7 @@ public:
 	 * @brief	Instantats the class.
 	 * @param	ethernet Pointer to the Ethernet instance.
 	 */
-	HttpServer(EthernetClass* ethernet) : EthernetServer(80),
+	HttpServer(Ethernet* ethernet) : EthernetServer(ethernet, 80),
 		handlers(handler_buffer, HTTP_SERVER_MAX_HANDLERS)
 	{
 		this->ethernet = ethernet;
@@ -53,7 +54,7 @@ public:
 			G.gooddog.feed(HttpdTaskOk);
 
 			// See if we are connected
-			uint8_t phy = w5500.get_phy_config();
+			uint8_t phy = ethernet->get_socket()->get_hardware()->get_phy_config();
 			bool link = phy & 0x01;
 			G.fault.update(NemoFault::NetworkLinkNotPresent, !link);
 
@@ -62,11 +63,11 @@ public:
 				// See if we are online.
 				if (ping_timer.is_elapsed())  // Every 5-10 seconds.
 				{
-					Ping::ICMPPing ping(4, 0xff);  // 4 is socket number.
-					socket.getGatewayIp(gw);
-					Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
-					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != Ping::SUCCESS);
-					ping_timer.restart();
+//					Ping::ICMPPing ping(socket->get_hardware(), 4, 0xff);  // 4 is socket number.
+//					socket->getGatewayIp(gw);
+//					Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
+//					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != SUCCESS);
+//					ping_timer.restart();
 				}
 
 				// Check for client connection.
@@ -220,7 +221,7 @@ public:
 
 
 private:
-	EthernetClass* ethernet;
+	Ethernet* ethernet;
 	HttpHandler* handler_buffer[0x200];
 	List<HttpHandler*> handlers;
 	static constexpr uint32_t RECV_BUFFER_LENGTH = 0x200;
