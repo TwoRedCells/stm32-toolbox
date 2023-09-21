@@ -1,3 +1,6 @@
+#ifndef FONT6X8_H
+#define FONT6X8_H
+
 class Font6x8
 {
 public:
@@ -263,4 +266,4 @@ public:
 	};
 };
 
-
+#endif

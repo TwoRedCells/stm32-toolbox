@@ -1,4 +1,3 @@
-#include "tasks/tasks.h"
 ///	@file       utility/Revision.h
 ///	@class      Revision
 ///	@brief      Determines the board revision based on a voltage divider.

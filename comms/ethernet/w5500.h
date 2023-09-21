@@ -114,7 +114,7 @@ class W5500Class
 {
 public:
 
-	void init(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	W5500Class(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 	{
 		this->hspi = _spi;
 		this->cs_port = cs_port;

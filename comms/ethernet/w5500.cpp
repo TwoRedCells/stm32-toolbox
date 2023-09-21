@@ -180,5 +180,4 @@ void W5500Class::execCmdSn(SOCKET s, SockCMD _cmd) {
 		;
 }
 
-W5500Class w5500;
 #endif

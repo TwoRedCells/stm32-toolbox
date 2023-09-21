@@ -30,10 +30,10 @@ public:
 	 * @brief	Instantats the class.
 	 * @param	ethernet Pointer to the Ethernet instance.
 	 */
-	HttpServer(EthernetClass* ethernet) : EthernetServer(80)
+	HttpServer(EthernetClass* ethernet) : EthernetServer(80),
+		handlers(handler_buffer, HTTP_SERVER_MAX_HANDLERS)
 	{
 		this->ethernet = ethernet;
-		handlers.set_buffer(handler_buffer, HTTP_SERVER_MAX_HANDLERS);
 		this->begin();
 	}
 

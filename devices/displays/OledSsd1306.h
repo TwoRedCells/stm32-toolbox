@@ -16,6 +16,8 @@
 #include <stdint.h>
 #include "toolbox.h"
 
+enum OledColour { Black, White, Inverse };
+
 
 class OledSsd1306 : public PrintLite
 {
@@ -52,8 +54,6 @@ public:
 	static constexpr uint8_t DeactivateScroll = 0x2e;
 	static constexpr uint8_t ActivateScroll = 0x2f;
 	static constexpr uint8_t SetVerticalScrollArea = 0xa3;
-
-	enum Colour { Black, White, Inverse };
 
 	static constexpr uint32_t DefaultTimeout = 100000;
 
@@ -94,7 +94,7 @@ public:
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, init_commands, sizeof(init_commands), timeout);
 	}
 
-	void pixel(uint16_t x, uint16_t y, Colour colour)
+	void pixel(uint16_t x, uint16_t y, OledColour colour)
 	{
 		uint16_t address = y / 8 * width + x;
 		if (colour == Black) pixels[address] &= ~(1 << (y%8));
@@ -146,7 +146,7 @@ public:
 
 	void clear_line(void)
 	{
-		Colour c = colour;
+		OledColour c = colour;
 		set_colour(c == Black ? White : Black);
 		rectangle(0, y, width-1, font6x8.height, true);
 		set_colour(c);
@@ -178,7 +178,7 @@ public:
 		string(x, y, str);
 	}
 
-	void set_colour(Colour colour)
+	void set_colour(OledColour colour)
 	{
 		this->colour = colour;
 	}
@@ -206,7 +206,7 @@ public:
 		}
 		else
 		{
-			uint8_t* glyph = font6x8.glyphs[ch];
+			const uint8_t* glyph = font6x8.glyphs[ch];
 			for (uint8_t i=0; i<8; i++)
 				for (uint8_t j=0; j<8; j++)
 					if (glyph[i] & (1 << j))
@@ -241,7 +241,7 @@ private:
 	uint32_t timeout = DefaultTimeout;
 	uint8_t pixels[OLED_SSD1306_WIDTH/8 * OLED_SSD1306_HEIGHT];
 	uint8_t x=0, y=0;
-	Colour colour = White;
+	OledColour colour = White;
 	Font6x8 font6x8;
 };
 

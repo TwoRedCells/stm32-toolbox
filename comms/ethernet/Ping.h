@@ -364,9 +364,6 @@ private:
 		w5500.execCmdSn(_socket, Sock_OPEN);
 	}
 
-
-
-
 	Status sendEchoRequest(const IPAddress& addr, const ICMPEcho& echoReq)
 	{
 		// I wish there were a better way of doing this, but if we use the uint32_t

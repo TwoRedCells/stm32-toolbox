@@ -70,7 +70,7 @@
 #define ENABLE_ILI9488_DMA (0)  // Stopped working.
 
 // Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
-#define ENABLE_ADC_CALIBRATION (1)
+#define ENABLE_ADC_CALIBRATION (0)
 
 // Used by `OledSsd1306`
 #define OLED_SSD1306_WIDTH (128)
@@ -84,7 +84,7 @@
 
 // Whether to allow classes to call malloc for dynamic memory allocation.
 // Chip
-#define MCU_STM32L4
+#define MCU_STM32F4
 
 #ifdef MCU_STM32F4
 #include "main.h"
