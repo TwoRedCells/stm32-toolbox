@@ -33,7 +33,7 @@ uint8_t SOCKETClass::open(SOCKET s, uint8_t protocol, uint16_t port, uint8_t fla
 			w5500.writeSnPORT(s, local_port);
 		}
 
-		w5500.execCmdSn(s, Sock_OPEN);
+		w5500.execute_command(s, Sock_OPEN);
 
 		return 1;
 	}
@@ -48,7 +48,7 @@ uint8_t SOCKETClass::open(SOCKET s, uint8_t protocol, uint16_t port, uint8_t fla
 void SOCKETClass::close(SOCKET s)
 {
 	sock_is_sending &= ~(1<<s);
-	w5500.execCmdSn(s, Sock_CLOSE);
+	w5500.execute_command(s, Sock_CLOSE);
 	w5500.writeSnIR(s, 0xFF);
 }
 
@@ -61,7 +61,7 @@ uint8_t SOCKETClass::listen(SOCKET s)
 {
 	if (w5500.readSnSR(s) != SnSR::INIT)
 		return 0;
-	w5500.execCmdSn(s, Sock_LISTEN);
+	w5500.execute_command(s, Sock_LISTEN);
 	return 1;
 }
 
@@ -82,7 +82,7 @@ uint8_t SOCKETClass::connect(SOCKET s, uint8_t * addr, uint16_t port)
 	// set destination IP
 	w5500.writeSnDIPR(s, addr);
 	w5500.writeSnDPORT(s, port);
-	w5500.execCmdSn(s, Sock_CONNECT);
+	w5500.execute_command(s, Sock_CONNECT);
 
 	return 1;
 }
@@ -128,7 +128,7 @@ uint16_t SOCKETClass::send(SOCKET s, const uint8_t * buf, uint16_t len)
 		if (trx > w5500.SSIZE) trx = w5500.SSIZE; // check size not to exceed MAX size.
 
 		// if freebuf is available, start.
-		while ( w5500.getTXFreeSize(s) < trx )
+		while ( w5500.get_tx_free_size(s) < trx )
 		{
 			uint8_t status = w5500.readSnSR(s);
 			if ((status != SnSR::ESTABLISHED) && (status != SnSR::CLOSE_WAIT))
@@ -139,7 +139,7 @@ uint16_t SOCKETClass::send(SOCKET s, const uint8_t * buf, uint16_t len)
 
 		// copy data
 		w5500.send_data_processing(s, (uint8_t *)buf+ret, trx);
-		w5500.execCmdSn(s, Sock_SEND);
+		w5500.execute_command(s, Sock_SEND);
 		sock_is_sending |= (1 << s);
 
 		ret += trx;
@@ -157,7 +157,7 @@ uint16_t SOCKETClass::send(SOCKET s, const uint8_t * buf, uint16_t len)
 int16_t SOCKETClass::recv(SOCKET s, uint8_t *buf, int16_t len)
 {
 	// Check how much data is available
-	int16_t ret = w5500.getRXReceivedSize(s);
+	int16_t ret = w5500.get_rx_received_size(s);
 	if ( ret == 0 )
 	{
 		// No data available.
@@ -181,7 +181,7 @@ int16_t SOCKETClass::recv(SOCKET s, uint8_t *buf, int16_t len)
 	if ( ret > 0 )
 	{
 		w5500.recv_data_processing(s, buf, ret);
-		w5500.execCmdSn(s, Sock_RECV);
+		w5500.execute_command(s, Sock_RECV);
 	}
 	return ret;
 }
@@ -264,7 +264,7 @@ uint16_t SOCKETClass::recvfrom(SOCKET s, uint8_t *buf, uint16_t len, uint8_t *ad
 		default :
 			break;
 		}
-		w5500.execCmdSn(s, Sock_RECV);
+		w5500.execute_command(s, Sock_RECV);
 	}
 	return data_len;
 }
@@ -290,7 +290,7 @@ uint16_t SOCKETClass::igmpsend(SOCKET s, const uint8_t * buf, uint16_t len)
 		return 0;
 
 	w5500.send_data_processing(s, (uint8_t *)buf, ret);
-	w5500.execCmdSn(s, Sock_SEND);
+	w5500.execute_command(s, Sock_SEND);
 
 	while ( !(w5500.readSnIR(s) & SnIR::SEND_OK) )
 	{
@@ -310,9 +310,9 @@ uint16_t SOCKETClass::igmpsend(SOCKET s, const uint8_t * buf, uint16_t len)
 uint16_t SOCKETClass::bufferData(SOCKET s, uint16_t offset, const uint8_t* buf, uint16_t len)
 {
 	uint16_t ret =0;
-	if (len > w5500.getTXFreeSize(s))
+	if (len > w5500.get_tx_free_size(s))
 	{
-		ret = w5500.getTXFreeSize(s); // check size not to exceed MAX size.
+		ret = w5500.get_tx_free_size(s); // check size not to exceed MAX size.
 	}
 	else
 	{
@@ -337,7 +337,7 @@ int SOCKETClass::startUDP(SOCKET s, uint8_t* addr, uint16_t port)
 
 int SOCKETClass::sendUDP(SOCKET s)
 {
-	w5500.execCmdSn(s, Sock_SEND);
+	w5500.execute_command(s, Sock_SEND);
 
 	/* +2008.01 bj */
 	while ( !(w5500.readSnIR(s) & SnIR::SEND_OK) )

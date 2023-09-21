@@ -110,6 +110,7 @@ public:
 	static const uint8_t RAW  = 255;
 };
 
+
 class W5500Class
 {
 public:
@@ -123,7 +124,12 @@ public:
 		Timer::Block(milliseconds(100));
 	}
 
-	inline uint8_t readVersion(void) { return readVERSIONR(); };
+
+	uint8_t read_version(void)
+	{
+		return readVERSIONR();
+	};
+
 
 	/**
 	 * @brief	This function is being used for copy the data form Receive buffer of the chip to application buffer.
@@ -132,8 +138,11 @@ public:
 	 * the data from Receive buffer. Here also take care of the condition while it exceed
 	 * the Rx memory uper-bound of socket.
 	 */
-	inline void read_data(SOCKET s, volatile uint16_t  src, volatile uint8_t * dst, uint16_t len)
-	{ read((uint16_t)src , (0x18+(s<<5)), (uint8_t *)dst, len); }
+	void read_data(SOCKET s, volatile uint16_t  src, volatile uint8_t * dst, uint16_t len)
+	{
+		read((uint16_t)src, (0x18+(s<<5)), (uint8_t *)dst, len);
+	}
+
 
 	/**
 	 * @brief	 This function is being called by send() and sendto() function also.
@@ -141,8 +150,11 @@ public:
 	 * This function read the Tx write pointer register and after copy the data in buffer update the Tx write pointer
 	 * register. User should read upper byte first and lower byte later to get proper value.
 	 */
-	inline void send_data_processing(SOCKET s, const uint8_t *data, uint16_t len)
-	{ send_data_processing_offset(s, 0, data, len); }
+	void send_data_processing(SOCKET s, const uint8_t *data, uint16_t len)
+	{
+		send_data_processing_offset(s, 0, data, len);
+	}
+
 
 	/**
 	 * @brief A copy of send_data_processing that uses the provided ptr for the
@@ -154,8 +166,16 @@ public:
 	 *        in from TX_WR
 	 * @return New value for ptr, to be used in the next call
 	 */
-	// FIXME Update documentation
-	void send_data_processing_offset(SOCKET s, uint16_t data_offset, const uint8_t *data, uint16_t len);
+	void send_data_processing_offset(SOCKET s, uint16_t data_offset, const uint8_t *data, uint16_t len)
+	{
+		uint16_t ptr = readSnTX_WR(s);
+		uint8_t cntl_byte = (0x14 + (s << 5));
+		ptr += data_offset;
+		write(ptr, cntl_byte, data, len);
+		ptr += len;
+		writeSnTX_WR(s, ptr);
+	}
+
 
 	/**
 	 * @brief	This function is being called by recv() also.
@@ -164,63 +184,218 @@ public:
 	 * and after copy the data from receive buffer update the Rx write pointer register.
 	 * User should read upper byte first and lower byte later to get proper value.
 	 */
-	void recv_data_processing(SOCKET s, uint8_t *data, uint16_t len, uint8_t peek = 0);
+	void recv_data_processing(SOCKET s, uint8_t *data, uint16_t len, uint8_t peek=0)
+	{
+		uint16_t ptr = readSnRX_RD(s);
+		read_data(s, ptr, data, len);
+		if (!peek)
+		{
+			ptr += len;
+			writeSnRX_RD(s, ptr);
+		}
+	}
 
-	inline void setGatewayIp(uint8_t * addr)  { writeGAR(addr); }
-	inline void getGatewayIp(uint8_t * addr)  { readGAR(addr); }
+	void set_gateway_ip(uint8_t* addr)  { writeGAR(addr); }
+	void get_gateway_ip(uint8_t* addr)  { readGAR(addr); }
 
-	inline void setSubnetMask(uint8_t * addr) { writeSUBR(addr); }
-	inline void getSubnetMask(uint8_t * addr) { readSUBR(addr); }
+	void set_subnet_mask(uint8_t* addr) { writeSUBR(addr); }
+	void get_subnet_mask(uint8_t* addr) { readSUBR(addr); }
 
-	inline void setMACAddress(uint8_t * addr) { writeSHAR(addr); }
-	inline void getMACAddress(uint8_t * addr) { readSHAR(addr); }
+	void set_mac_address(uint8_t* addr) { writeSHAR(addr); }
+	void get_mac_address(uint8_t* addr) { readSHAR(addr); }
 
-	inline void setIPAddress(uint8_t * addr)  { writeSIPR(addr); }
-	inline void getIPAddress(uint8_t * addr)  { readSIPR(addr); }
+	void set_ip_address(uint8_t* addr)  { writeSIPR(addr); }
+	void get_ip_address(uint8_t* addr)  { readSIPR(addr); }
 
-	inline void setRetransmissionTime(uint16_t timeout) { writeRTR(timeout); }
-	inline void setRetransmissionCount(uint8_t retry)  { writeRCR(retry); }
+	void set_retransmission_time(uint16_t timeout) { writeRTR(timeout); }
+	void set_retransmission_count(uint8_t retry)  { writeRCR(retry); }
 
-	inline void setPHYCFGR(uint8_t val) { writePHYCFGR(val); }
-	inline uint8_t getPHYCFGR() { return read(0x002E, 0x00); } // { return readPHYCFGR(); }
+	void set_phy_config(uint8_t val) { writePHYCFGR(val); }
+	uint8_t get_phy_config() { return read(0x002E, 0x00); }
 
-	void execCmdSn(SOCKET s, SockCMD _cmd);
 
-	uint16_t getTXFreeSize(SOCKET s);
-	uint16_t getRXReceivedSize(SOCKET s);
+	void execute_command(SOCKET s, SockCMD _cmd)
+	{
+		writeSnCR(s, _cmd);
+		// Wait for command to complete
+		while (readSnCR(s));
+	}
 
+
+	uint16_t get_tx_free_size(SOCKET s)
+	{
+		uint16_t val = 0, val1;
+		do {
+			val1 = readSnTX_FSR(s);
+			if (val1 != 0)
+				val = readSnTX_FSR(s);
+		} while (val != val1);
+		return val;
+	}
+
+
+	uint16_t get_rx_received_size(SOCKET s)
+	{
+		uint16_t val = 0, val1;
+		do {
+			val1 = readSnRX_RSR(s);
+			if (val1 != 0)
+				val = readSnRX_RSR(s);
+		} while (val != val1);
+		return val;
+	}
+
+
+	/**
+	 * Sends 8-bit data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @param data The data to send.
+	 */
+	void spi_transmit8(SPI_HandleTypeDef spi, uint8_t data)
+	{
+		spi_transmit_buf(spi, &data, 1);
+	}
+
+
+	/**
+	 * Sends 16-bit data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @param data The data to send.
+	 */
+	void spi_transmit16(SPI_HandleTypeDef spi, uint16_t data)
+	{
+		spi_transmit8(spi, (uint8_t)((data >> 8) & 0xFF));
+		spi_transmit8(spi, (uint8_t)(data & 0xFF));
+	}
+
+
+	/**
+	 * Sends a buffer of bytes data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @param data The data to send.
+	 */
+	void spi_transmit_buf(SPI_HandleTypeDef spi, uint8_t *data, uint16_t len)
+	{
+		for (int i = 0; i < len; i++)
+			HAL_SPI_Transmit(&spi, &data[i], 1, 100);
+	}
+
+
+	/**
+	 * Receives 8-bit data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @returns The received byte.
+	 */
+	uint8_t spi_receive8(SPI_HandleTypeDef spi)
+	{
+		uint8_t data;
+		spi_receive_buf(spi, &data, 1);
+		return data;
+	}
+
+
+	/**
+	 * Receives 16-bit data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @returns The received word.
+	 */
+	uint16_t spi_receive16(SPI_HandleTypeDef spi)
+	{
+		uint16_t dato_recibido;
+		dato_recibido = spi_receive8(spi) << 8;
+		dato_recibido |= spi_receive8(spi);
+		return dato_recibido;
+	}
+
+
+	/**
+	 * Receives a buffer of bytes data over the SPI peripheral.
+	 * @param spi SPI peripheral handle.
+	 * @param data Pointer to store the data.
+	 */
+	void spi_receive_buf(SPI_HandleTypeDef spi, uint8_t *data, uint16_t _len)
+	{
+		for(int i = 0; i < _len; i++)
+			HAL_SPI_Receive(&spi, &data[i], 1, 100);
+	}
+
+
+private:
+	void write(uint16_t _addr, uint8_t _cb, uint8_t _data)
+	{
+		select_ss();
+		spi_transmit16(hspi, _addr);
+		spi_transmit16(hspi,(uint16_t) (_cb << 8) | _data);
+		deselect_ss();
+	}
+
+
+	void write16(uint16_t _addr, uint8_t _cb, uint16_t _data)
+	{
+		select_ss();
+		spi_transmit16(hspi,_addr);
+		spi_transmit8(hspi, _cb);
+		spi_transmit16(hspi,_data);
+		deselect_ss();
+	}
+
+
+	void write(uint16_t _addr, uint8_t _cb, const uint8_t *_buf, uint16_t _len)
+	{
+		select_ss();
+		spi_transmit16(hspi,_addr);
+		spi_transmit8(hspi, _cb);
+		spi_transmit_buf(hspi, (uint8_t *)_buf, _len);
+		deselect_ss();
+	}
+
+
+	uint8_t read(uint16_t _addr, uint8_t _cb)
+	{
+		select_ss();
+		spi_transmit16(hspi,_addr);
+		spi_transmit8(hspi, _cb);
+		uint8_t _data = spi_receive8(hspi);
+		deselect_ss();
+		return _data;
+	}
+
+
+	uint16_t read16(uint16_t _addr, uint8_t _cb)
+	{
+		select_ss();
+		spi_transmit16(hspi,_addr);
+		spi_transmit8(hspi, _cb);
+		uint16_t _data = spi_receive16(hspi);
+		deselect_ss();
+		return _data;
+	}
+
+
+	uint16_t read(uint16_t _addr, uint8_t _cb, uint8_t *_buf, uint16_t _len)
+	{
+		select_ss();
+		spi_transmit16(hspi,_addr);
+		spi_transmit8(hspi, _cb);
+		spi_receive_buf(hspi, &*_buf , _len);
+		deselect_ss();
+		return _len;
+	}
 
 	// W5500 Registers
 	// ---------------
-private:
-	void write(uint16_t _addr, uint8_t _cb, uint8_t _data);
-	void write16(uint16_t _addr, uint8_t _cb, uint16_t _data);
-	void write(uint16_t _addr, uint8_t _cb, const uint8_t *buf, uint16_t len);
-	uint8_t  read(uint16_t _addr, uint8_t _cb );
-	uint16_t read16(uint16_t _addr, uint8_t _cb );
-	uint16_t read(uint16_t _addr, uint8_t _cb, uint8_t *buf, uint16_t len);
 
 #define __GP_REGISTER8(name, address)          \
-		inline void write##name(uint8_t _data) {     \
-	write(address, 0x04, _data);               \
-}                                            \
-inline uint8_t read##name() {                \
-	return read(address, 0x00);                \
-}
+	void write##name(uint8_t _data) { write(address, 0x04, _data); } \
+	uint8_t read##name() { return read(address, 0x00); }
+
 #define __GP_REGISTER16(name, address)         \
-		inline void write##name(uint16_t _data) {    \
-	write16(address, 0x04, _data);             \
-}                                            \
-inline uint16_t read##name() {               \
-	return read16(address, 0x00);              \
-}
+	void write##name(uint16_t _data) { write16(address, 0x04, _data); }  \
+	uint16_t read##name() { return read16(address, 0x00); }
+
 #define __GP_REGISTER_N(name, address, size)   \
-		inline void write##name(uint8_t *_buff) {    \
-	write(address, 0x04, _buff, size);         \
-}                                            \
-inline uint16_t read##name(uint8_t *_buff) { \
-	return read(address, 0x00, _buff, size);   \
-}
+	void write##name(uint8_t *_buff) { write(address, 0x04, _buff, size); }  \
+	uint16_t read##name(uint8_t *_buff) { return read(address, 0x00, _buff, size); }
 
 public:
 	__GP_REGISTER8 (MR,      0x0000);    // Mode
@@ -247,34 +422,24 @@ public:
 	// W5500 Socket registers
 	// ----------------------
 private:
-	inline uint8_t readSn(SOCKET s, uint16_t addr)    { return read(addr, (s<<5)+0x08); }
-	inline uint16_t readSn16(SOCKET s, uint16_t addr) { return read16(addr, (s<<5)+0x08); }
-	inline uint16_t readSn(SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return read(addr, (s<<5)+0x08, buf, len ); }
-	inline void writeSn(SOCKET s, uint16_t addr, uint8_t data) { write(addr, (s<<5)+0x0C, data); }
-	inline void writeSn16(SOCKET s, uint16_t addr, uint16_t data) { write16(addr, (s<<5)+0x0C, data); }
-	inline void writeSn(SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { write(addr, (s<<5)+0x0C, buf, len); }
+	uint8_t readSn(SOCKET s, uint16_t addr)    { return read(addr, (s<<5)+0x08); }
+	uint16_t readSn16(SOCKET s, uint16_t addr) { return read16(addr, (s<<5)+0x08); }
+	uint16_t readSn(SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { return read(addr, (s<<5)+0x08, buf, len ); }
+	void writeSn(SOCKET s, uint16_t addr, uint8_t data) { write(addr, (s<<5)+0x0C, data); }
+	void writeSn16(SOCKET s, uint16_t addr, uint16_t data) { write16(addr, (s<<5)+0x0C, data); }
+	void writeSn(SOCKET s, uint16_t addr, uint8_t *buf, uint16_t len) { write(addr, (s<<5)+0x0C, buf, len); }
 
 #define __SOCKET_REGISTER8(name, address)                 \
-		inline void write##name(SOCKET _s, uint8_t _data) {     \
-	writeSn(_s, address, _data);                          \
-}                                                       \
-inline uint8_t read##name(SOCKET _s) {                  \
-	return readSn(_s, address);                           \
-}
+	void write##name(SOCKET _s, uint8_t _data) { writeSn(_s, address, _data); }  \
+	uint8_t read##name(SOCKET _s) { return readSn(_s, address); }
+
 #define __SOCKET_REGISTER16(name, address)                \
-		inline void write##name(SOCKET _s, uint16_t _data) {    \
-	writeSn16(_s, address, _data);                        \
-}                                                       \
-inline uint16_t read##name(SOCKET _s) {                 \
-	return readSn16(_s, address);                         \
-}
+	void write##name(SOCKET _s, uint16_t _data) { writeSn16(_s, address, _data); } \
+	uint16_t read##name(SOCKET _s) { return readSn16(_s, address);}
+
 #define __SOCKET_REGISTER_N(name, address, size)          \
-		inline void write##name(SOCKET _s, uint8_t *_buff) {    \
-	writeSn(_s, address, _buff, size);                    \
-}                                                       \
-inline uint16_t read##name(SOCKET _s, uint8_t *_buff) { \
-	return readSn(_s, address, _buff, size);              \
-}
+	void write##name(SOCKET _s, uint8_t *_buff) { writeSn(_s, address, _buff, size); } \
+	uint16_t read##name(SOCKET _s, uint8_t *_buff) { return readSn(_s, address, _buff, size);}
 
 public:
 	__SOCKET_REGISTER8(SnMR,        0x0000)        // Mode
@@ -308,12 +473,12 @@ private:
 	GPIO_TypeDef* cs_port;
 	uint16_t cs_pin;
 
-	inline void select_SS()
+	void select_ss()
 	{
 		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
 	}
 
-	inline void deselect_SS()
+	void deselect_ss()
 	{
 		HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 	}

@@ -1,9 +1,3 @@
-/*
- * - 10 Apr. 2015
- * Added support for Arduino Ethernet Shield 2
- * by Arduino.org team
- */
-
 #ifndef	_SOCKET_H_
 #define	_SOCKET_H_
 
@@ -14,21 +8,21 @@ class SOCKETClass
 {
 public:
 	//void init(SPI_HandleTypeDef & spi, uint8_t sspin) { w5500.init(spi, sspin); }
-	inline uint8_t readChipVersion(void) { return w5500.readVersion(); }
+	inline uint8_t readChipVersion(void) { return w5500.read_version(); }
 	inline uint8_t status(SOCKET s) { return w5500.readSnSR(s); }
-	inline int16_t recvAvailable(SOCKET s) { return w5500.getRXReceivedSize(s); }
-	inline void setMACAddress(uint8_t * mac) { w5500.setMACAddress(mac); }
-	inline void setIPAddress(uint8_t * ip) { w5500.setIPAddress(ip); }
-	inline void getIPAddress(uint8_t * ip) { w5500.getIPAddress(ip); }
-	inline void setGatewayIp(uint8_t * ip) { w5500.setGatewayIp(ip); }
-	inline void getGatewayIp(uint8_t * ip) { w5500.getGatewayIp(ip); }
-	inline void setSubnetMask(uint8_t * sm) { w5500.setSubnetMask(sm); }
-	inline void getSubnetMask(uint8_t * sm) { w5500.getSubnetMask(sm); }
+	inline int16_t recvAvailable(SOCKET s) { return w5500.get_rx_received_size(s); }
+	inline void setMACAddress(uint8_t * mac) { w5500.set_mac_address(mac); }
+	inline void setIPAddress(uint8_t * ip) { w5500.set_ip_address(ip); }
+	inline void getIPAddress(uint8_t * ip) { w5500.get_ip_address(ip); }
+	inline void setGatewayIp(uint8_t * ip) { w5500.set_gateway_ip(ip); }
+	inline void getGatewayIp(uint8_t * ip) { w5500.get_gateway_ip(ip); }
+	inline void setSubnetMask(uint8_t * sm) { w5500.set_subnet_mask(sm); }
+	inline void getSubnetMask(uint8_t * sm) { w5500.get_subnet_mask(sm); }
 	inline void getRemoteIP(SOCKET s, uint8_t * ip) { w5500.readSnDIPR(s, ip); }
 	uint8_t open(SOCKET s, uint8_t protocol, uint16_t port, uint8_t flag); // Opens a socket(TCP or UDP or IP_RAW mode)
 	void close(SOCKET s); // Close socket
 	uint8_t connect(SOCKET s, uint8_t * addr, uint16_t port); // Establish TCP connection (Active connection)
-	inline void disconnect(SOCKET s) { w5500.execCmdSn(s, Sock_DISCON); } // disconnect the connection
+	inline void disconnect(SOCKET s) { w5500.execute_command(s, Sock_DISCON); } // disconnect the connection
 	uint8_t listen(SOCKET s);	// Establish TCP connection (Passive connection)
 	uint16_t send(SOCKET s, const uint8_t * buf, uint16_t len); // Send data (TCP)
 	int16_t recv(SOCKET s, uint8_t * buf, int16_t len);	// Receive data (TCP)
@@ -48,12 +42,14 @@ public:
 	  @return 1 if the datagram was successfully set up, or 0 if there was an error
 	 */
 	int startUDP(SOCKET s, uint8_t* addr, uint16_t port);
+
 	/*
 	  @brief This function copies up to len bytes of data from buf into a UDP datagram to be
 	  sent later by sendUDP.  Allows datagrams to be built up from a series of bufferData calls.
 	  @return Number of bytes successfully buffered
 	 */
 	uint16_t bufferData(SOCKET s, uint16_t offset, const uint8_t* buf, uint16_t len);
+
 	/*
 	  @brief Send a UDP datagram built up from a sequence of startUDP followed by one or more
 	  calls to bufferData.

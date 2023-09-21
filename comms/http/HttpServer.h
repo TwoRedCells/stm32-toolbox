@@ -53,7 +53,7 @@ public:
 			G.gooddog.feed(HttpdTaskOk);
 
 			// See if we are connected
-			uint8_t phy = w5500.getPHYCFGR();
+			uint8_t phy = w5500.get_phy_config();
 			bool link = phy & 0x01;
 			G.fault.update(NemoFault::NetworkLinkNotPresent, !link);
 

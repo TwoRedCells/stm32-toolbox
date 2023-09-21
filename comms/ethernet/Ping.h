@@ -269,7 +269,7 @@ public:
 			}
 		}
 
-		w5500.execCmdSn(_socket, Sock_CLOSE);
+		w5500.execute_command(_socket, Sock_CLOSE);
 		w5500.writeSnIR(_socket, 0xFF);
 	}
 
@@ -356,12 +356,12 @@ private:
 
 	void openSocket()
 	{
-		w5500.execCmdSn(_socket, Sock_CLOSE);
+		w5500.execute_command(_socket, Sock_CLOSE);
 		w5500.writeSnIR(_socket, 0xFF);
 		w5500.writeSnMR(_socket, SnMR::IPRAW);
 		w5500.writeSnPROTO(_socket, IPPROTO::ICMP);
 		w5500.writeSnPORT(_socket, 0);
-		w5500.execCmdSn(_socket, Sock_OPEN);
+		w5500.execute_command(_socket, Sock_OPEN);
 	}
 
 	Status sendEchoRequest(const IPAddress& addr, const ICMPEcho& echoReq)
@@ -380,7 +380,7 @@ private:
 		echoReq.serialize(serialized);
 
 		w5500.send_data_processing(_socket, serialized, sizeof(ICMPEcho));
-		w5500.execCmdSn(_socket, Sock_SEND);
+		w5500.execute_command(_socket, Sock_SEND);
 
 		while ((w5500.readSnIR(_socket) & SnIR::SEND_OK) != SnIR::SEND_OK)
 		{
@@ -403,7 +403,7 @@ private:
 		while (millis() - start < ping_timeout)
 		{
 
-			if (w5500.getRXReceivedSize(_socket) < 1)
+			if (w5500.get_rx_received_size(_socket) < 1)
 			{
 				// take a break, maybe let platform do
 				// some background work (like on ESP8266)
@@ -430,7 +430,7 @@ private:
 
 			buffer += dataLen;
 			w5500.writeSnRX_RD(_socket, buffer);
-			w5500.execCmdSn(_socket, Sock_RECV);
+			w5500.execute_command(_socket, Sock_RECV);
 
 			echoReply.ttl = w5500.readSnTTL(_socket);
 
@@ -551,7 +551,7 @@ private:
 			return true;
 		}
 
-		if (w5500.getRXReceivedSize(_socket))
+		if (w5500.get_rx_received_size(_socket))
 		{
 			// ooooh, we've got a pending reply
 			ICMPEcho echoReq(ICMP_ECHOREQ, _id, _curSeq, _payload);
