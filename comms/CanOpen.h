@@ -2,7 +2,7 @@
  * \file       comms/CanOpen.h
  * \class      CanOpen
  * \brief      Encapsulates CANopen communications.
- * \notes	Configure the CAN port using STM32CubeIDE normally. Create an interrupt, and put a call to on_message in the interrupt.
+ * \notes	   Configure the CAN port using STM32CubeIDE normally. Create an interrupt, and put a call to on_message in the interrupt.
  */
 
 #ifndef INC_COMMS_CANOPEN_H_
@@ -10,7 +10,7 @@
 
 #include "CanBus.h"
 #include "utility/FastDelegate.h"
-
+#include "toolbox.h"
 
 class CanOpen : public CanBus
 {
@@ -124,13 +124,22 @@ public:
 		virtual void on_heartbeat(uint8_t node)
 		{
 		}
-		
+
 
 		/**
 		 * Called when an nmt message is received.
 		 * @param data The data (1-8 bytes).
 		 */
 		virtual void on_nmt(uint8_t data)
+		{
+		}
+
+
+		/**
+		 * Called when an lss message is received.
+		 * @param data The data (1-8 bytes).
+		 */
+		virtual void on_lss(uint16_t cob, uint8_t* data)
 		{
 		}
 
@@ -193,17 +202,17 @@ public:
 		cob += role==Master ? 0x600 : 0x580;
 		uint8_t data[] = {
 				//size == 0 ? 0x40 : 0x2f-size,
-				size == 1 ? 0x2f : size == 2 ? 0x2b : size == 4 ? 0x23 : 0x40,
-				index & 0xff,
-				index >> 8,
+				(uint8_t)(size == 1 ? 0x2f : size == 2 ? 0x2b : size == 4 ? 0x23 : 0x40),
+				(uint8_t)(index & 0xff),
+				(uint8_t)(index >> 8),
 				subindex,
-				value & 0x000000ff,
-				(value & 0x0000ff00) >> 8,
-				(value & 0x00ff0000) >> 16,
-				(value & 0xff000000) >> 24
+				(uint8_t)(value & 0x000000ff),
+				(uint8_t)((value & 0x0000ff00) >> 8),
+				(uint8_t)((value & 0x00ff0000) >> 16),
+				(uint8_t)((value & 0xff000000) >> 24)
 		};
 		uint32_t error = send(cob, data, size == 0 ? 8 : 4 + size);
-		osDelay(1);
+		osDelay(1);  // Keep this.
 		return error;
 	}
 
@@ -217,13 +226,13 @@ public:
 	uint32_t pdo(uint16_t address, uint16_t index, uint8_t subindex=0, uint32_t value=0, uint8_t size=0)
 	{
 		uint8_t data[] = {
-				index & 0xff,
-				index >> 8,
+				(uint8_t)(index & 0xff),
+				(uint8_t)(index >> 8),
 				subindex,
-				value & 0x000000ff,
-				(value & 0x0000ff00) >> 8,
-				(value & 0x00ff0000) >> 16,
-				(value & 0xff000000) >> 24,
+				(uint8_t)(value & 0x000000ff),
+				(uint8_t)((value & 0x0000ff00) >> 8),
+				(uint8_t)((value & 0x00ff0000) >> 16),
+				(uint8_t)((value & 0xff000000) >> 24),
 				0
 		};
 		uint32_t error = send(address, data, 3 + size);
@@ -246,6 +255,12 @@ public:
 		{
 			if (callback != nullptr)
 				callback->on_nmt(*data);
+		}
+
+		else if (cob == 0x7e4 || cob == 0x7e5)
+		{
+			if (callback != nullptr)
+				callback->on_lss(cob, data);
 		}
 
 		else if ((cob & 0x700) == 0x700)
@@ -302,8 +317,8 @@ public:
 	{
 		if (allow_tpdo5)
 		{
-		    if ((cob & 0x90) == 0x80) cob -= 0x10;
-		    return cob & 0x3f;
+			if ((cob & 0x90) == 0x80) cob -= 0x10;
+			return cob & 0x3f;
 		}
 		return cob & 0x7f;
 	}
@@ -341,11 +356,11 @@ public:
 	}
 
 
-    /**
-     * Converts LSB word into int16.
-     * @param data Pointer to the first byte of the word.
-     * @return The value.
-     */
+	/**
+	 * Converts LSB word into int16.
+	 * @param data Pointer to the first byte of the word.
+	 * @return The value.
+	 */
 	static int16_t lsb_int16_to_int16(uint8_t* data)
 	{
 		return data[0] | data[1] << 8;
@@ -363,24 +378,24 @@ public:
 	}
 
 
-    /**
-     * Converts LSB word into int16.
-     * @param data Pointer to the first byte of the word.
-     * @return The value.
-     */
+	/**
+	 * Converts LSB word into int16.
+	 * @param data Pointer to the first byte of the word.
+	 * @return The value.
+	 */
 	static int32_t lsb_int32_to_int32(uint8_t* data)
 	{
 		return data[0] | data[1] << 8 | data[2] << 16 | data[3];
 	}
 
 
-    /**
-     * Converts LSB word with implicit decimal into float.
-     * @param data Pointer to the first byte of the word.
-     * @param divisor Value to divide the integer value by to translate it to float.
-     *        The default is 1 (zero decimal places).
-     * @return The value.
-     */
+	/**
+	 * Converts LSB word with implicit decimal into float.
+	 * @param data Pointer to the first byte of the word.
+	 * @param divisor Value to divide the integer value by to translate it to float.
+	 *        The default is 1 (zero decimal places).
+	 * @return The value.
+	 */
 	static float lsb_int16_to_float(uint8_t* data, uint16_t divisor=1)
 	{
 		int16_t u = lsb_int16_to_int16(data);
@@ -388,13 +403,13 @@ public:
 	}
 
 
-    /**
-     * Converts LSB word with implicit decimal into float.
-     * @param data Pointer to the first byte of the word.
-     * @param divisor Value to divide the integer value by to translate it to float.
-     *        The default is 1 (zero decimal places).
-     * @return The value.
-     */
+	/**
+	 * Converts LSB word with implicit decimal into float.
+	 * @param data Pointer to the first byte of the word.
+	 * @param divisor Value to divide the integer value by to translate it to float.
+	 *        The default is 1 (zero decimal places).
+	 * @return The value.
+	 */
 	static float lsb_uint16_to_float(uint8_t* data, uint16_t divisor=1)
 	{
 		uint16_t u = lsb_uint16_to_uint16(data);
@@ -402,13 +417,13 @@ public:
 	}
 
 
-    /**
-     * Converts LSB double word with implicit decimal into float.
-     * @param data Pointer to the first byte of the word.
-     * @param divisor Value to divide the integer value by to translate it to float.
-     *        The default is 1 (zero decimal places).
-     * @return The value.
-     */
+	/**
+	 * Converts LSB double word with implicit decimal into float.
+	 * @param data Pointer to the first byte of the word.
+	 * @param divisor Value to divide the integer value by to translate it to float.
+	 *        The default is 1 (zero decimal places).
+	 * @return The value.
+	 */
 	static float lsb_uint32_to_float(uint8_t* data, uint16_t divisor=1)
 	{
 		uint32_t u = lsb_uint32_to_uint32(data);
@@ -416,18 +431,19 @@ public:
 	}
 
 
-    /**
-     * Converts byte sequence into NUL terminated string.
-     * @param data Pointer to the first byte.
-     * @param dest Pointer to the destination.
-     * @param length The number of characyters, excluding the NUL termination.
-     * @return The value.
-     */
-	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length)
+	/**
+	 * Converts byte sequence into a string.
+	 * @param data Pointer to the first byte.
+	 * @param dest Pointer to the destination.
+	 * @param length The number of characyters, excluding the NUL termination.
+	 * @return The value.
+	 */
+	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length, bool terminate=true)
 	{
 		for (uint8_t i=0; i < length; i++)
-			dest[i] = (char)data[i];
-		dest[length] = '\0';
+			dest[i] = (char)data[length-1-i];
+		if (terminate)
+			dest[length] = '\0';
 	}
 
 

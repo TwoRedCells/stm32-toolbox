@@ -68,6 +68,8 @@ public:
 	uint32_t timestamp_tpdo4 = 0;
 	uint32_t timestamp_tpdo5 = 0;
 	uint32_t timestamp_tpdo6 = 0;
+	uint8_t configure_node_id_response = 0xff;
+	uint8_t store_configuration_response = 0xff;
 
 	// Detail CiA 418
 	uint8_t state_of_charge;
@@ -98,6 +100,32 @@ public:
 	float maximum_cell_temperature;
 	float minimum_cell_voltage;
 	float maximum_cell_voltage;
+
+
+	/**
+	 * Returns the description of the battery chemistry.
+	 * @param battery_type The battery type value reported by the battery.
+	 * @returns A string containing the battery chemistry.
+	 */
+	static const char* get_chemistry(uint8_t battery_type)
+	{
+		uint8_t type = battery_type >> 4;
+		assert(type >= 0 && type < 14);
+		const char* long_strings[] = { "Unknown", "Lead acid", "Nickel cadmium", "Nickel zinc", "Nickel iron", "Silver oxide", "Nickel hydrogen", "Nickel metal hydride", "Zinc/Alkaline/Manganese dioxide", "Lithium-ion", "Zinc bromine", "Metal air", "Lithium/Iron sulfide", "Sodium beta" };
+		return long_strings[type];
+	}
+
+
+	/**
+	 * Gets the string associated with the specified mode number.
+	 * @param mode The mode number.
+	 */
+	static const char* get_mode_string(uint8_t mode)
+	{
+		assert(mode < 8);
+		const char* mode_strings[] = { "NONE", "BALANCING",	"SHIP",	"PRE-DISCHARGE", "STANDBY",	"DISCHARGE", "CHARGE", "FAULT",	"PRE-CHARGE" };
+		return mode_strings[mode];
+	}
 };
 
 

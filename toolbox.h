@@ -1,15 +1,15 @@
-/**
- * @file      toolbox.h
- * @author    Yvan Rodrigues <yvan.r@radskunkworks.com>
- * @brief     Constants used by stm32-toolbox.
- * @date      2021-08-15
- * @copyright Copyright (c) 2021 Robotic Assistance Devices
- */
+///	@file       toolbox.h
+///	@brief      Compile-time constants used to configure the behaviour of stm32-toolbox.
+///
+/// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
+///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
+/// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
 
 #ifndef INC_TOOLBOX_H_
 #define INC_TOOLBOX_H_
 
 #include <stdint.h>
+#include "main.h"
 
 #define HIGH (GPIO_PIN_SET)
 #define LOW (GPIO_PIN_RESET)
@@ -67,8 +67,22 @@
 #define ENABLE_W5500 (1)
 
 // Displays
-#define ENABLE_ILI9488_DMA (1)
+#define ENABLE_ILI9488_DMA (0)  // Stopped working.
 
+// Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
+#define ENABLE_ADC_CALIBRATION (1)
+
+// Used by `OledSsd1306`
+#define OLED_SSD1306_WIDTH (128)
+#define OLED_SSD1306_HEIGHT (64)
+
+// Graphics
+#define ICANVAS_MAX_WIDGETS (100)
+
+// Generics
+#define GENERICS_ALLOW_NEW (1)   // Whether the generics are allowed to use dynamic memory allocations.
+
+// Whether to allow classes to call malloc for dynamic memory allocation.
 // Chip
 #define MCU_STM32L4
 

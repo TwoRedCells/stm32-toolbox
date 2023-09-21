@@ -51,6 +51,10 @@ public:
 	static constexpr uint8_t State_Waiting = 0x00;
 	static constexpr uint8_t State_Configuration = 0x01;
 
+	static constexpr uint8_t first_node_id = 0x31;
+	static constexpr uint8_t maximum_parallel_batteries = 15;
+
+
 	/**
 	 * Instantiates the battery CANopen class.
 	 * @param batteries A pointer to the array of batteries. Enough instances
@@ -60,9 +64,7 @@ public:
 	Inventus(CAN_HandleTypeDef* port) : CanOpen(port, roles::Master, true)
 	{
 		set_callback(this);
-		master_battery = &batteries[0];
-		master_battery->master_node_id = master_node_id;
-		for (uint8_t i=0; i<16; i++)
+		for (uint8_t i=0; i<maximum_parallel_batteries; i++)
 		{
 			batteries[i] = {0};
 			batteries[i].node_id = 0x31 + i;
@@ -102,7 +104,7 @@ public:
 	void configure_node_id(uint8_t id)
 	{
 		assert(id >= 0x31 && id <= 0x3f);
-		assert(get_single_battery_id() != 0x00);
+//		assert(get_single_battery_id() != 0x00);
 
 		uint8_t packet[8] = {0};
 		packet[0] = 0x11;
@@ -146,6 +148,63 @@ public:
 	}
 
 
+
+	/**
+	 * Gets the tiemstamp from the battery having the most recent communication.
+	 * @returns The timestamp.
+	 */
+	uint32_t get_last_message_time(void)
+	{
+		uint32_t last = 0;
+
+		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
+			if (batteries[i].last_message > last)
+				last = batteries[i].last_message;
+		return last;
+	}
+
+
+	/**
+	 * Gets the number of faulted batteries.
+	 * @returns The count of faulted batteries.
+	 */
+	uint8_t get_faulted_batteries(void)
+	{
+		uint8_t count = 0;
+		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
+			if (batteries[i].charge_fault || batteries[i].discharge_fault)
+				count++;
+		return count;
+	}
+
+
+	/**
+	 * Gets the count of online batteries.
+	 * @returns The number of online batteries.
+	 */
+	uint8_t get_online_batteries(void)
+	{
+		uint8_t count = 0;
+		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
+			if (batteries[i].last_message && batteries[i].last_message < online_time)
+				count++;
+		return count;
+	}
+
+
+	/**
+	 * Gets the master battery.
+	 * @returns A pointer to the master battery.
+	 */
+	InventusBattery* get_master_battery(void)
+	{
+		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
+			if (batteries[i].master_node_id == batteries[i].node_id)
+				return &batteries[i];
+		return nullptr;
+	}
+
+
 	/**
 	 * Gets the node ID of the battery having an outstanding node ID change request.
 	 * @returns The ID of the changing node; otherwise zero.
@@ -154,14 +213,10 @@ public:
 	{
 		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
 			if (batteries[i].change_node_id)
-				return batteries[i].change_node_id;
+				return batteries[i].node_id;
 		return 0x00;
 	}
 
-
-	InventusBattery* master_battery;
-	static constexpr uint8_t master_node_id = 0x31;
-	static constexpr uint8_t maximum_parallel_batteries = 15;
 
 
 private:
@@ -169,7 +224,7 @@ private:
 	{
 		uint8_t node = cob_to_node(cob);
 		assert(node >= 0x31 && node <= 0x3f);
-		InventusBattery* battery = &batteries[node - master_node_id];
+		InventusBattery* battery = &batteries[node - first_node_id];
 
 		if (index == Index_BatteryStatus)
 			battery->battery_status = lsb_uint8_to_uint8(data);
@@ -192,9 +247,9 @@ private:
 		{
 			battery->serial_number[8] = 0;
 			if (subindex == Subindex_BatterySerial1)
-				bytes_to_string(data, battery->serial_number, 4);
+				bytes_to_string(data, battery->serial_number, 4, false);
 			else if (subindex == Subindex_BatterySerial2)
-				bytes_to_string(data, battery->serial_number+4, 4);
+				bytes_to_string(data, battery->serial_number+4, 4, false);
 		}
 		else if (index == Index_CumulativeCharge)
 			battery->cumulative_charge = lsb_uint32_to_uint32(data);
@@ -229,9 +284,9 @@ private:
 		else if (index == Index_BatteryMaximumCellTemperature)
 			battery->maximum_cell_temperature = lsb_uint16_to_float(data, 8);
 		else if (index == Index_BatteryMinimumCellVoltage)
-			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 8);
+			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 1000);
 		else if (index == Index_BatteryMaximumCellVoltage)
-			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 8);
+			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 1000);
 
 		battery->metadata_received = true;
 	}
@@ -239,19 +294,19 @@ private:
 
 	void on_other_message(uint16_t cob, uint8_t* data)
 	{
+	}
+
+
+	void on_lss(uint16_t cob, uint8_t* data)
+	{
+		uint8_t node = get_changing_node_id() - first_node_id;
+		InventusBattery* battery = &batteries[node];
 		if (cob == 0x7e4) // Response to node ID change.
 		{
-			if (data[0] == 0x11 && data[1] == 0x00)  // Successful return value.
-			{
-//				uint8_t old_id = get_single_battery_id();
-//				InventusBattery* old_battery = &batteries[old_id - master_node_id];
-//				uint8_t new_id = get_changing_node_id();
-//				InventusBattery* new_battery = &batteries[new_id - master_node_id];
-//				old_battery->last_message = 0;
-
-				// Make it permanent.
-
-			}
+			if (data[0] == 0x11)
+				battery->configure_node_id_response = data[1];
+			else if (data[0] == 0x17)
+				battery->store_configuration_response = data[1];
 		}
 	}
 
@@ -259,13 +314,13 @@ private:
 	void on_nmt(uint8_t data)
 	{
 	}
-	
+
 
 	void on_heartbeat(uint8_t node)
 	{
 		if (node >= 0x31 && node <= 0x3f)
 		{
-			InventusBattery* battery = &batteries[node - master_node_id];
+			InventusBattery* battery = &batteries[node - first_node_id];
 			battery->last_message = Timer::now();
 		}
 	}
@@ -276,7 +331,7 @@ private:
 		uint8_t node = cob_to_node(cob);
 		uint16_t pdo = cob - node;
 		assert(node >= 0x31 && node <= 0x3f);
-		InventusBattery* battery = &batteries[node - master_node_id];
+		InventusBattery* battery = &batteries[node - first_node_id];
 		if (pdo == 0x290)
 			on_tpdo6(battery, data);
 		else if (pdo == 0x190)
@@ -322,7 +377,7 @@ private:
 		battery->virtual_maximum_charge_voltage = lsb_uint16_to_float(data+6, 1000);
 		battery->timestamp_tpdo3 = Timer::now();
 	}
-	
+
 
 	void on_tpdo4(InventusBattery* battery, uint8_t* data)
 	{
@@ -344,7 +399,7 @@ private:
 		battery->cell_balance_status = lsb_uint16_to_uint16(data+6);
 		battery->timestamp_tpdo5 = Timer::now();
 	}
-	
+
 
 	void on_tpdo6(InventusBattery* battery, uint8_t* data)
 	{
@@ -354,15 +409,15 @@ private:
 		battery->virtual_all_temperature = lsb_int16_to_int16(data+3);
 		battery->heater_status = lsb_uint16_to_uint16(data+5);
 		battery->master_node_id = lsb_uint8_to_uint8(data+7);
-		for (uint8_t i=0; i < maximum_parallel_batteries; i++)
-			batteries[i].master_node_id = battery->master_node_id;
-		master_battery = &batteries[battery->master_node_id - master_node_id];
 		battery->timestamp_tpdo6 = Timer::now();
 	}
 
-
 	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3f
-	uint8_t single_battery_id; // When there is only one battery connected, this is its ID.
+
+
+private:
+	const uint32_t online_time = seconds(30);
+
 };
 
 #endif /* INC_COMMS_NECCANOPEN_H_ */

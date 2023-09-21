@@ -37,7 +37,7 @@
 	#define delay(x) HAL_Delay(x)
 #endif
 
-#ifdef ILI9488_DMA
+#if ENABLE_ILI9488_DMA
 	#define WriteSPI(port, data, len)  HAL_SPI_Transmit_DMA(port, data, len)
 #else
 	#define WriteSPI(port, data, len)  HAL_SPI_Transmit(port, data, len, 1)
@@ -47,7 +47,6 @@
 #define fast_vline(x, y, h, hue) fast_fill(x, y, 1, h, hue)
 
 #include <stdint.h>
-#include <malloc.h>
 
 struct RGB
 {
@@ -105,25 +104,28 @@ struct RGB
 //		return RGB(hue.r, hue.g, hue.b);
 //	}
 
-	static constexpr uint16_t Black = 0x000000;
-	static constexpr uint16_t Navy =       0x000f;      /*   0,   0, 128 */
-	static constexpr uint16_t DarkGreen =  0x03e0;      /*   0, 128,   0 */
-	static constexpr uint16_t DarkCyan =   0x03ef;      /*   0, 128, 128 */
-	static constexpr uint16_t Maroon =     0x7800;      /* 128,   0,   0 */
-	static constexpr uint16_t Purple =     0x780f;      /* 128,   0, 128 */
-	static constexpr uint16_t Olive =      0x7be0;      /* 128, 128,   0 */
-	static constexpr uint16_t LightGrey =  0xc618;      /* 192, 192, 192 */
-	static constexpr uint16_t DarkGrey =   0x7bef;      /* 128, 128, 128 */
-	static constexpr uint16_t Blue =        0x003f; //(  0,   0,   255);
-	static constexpr uint16_t Green =      0x07E0;      /*   0, 255,   0 */
-	static constexpr uint16_t Cyan =       0x07ff;      /*   0, 255, 255 */
-	static constexpr uint16_t Red =        0xf800;      /* 255,   0,   0 */
-	static constexpr uint16_t Magenta =    0xf81f;      /* 255,   0, 255 */
-	static constexpr uint16_t Yellow  =    0xffe0;      /* 255, 255,   0 */
-	static constexpr uint16_t White =      0xffff;      /* 255, 255, 255 */
-	static constexpr uint16_t Orange =     0xfd20;      /* 255, 165,   0 */
-	static constexpr uint16_t GreenYellow = 0xafe5;      /* 173, 255,  47 */
-	static constexpr uint16_t Pink =       0xf81f;
+	// See http://embeddednotepad.com/page/rgb565-color-picker
+	static constexpr uint16_t Black =       0x0000;
+	static constexpr uint16_t Navy =        0x000f;
+	static constexpr uint16_t DarkGreen =   0x03e0;
+	static constexpr uint16_t DarkCyan =    0x03ef;
+	static constexpr uint16_t Maroon =      0x7800;
+	static constexpr uint16_t Purple =      0x780f;
+	static constexpr uint16_t Olive =       0x7be0;
+	static constexpr uint16_t LightGrey =   0xc618;
+	static constexpr uint16_t MediumGrey =  0x7bef;
+	static constexpr uint16_t DarkGrey =    0x4208;
+	static constexpr uint16_t Blue =        0x003f;
+	static constexpr uint16_t Green =       0x07E0;
+	static constexpr uint16_t Cyan =        0x07ff;
+	static constexpr uint16_t Red =         0xf800;
+	static constexpr uint16_t Magenta =     0xf81f;
+	static constexpr uint16_t Yellow  =     0xffe0;
+	static constexpr uint16_t White =       0xffff;
+	static constexpr uint16_t Orange =      0xfd20;
+	static constexpr uint16_t GreenYellow = 0xafe5;
+	static constexpr uint16_t Pink =        0xf81f;
+	static constexpr uint16_t LightPink =   0xfaaf;
 };
 
 

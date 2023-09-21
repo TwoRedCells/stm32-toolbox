@@ -10,54 +10,45 @@
 #ifndef GENERIC_LIST_H
 #define GENERIC_LIST_H
 
+#include "ICollection.h"
 
 /**
  * A list.
  * @tparam T The underlying type of the list.
  */
-template <class T> class List
+template <class T>
+class List : public ICollection<T>
 {
 public:
-    /**
-     * Default constructor.
-     * set_buffer() must be called before the list can be used.
-     */
-    List()
-    {
-        buffer = nullptr;
-        length = 0;
-    }
+#if GENERICS_ALLOW_NEW
+	/**
+	 * Default constructor for dynamic allocation without an initial length.
+	 */
+	List(void)
+	{
+	}
 
 
-    /**
-     * Dynamic constructor allocates memory from the heap.
-     * @param length The number of objects in the list.
-     */
-    List(uint32_t length)
-    {
-    	dynamic = true;
-    	T* buffer = (T*) malloc(length*sizeof(T));
-    	set_buffer(buffer, length);
-    	this->length = 0;
-    }
+	/**
+	 * Constructs a collection and pre-allocates an initial number of objects.
+	 */
+	List(uint32_t initial_length)
+	{
+		this->allocate(initial_length);
+	}
+#endif
 
+	/**
+	 * Constructor for passing a statically allocated buffer.
+	 * @param buffer Pointer to the buffer.
+	 * @param legnth The length of the buffer in objects (not bytes).
+	 */
+	List(T* buffer, uint32_t length)
+	{
+		this->buffer = buffer;
+		this->buffer_length = length;
+	}
 
-    ~List()
-    {
-    	if (dynamic)
-    		free(buffer);
-    }
-
-    /**
-     * Sets the internal buffer to the specified pointer.
-     * @param buffer Pointer to the buffer.
-     * @param length The length of the allocated buffer.
-     */
-    void set_buffer(T* buffer, uint32_t length)
-    {
-        this->buffer = buffer;
-        this->buffer_length = length;
-    }
 
     /**
      * Adds an item to the end of the list.
@@ -67,32 +58,23 @@ public:
     bool add(T value)
     {
         // No buffer set.
-        if (buffer == NULL)
+        if (this->buffer == NULL)
             return false;
 
         // Buffer overflow.
-        if (length == buffer_length)
-            return false;
+        if (this->length == this->buffer_length)
+        {
+#if GENERICS_ALLOW_NEW
+        	if (!this->allocate())
+        		return false;
+#else
+        	return false;
+#endif
+        }
 
-        buffer[length++] = value;
+        this->buffer[this->length] = value;
+        this->length++;
         return true;
-    }
-
-    /**
-     * Returns the length of the list.
-     * @return The length of the list.
-     */
-    uint32_t get_length(void) 
-    {
-        return length;
-    }
-
-    /**
-     * Returns a pointer to the buffer.
-     */
-    T* get_buffer(void)
-    {
-        return buffer;
     }
 
     /**
@@ -102,7 +84,7 @@ public:
      */
     T get(uint32_t index)
     {
-    	return buffer[index];
+    	return this->buffer[index];
     }
 
 
@@ -115,30 +97,6 @@ public:
     {
     	return get(index);
     }
-
-    /**
-     * Returns the state of the queue.
-     * @return true if the queue is empty; otherwise false.
-     */
-    bool is_empty()
-    {
-        return length == 0;
-    }
-
-    /**
-     * Clears the queue, setting its length to zero.
-     */
-    void clear(void)
-    {
-        length = 0;
-    }
-
-private:
-    T* buffer;  // Pointer to the buffer.
-    uint32_t buffer_length;  // Length of the buffer.
-    uint32_t length;  // The current length of the queue.
-    T _default;  // Empty value.
-    bool dynamic = false;  // True if the buffer was allocated at runtime.
 };
 #endif
 

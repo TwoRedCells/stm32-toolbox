@@ -16,16 +16,17 @@
 #include "utility/Timer.h"
 
 
-class Fan : public Pwm
+class Fan
 {
 public:
 	/**
 	 * Prepares the fan for control.
 	 * @param htim Handle to the timer allocated for PWM control.
 	 */
-	void setup(TIM_HandleTypeDef *htim)
+	Fan(TIM_HandleTypeDef *htim, uint32_t channel)
 	{
 		this->htim = htim;
+		this->channel = channel;
 		duty = PERIOD/6;  // Initial duty.
 		tach_timer.start(FAN_SPEED_UPDATE_INTERVAL);
 	}
@@ -55,6 +56,15 @@ public:
 			}
 			tach_timer.restart();
 		}
+	}
+
+
+	/**
+	 * Starts the PWM timer.
+	 */
+	void start(void)
+	{
+		HAL_TIM_PWM_Start(htim, channel);
 	}
 
 
@@ -166,8 +176,8 @@ public:
 		if (duty <= 0) duty = 0;
 		else if (duty > PERIOD) duty = PERIOD;
 		this->duty = duty;
-		PWM(htim, TIM_CHANNEL_3, PERIOD, duty);
-		PWM(htim, TIM_CHANNEL_4, PERIOD, duty);
+		//PWM(htim, channel, PERIOD, duty);
+		__HAL_TIM_SET_COMPARE(htim, channel, duty/5);
 	}
 
 private:
@@ -181,6 +191,7 @@ private:
 	const float PERIOD = 9000;//0.0001;
 	const uint16_t POLES = 2;
 	bool enabled = true;
+	uint32_t channel;
 };
 
 #endif /* INC_OUTPUTS_FAN_H_ */

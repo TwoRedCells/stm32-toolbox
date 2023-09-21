@@ -43,6 +43,7 @@
 class PrintLite
 {
 public:
+
 	/**
 	 * @brief	Outputs a formatted string.
 	 * @param 	format A string that may include format specifiers.
@@ -53,10 +54,11 @@ public:
 	{
 		va_list a;
 		va_start(a, format);
-		int32_t n, dec;
+		int32_t n;
 		uint32_t u;
 		uint16_t count = 0;
-		double f;
+
+		bool zero_before_decimal = false;
 
 		while(char c = *format++)
 		{
@@ -76,13 +78,13 @@ public:
 				case 'u':                       // 16 bit unsigned integer
 					n = va_arg(a, int32_t);
 					if(c == 'i' && n < 0) n = -n, write('-');
-					count += xtoa((uint16_t)n, divisors + 5);
+					count += xtoa((uint16_t)n);
 					break;
 				case 'l':                       // 32 bit long signed integer
 				case 'n':                       // 32 bit long unsigned integer
 					n = va_arg(a, int32_t);
 					if(c == 'l' && n < 0) n = -n, write('-');
-					count += xtoa((uint32_t)n, divisors);
+					count += xtoa((uint32_t)n);
 					break;
 				case 'x':                       // 16 bit heXadecimal
 					u = va_arg(a, uint32_t);
@@ -98,19 +100,27 @@ public:
 					puth(u);
 					count += 2;
 					break;
+				case '0':
+					zero_before_decimal = true;
+					format++;
 				case '.':						// float
-					dec = *format++ - 0x30;
-					f = va_arg(a, double);
-					if(f < 0) f = -f, write('-');
-					print((int16_t)f, DEC);
+				{
+					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
+					double f = va_arg(a, double);
+					if (f < 0) f = -f, write('-'), count++;  // Negative.
+					uint32_t whole = (uint32_t)f;
+					if (count_digits(whole) == 0 && zero_before_decimal)
+						write('0'), count++;
+					count += xtoa(f);
 					if (dec > 0)
 					{
-						write('.');
-						count++;
-						print((f - (int16_t)f) * pow(10, dec), DEC);
+						write('.'), count++;
+						count += xtoa((f - (int16_t)f) * pow(10, dec), dec);
 					}
-					format++;
+					format++;  // Discard the f.
+					zero_before_decimal = false;
 					break;
+				}
 				case 0:
 					return count;
 				default:
@@ -119,10 +129,124 @@ public:
 			}
 			else
 				bad_fmt:
-			write(c);
+				write(c);
 		}
 		va_end(a);
 		return count;
+	}
+
+
+	/**
+	 * @brief	Outputs a formatted string.
+	 * @param 	format A string that may include format specifiers.
+	 * @param	... Value(s) to format.
+	 * @returns The number of characters printed.
+	 */
+	static uint16_t vsprintf(char* buffer, const char *format, ...)
+	{
+		va_list args;
+		va_start(args, format);
+		uint16_t ret = vsprintf(buffer, format, args);
+		va_end(args);
+		return ret;
+	}
+
+	/**
+	 * @brief	Outputs a formatted string.
+	 * @param 	format A string that may include format specifiers.
+	 * @param	... Value(s) to format.
+	 * @returns The number of characters printed.
+	 */
+	static uint16_t vsprintf(char* buffer, const char *format, va_list a)
+	{
+		char* p = buffer;  // Pointer to current character.
+		bool zero_before_decimal = false;
+
+		while(char c = *format++)
+		{
+			if(c == '%')
+			{
+				switch(c = *format++)
+				{
+				case 's':                       // String
+				{
+					char* str = va_arg(a, char*);
+					while (*str != '\0')
+						*p++ = *str++;
+					break;
+				}
+				case 'c':                       // Char
+					*p++ = va_arg(a, int);
+					break;
+				case 'd':
+				case 'i':                       // 16 bit signed integer
+				case 'u':                       // 16 bit unsigned integer
+				{
+					int32_t n = va_arg(a, int32_t);
+					if(c == 'i' && n < 0) n = -n, *p++ = '-';
+					p += xtoa((uint16_t)n, p);
+					break;
+				}
+				case 'l':                       // 32 bit long signed integer
+				case 'n':                       // 32 bit long unsigned integer
+				{
+					int32_t n = va_arg(a, int32_t);
+					if(c == 'l' && n < 0) n = -n, *p++ = '-';
+					p += xtoa((uint32_t)n, p);
+					break;
+				}
+				case 'x':                       // 16 bit heXadecimal
+				{
+					uint32_t u = va_arg(a, uint32_t);
+					*p++ = hex[u >> 12 & 0xf];
+					*p++ = hex[u >> 8 & 0xf];
+					*p++ = hex[u >> 4 & 0xf];
+					*p++ = hex[u & 0xf];
+					break;
+				}
+				case 'y':                       // 8 bit heXadecimal
+				{
+					uint32_t u = va_arg(a, uint32_t);
+					*p++ = hex[u >> 4 & 0xf];
+					*p++ = hex[u & 0xf];
+					break;
+				}
+				case '0':
+					zero_before_decimal = true;
+					format++;
+				case '.':						// float
+				{
+					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
+					double f = va_arg(a, double);
+					if (f < 0) f = -f, *p++ = '-';  // Negative.
+					uint32_t whole = (uint32_t)f;
+					if (count_digits(whole) == 0 && zero_before_decimal)
+						*p++ = '0';
+					p += xtoa(f, p);
+					if (dec > 0)
+					{
+						*p++ = '.';
+						p += xtoa((f - (int16_t)f) * pow(10, dec), p, dec);
+					}
+					format++;  // Discard the f.
+					zero_before_decimal = false;
+					break;
+				}
+				case 0:
+					return p - buffer;
+				default:
+					goto bad_fmt;
+				}
+			}
+			else
+			{
+				bad_fmt:
+				*p++ = c;  // Add the character verbatim.
+			}
+		}
+		va_end(a);
+		*p = '\0';  // Terminate with NUL.
+		return p - buffer;
 	}
 
 
@@ -203,44 +327,57 @@ protected:
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
 	 */
-	uint16_t xtoa(uint32_t value, const uint32_t *string)
+	uint16_t xtoa(uint32_t value, int8_t digits=10)
 	{
+		uint32_t v = value;
 		uint16_t count = 0;
-		char c;
-		uint32_t d;
-		if(value)
+		for (uint8_t d=digits; d>=0; d--)
 		{
-			while(value < *string) ++string;
-			do
-			{
-				d = *string++;
-				c = '0';
-				while(value >= d)
-					++c, value -= d;
-				write(c);
-				count++;
-			} while(!(d & 1));
+			uint32_t exp = pow(10, d);
+			char x = v / exp;
+			write('0'+x);
+			count++;
+			v -= x * exp;
 		}
-		else
-			write('0');
 		return count;
 	}
 
 
-	static inline const uint32_t divisors[] = {
-			//  4294967296      // 32 bit unsigned max
-			1000000000,     // +0
-			100000000,     // +1
-			10000000,     // +2
-			1000000,     // +3
-			100000,     // +4
-			//       65535      // 16 bit unsigned max
-			10000,     // +5
-			1000,     // +6
-			100,     // +7
-			10,     // +8
-			1,     // +9
-	};
+	/**
+	 * Converts an integer to a string.
+	 * @param value The integer to convert.
+	 * @param string Pointer to place the string.
+	 * @param digits Number of digits to force (10 for automatic).
+	 */
+	static uint16_t xtoa(uint32_t value, char *p, int8_t digits=Auto)
+	{
+		if (digits == -1)
+			digits = count_digits(value);
+		char* q = p;
+		uint32_t v = value;
+		for (int8_t d=digits-1; d>=0; d--)
+		{
+			uint32_t exp = pow(10, d);
+			char x = v / exp;
+			*q++ = '0'+x;
+			v -= x * exp;
+		}
+		return digits;
+	}
+
+
+	/**
+	 * Returns the number of digits in the specified value.
+	 * @param value The value as assess.
+	 * @returns The number of digits.
+	 */
+	static uint8_t count_digits(uint32_t value)
+	{
+		uint8_t d;
+		for (d=0; value>0; d++)
+			value /= 10;
+		return d == 0 ? 1 : d;
+	}
 
 
 	/**
@@ -249,9 +386,12 @@ protected:
 	 */
 	void puth(uint8_t value)
 	{
-		static const char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 		write(hex[value & 15]);
 	}
+
+private:
+	static constexpr char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	static constexpr const int8_t Auto = -1;
 };
 
 #endif /* INC_PRINT_HPP_ */

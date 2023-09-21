@@ -28,10 +28,9 @@ public:
      * @param handle Handle to the hardware interface.
      * @return True on success; otherwise failure.
      */
-	bool setup(UART_HandleTypeDef *handle)
+	Serial(UART_HandleTypeDef *handle)
 	{
 		this->handle = handle;
-		return true;
 	}
 
 

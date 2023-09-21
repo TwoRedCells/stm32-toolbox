@@ -1,3 +1,4 @@
+#include "tasks/tasks.h"
 ///	@file       utility/Revision.h
 ///	@class      Revision
 ///	@brief      Determines the board revision based on a voltage divider.
@@ -10,6 +11,8 @@
 #ifndef LIB_STM32_TOOLBOX_UTILITY_REVISION_H_
 #define LIB_STM32_TOOLBOX_UTILITY_REVISION_H_
 
+#include "toolbox.h"
+#include "main.h"
 
 class Revision
 {
@@ -31,9 +34,11 @@ public:
 	uint16_t get_raw(void)
 	{
 		// Prepare ADC for reading.
+#if ENABLE_ADC_CALIBRATION
 		HAL_ADCEx_Calibration_Start(hadc, ADC_SINGLE_ENDED);
 		uint32_t factor = HAL_ADCEx_Calibration_GetValue(hadc, ADC_SINGLE_ENDED);
 		HAL_ADCEx_Calibration_SetValue(hadc, ADC_SINGLE_ENDED, factor);
+#endif
 		HAL_ADC_Start(hadc);
 		HAL_ADC_PollForConversion(hadc, 100);
 		uint16_t value = HAL_ADC_GetValue(hadc);
@@ -56,6 +61,20 @@ public:
 
 
 	/**
+	 * Gets the revision.
+	 * @param revision The raw value from the ADC.
+	 * @returns -1 if invalid, otherwise the zero-based revision (0=A, 1=B, etc.)
+	 */
+	static int8_t get(uint16_t revision)
+	{
+		uint16_t value = revision;
+		if (value < 75 || value > 3975)
+			return -1;
+		return (value + 75) / 150;
+	}
+
+
+	/**
 	 * Gets the revision as a letter, where A=1, B=2, etc.
 	 * @returns The letter revision.
 	 */
@@ -63,6 +82,18 @@ public:
 	{
 		return '@' + get();
 	}
+
+
+	/**
+	 * Gets the revision as a letter, where A=1, B=2, etc.
+	 * @param revision The numerical revision.
+	 * @returns The letter revision.
+	 */
+	static char get_letter(uint8_t revision)
+	{
+		return '@' + revision;
+	}
+
 
 private:
 	ADC_HandleTypeDef* hadc;
