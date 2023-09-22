@@ -52,7 +52,7 @@ public:
 	void start(void)
 	{
 		hiwdg.Instance = IWDG;
-#ifdef MCE_STM32L4
+#ifdef MCU_STM32L4
 		hiwdg.Init.Window = 4095;
 #endif
 		hiwdg.Init.Reload = 4095;
