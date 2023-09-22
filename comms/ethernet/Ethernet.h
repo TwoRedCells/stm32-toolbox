@@ -15,7 +15,6 @@ private:
 	IPAddress _dnsServerAddress;
 	Socket* socket;
 
-
 public:
 	Ethernet(Socket* socket)
 	{
@@ -137,7 +136,6 @@ public:
 	{
 		return _dnsServerAddress;
 	}
-
 
 	Socket* get_socket(void)
 	{

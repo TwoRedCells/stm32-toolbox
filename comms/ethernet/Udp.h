@@ -38,8 +38,8 @@
 #include "Stream.h"
 #include "IPAddress.h"
 
-class Udp: public Stream {
-
+class Udp: public Stream
+{
 public:
 	virtual ~Udp() {};
 	virtual uint8_t begin(uint16_t) =0;	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
@@ -82,9 +82,11 @@ public:
 	virtual IPAddress remoteIP() =0;
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() =0;
-protected:
 
-	uint8_t* rawIPAddress(IPAddress& addr) {
+
+protected:
+	uint8_t* rawIPAddress(IPAddress& addr)
+	{
 		return addr.raw_address();
 	}
 	/*
