@@ -19,7 +19,8 @@
 
 #include "Print.h"
 
-class Server: public Print {
+class Server: public Print
+{
 public:
 	virtual void begin() =0;
 };
