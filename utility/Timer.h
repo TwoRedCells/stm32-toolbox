@@ -14,6 +14,11 @@
 #define seconds(x) (x*1000000)
 #define millis() (Timer::now()/1000)
 
+// osDelay-compatible function for when FreeRTOS is not being used.
+#ifndef FREERTOS_CONFIG_H
+#define osDelay(x) Timer::Block(milliseconds(x))
+#endif
+
 #include "toolbox.h"
 
 /// <summary>
