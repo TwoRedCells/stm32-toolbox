@@ -38,58 +38,235 @@
 #define ETHERNETUDP_H
 
 
-#include <comms/ethernet/Socket.h>
+#include "Socket.h"
 #include "Udp.h"
+#include "Ethernet.h"
 
-class EthernetUDP : public UDP {
-private:
-	uint8_t _sock;  // socket ID for Wiz5100
-	uint16_t _port; // local port to listen on
-	IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
-	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
-	uint16_t _offset; // offset into the packet being sent
-	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
-
+class EthernetUDP : public Udp
+{
 public:
-	EthernetUDP(Socket* socket);  // Constructor
-	virtual uint8_t begin(uint16_t);	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
-	virtual uint8_t beginMulticast(IPAddress, uint16_t);	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
-	virtual void stop();  // Finish with the UDP socket
+	/* Constructor */
+	EthernetUDP(Socket* socket) : _sock(MAX_SOCK_NUM)
+	{
+		this->socket = socket;
+	}
 
-	// Sending UDP packets
+	/* Start EthernetUDP socket, listening at local port PORT */
+	virtual uint8_t begin(uint16_t port) {
+		if (_sock != MAX_SOCK_NUM)
+			return 0;
 
-	// Start building up a packet to send to the remote host specific in ip and port
-	// Returns 1 if successful, 0 if there was a problem with the supplied IP address or port
-	virtual int beginPacket(IPAddress ip, uint16_t port);
-	// Start building up a packet to send to the remote host specific in host and port
-	// Returns 1 if successful, 0 if there was a problem resolving the hostname or port
-	virtual int beginPacket(const char *host, uint16_t port);
-	// Finish off this packet and send it
-	// Returns 1 if the packet was sent successfully, 0 if there was an error
-	virtual int endPacket();
-	// Write a single byte into the packet
-	virtual size_t write(uint8_t);
-	// Write size bytes from buffer into the packet
-	virtual size_t write(const uint8_t *buffer, size_t size);
+		for (int i = 0; i < MAX_SOCK_NUM; i++) {
+			uint8_t s = socket->status(i);
+			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
+				_sock = i;
+				break;
+			}
+		}
+
+		if (_sock == MAX_SOCK_NUM)
+			return 0;
+
+		_port = port;
+		_remaining = 0;
+		socket->open(_sock, SnMR::UDP, _port, 0);
+
+		return 1;
+	}
+
+	/* return number of bytes available in the current packet,
+	   will return zero if parsePacket hasn't been called yet */
+	virtual int available()
+	{
+		return _remaining;
+	}
+
+	/* Release any resources being used by this EthernetUDP instance */
+	virtual void stop()
+	{
+		if (_sock == MAX_SOCK_NUM)
+			return;
+
+		socket->close(_sock);
+
+		Ethernet::server_port[_sock] = 0;
+		_sock = MAX_SOCK_NUM;
+	}
+
+	//int EthernetUDP::beginPacket(const char *host, uint16_t port)
+	//{
+	//	// Look up the host first
+	//	int ret = 0;
+	//	DNSClient dns;
+	//	IPAddress remote_addr;
+	//
+	//	dns.begin(Ethernet.dnsServerIP());
+	//	ret = dns.getHostByName(host, remote_addr);
+	//	if (ret == 1) {
+	//		return beginPacket(remote_addr, port);
+	//	} else {
+	//		return ret;
+	//	}
+	//}
 
 	using Print::write;
 
-	// Start processing the next available incoming packet
-	// Returns the size of the packet in bytes, or 0 if no packets are available
-	virtual int parsePacket();
-	// Number of bytes remaining in the current packet
-	virtual int available();
-	// Read a single byte from the current packet
-	virtual int read();
-	// Read up to len bytes from the current packet and place them into buffer
-	// Returns the number of bytes read, or 0 if none are available
-	virtual int read(unsigned char* buffer, size_t len);
-	// Read up to len characters from the current packet and place them into buffer
-	// Returns the number of characters read, or 0 if none are available
-	virtual int read(char* buffer, size_t len) { return read((unsigned char*)buffer, len); };
-	// Return the next byte from the current packet without moving on to the next byte
-	virtual int peek();
-	virtual void flush();	// Finish reading the current packet
+	virtual int beginPacket(IPAddress ip, uint16_t port)
+	{
+		_offset = 0;
+		return socket->startUDP(_sock, rawIPAddress(ip), port);
+	}
+
+	virtual int endPacket()
+	{
+		return socket->sendUDP(_sock);
+	}
+
+	virtual size_t write(uint8_t byte)
+	{
+		return write(&byte, 1);
+	}
+
+	virtual size_t write(const uint8_t *buffer, size_t size)
+	{
+		uint16_t bytes_written = socket->bufferData(_sock, _offset, buffer, size);
+		_offset += bytes_written;
+		return bytes_written;
+	}
+
+	virtual int parsePacket()
+	{
+		// discard any remaining bytes in the last packet
+		flush();
+
+		if (socket->recvAvailable(_sock) > 0)
+		{
+			//HACK - hand-parse the UDP packet using TCP recv method
+			uint8_t tmpBuf[8];
+			int ret =0;
+			//read 8 header bytes and get IP and port from it
+			ret = socket->recv(_sock,tmpBuf,8);
+			if (ret > 0)
+			{
+				_remoteIP = tmpBuf;
+				_remotePort = word(tmpBuf[4], tmpBuf[5]);
+				_remaining = word(tmpBuf[6], tmpBuf[7]);
+
+				// When we get here, any remaining bytes are the data
+				ret = _remaining;
+			}
+			return ret;
+		}
+		// There aren't any packets available
+		return 0;
+	}
+
+	virtual int read()
+	{
+		uint8_t byte;
+
+		if ((_remaining > 0) && (socket->recv(_sock, &byte, 1) > 0))
+		{
+			// We read things without any problems
+			_remaining--;
+			return byte;
+		}
+
+		// If we get here, there's no data available
+		return -1;
+	}
+
+	virtual int read(unsigned char* buffer, size_t len)
+	{
+
+		if (_remaining > 0)
+		{
+
+			int got;
+
+			if (_remaining <= len)
+			{
+				// data should fit in the buffer
+				got = socket->recv(_sock, buffer, _remaining);
+			}
+			else
+			{
+				// too much data for the buffer,
+				// grab as much as will fit
+				got = socket->recv(_sock, buffer, len);
+			}
+
+			if (got > 0)
+			{
+				_remaining -= got;
+				return got;
+			}
+
+		}
+
+		// If we get here, there's no data available or recv failed
+		return -1;
+
+	}
+
+	virtual int peek()
+	{
+		uint8_t b;
+		// Unlike recv, peek doesn't check to see if there's any data available, so we must.
+		// If the user hasn't called parsePacket yet then return nothing otherwise they
+		// may get the Udp header
+		if (!_remaining)
+			return -1;
+		socket->peek(_sock, &b);
+		return b;
+	}
+
+	virtual void flush()
+	{
+		// could this fail (loop endlessly) if _remaining > 0 and recv in read fails?
+		// should only occur if recv fails after telling us the data is there, lets
+		// hope the w5100 always behaves :)
+
+		while (_remaining)
+		{
+			read();
+		}
+	}
+
+	/* Start EthernetUDP socket, listening at local port PORT */
+	virtual uint8_t beginMulticast(IPAddress ip, uint16_t port)
+	{
+		if (_sock != MAX_SOCK_NUM)
+			return 0;
+
+		for (int i = 0; i < MAX_SOCK_NUM; i++) {
+			uint8_t s = socket->status(i);
+			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
+				_sock = i;
+				break;
+			}
+		}
+
+		if (_sock == MAX_SOCK_NUM)
+			return 0;
+
+		// Calculate MAC address from Multicast IP Address
+		uint8_t mac[] = {  0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
+
+		mac[3] = ip[1] & 0x7F;
+		mac[4] = ip[2];
+		mac[5] = ip[3];
+
+		socket->set(_sock, mac, rawIPAddress(ip), port);
+		//W5100.writeSnDIPR(_sock, rawIPAddress(ip));
+		//W5100.writeSnDPORT(_sock, port);
+		//W5100.writeSnDHAR(_sock,mac);
+
+		_remaining = 0;
+		socket->open(_sock, SnMR::UDP, port, SnMR::MULTI);
+		return 1;
+	}
+
 
 	// Return the IP address of the host who sent the current incoming packet
 	virtual IPAddress remoteIP() { return _remoteIP; };
@@ -97,6 +274,13 @@ public:
 	virtual uint16_t remotePort() { return _remotePort; };
 
 private:
+private:
+	uint8_t _sock;  // socket ID for Wiz5100
+	uint16_t _port; // local port to listen on
+	IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
+	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
+	uint16_t _offset; // offset into the packet being sent
+	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
 	Socket* socket;
 };
 

@@ -7,8 +7,7 @@
 
 
 #include "IPAddress.h"
-#include "EthernetUdp.h"
-
+#include "Socket.h"
 
 class Ethernet
 {

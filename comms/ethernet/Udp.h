@@ -38,10 +38,10 @@
 #include "Stream.h"
 #include "IPAddress.h"
 
-class UDP: public Stream {
+class Udp: public Stream {
 
 public:
-	virtual ~UDP() {};
+	virtual ~Udp() {};
 	virtual uint8_t begin(uint16_t) =0;	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual void stop() =0;  // Finish with the UDP socket
 
