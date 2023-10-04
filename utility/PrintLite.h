@@ -211,6 +211,19 @@ public:
 					*p++ = hex[u & 0xf];
 					break;
 				}
+				case 'z':                       // 32 bit heXadecimal
+				{
+					uint32_t u = va_arg(a, uint32_t);
+					*p++ = hex[u >> 28 & 0xf];
+					*p++ = hex[u >> 24 & 0xf];
+					*p++ = hex[u >> 20 & 0xf];
+					*p++ = hex[u >> 16 & 0xf];
+					*p++ = hex[u >> 12 & 0xf];
+					*p++ = hex[u >> 8 & 0xf];
+					*p++ = hex[u >> 4 & 0xf];
+					*p++ = hex[u & 0xf];
+					break;
+				}
 				case '0':
 					zero_before_decimal = true;
 					format++;
