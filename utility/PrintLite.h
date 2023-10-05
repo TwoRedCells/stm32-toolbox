@@ -13,7 +13,6 @@
 
 #include <stdarg.h>
 #include <stdint.h>
-#include <math.h>
 
 #define DEC 10
 #define HEX 16
@@ -103,15 +102,17 @@ public:
 				case '0':
 					zero_before_decimal = true;
 					format++;
+					// Fall through.
 				case '.':						// float
 				{
 					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
 					double f = va_arg(a, double);
 					if (f < 0) f = -f, write('-'), count++;  // Negative.
 					uint32_t whole = (uint32_t)f;
-					if (count_digits(whole) == 0 && zero_before_decimal)
+					if (whole == 0 && zero_before_decimal)
 						write('0'), count++;
-					count += xtoa(f);
+					else
+						count += xtoa(f);
 					if (dec > 0)
 					{
 						write('.'), count++;
@@ -235,7 +236,8 @@ public:
 					uint32_t whole = (uint32_t)f;
 					if (count_digits(whole) == 0 && zero_before_decimal)
 						*p++ = '0';
-					p += xtoa(f, p);
+					else
+						p += xtoa(f, p);
 					if (dec > 0)
 					{
 						*p++ = '.';
@@ -296,6 +298,21 @@ public:
 
 
 	/**
+	 * @brief Returns a to the power of b.
+	 * @param a The base.
+	 * @param b The exponent.
+	 * @returns The power.
+	 */
+	static double pow(double a, double b)
+	{
+		double r = 1;
+		for (uint32_t i=0; i<b; i++)
+			r *= a;
+		return r;
+	}
+
+
+	/**
 	 * @brief	Writes the specified byte to the underlying resource.
 	 * @param	c The byte value
 	 */
@@ -340,13 +357,15 @@ protected:
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
 	 */
-	uint16_t xtoa(uint32_t value, int8_t digits=10)
+	uint16_t xtoa(uint32_t value, int8_t digits=Auto)
 	{
+		if (digits == -1)
+			digits = count_digits(value);
 		uint32_t v = value;
 		uint16_t count = 0;
-		for (uint8_t d=digits; d>=0; d--)
+		for (int8_t d=digits; d>0; d--)
 		{
-			uint32_t exp = pow(10, d);
+			uint32_t exp = pow(10, d-1);
 			char x = v / exp;
 			write('0'+x);
 			count++;
@@ -381,7 +400,7 @@ protected:
 
 	/**
 	 * Returns the number of digits in the specified value.
-	 * @param value The value as assess.
+	 * @param value The value to assess.
 	 * @returns The number of digits.
 	 */
 	static uint8_t count_digits(uint32_t value)

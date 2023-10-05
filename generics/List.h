@@ -43,10 +43,8 @@ public:
 	 * @param buffer Pointer to the buffer.
 	 * @param legnth The length of the buffer in objects (not bytes).
 	 */
-	List(T* buffer, uint32_t length)
+	List(T* buffer, uint32_t length) : ICollection<T>(buffer, length)
 	{
-		this->buffer = buffer;
-		this->buffer_length = length;
 	}
 
 

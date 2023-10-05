@@ -13,7 +13,7 @@
 
 #include "comms/ethernet/Ethernet.h"
 #include "comms/ethernet/EthernetServer.h"
-//#include "comms/ethernet/Ping.h"
+#include "comms/ethernet/Ping.h"
 #include "HttpHandler.h"
 #include "generics/List.h"
 #include "string.h"
@@ -50,11 +50,13 @@ public:
 
 		for(;;)
 		{
+#if ENABLE_WATCHDOG
 			// Feed watchdog.
 			G.gooddog.feed(HttpdTaskOk);
-
+#endif
 			// See if we are connected
-			uint8_t phy = ethernet->get_socket()->get_hardware()->get_phy_config();
+			Socket* socket = ethernet->get_socket();
+			uint8_t phy = socket->get_hardware()->get_phy_config();
 			bool link = phy & 0x01;
 			G.fault.update(NemoFault::NetworkLinkNotPresent, !link);
 
@@ -63,11 +65,11 @@ public:
 				// See if we are online.
 				if (ping_timer.is_elapsed())  // Every 5-10 seconds.
 				{
-//					Ping::ICMPPing ping(socket->get_hardware(), 4, 0xff);  // 4 is socket number.
-//					socket->getGatewayIp(gw);
-//					Ping::ICMPEchoReply echoReply = ping(gw, 1);  // 1 retry
-//					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != SUCCESS);
-//					ping_timer.restart();
+					Ping ping(ethernet->get_socket()->get_hardware(), 4, 0xff);  // 4 is socket number.
+					socket->getGatewayIp(gw);
+					IcmpEchoReply echoReply = ping(gw, 1);  // 1 retry
+					G.fault.update(NemoFault::NetworkGatewayOffline, echoReply.status != SUCCESS);
+					ping_timer.restart();
 				}
 
 				// Check for client connection.
