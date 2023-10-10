@@ -87,6 +87,7 @@ public:
 		loop_callback = nullptr;
 	}
 
+
 	/**
 	 * @brief	Checks if the filesystem is initialized, and initializes it if it isn't.
 	 * @returns	True if successful; otherwise false.
@@ -98,13 +99,20 @@ public:
 			return false;
 		capacity = pow(2, rdid.capacity);
 
+		// Allocate index.
+		uint32_t index_size = capacity / SectorSize / 8;
+		index = (uint8_t*) malloc(index_size);
+		memset(index, 0, index_size);
+
 		// Determine used and free space.
-		DirectoryEntry* entry = iterate_directory(true);
-		while (entry != nullptr)
+		for (uint32_t address=0; address<capacity; address += SectorSize)
 		{
+			DirectoryEntry* entry = read_directory(address);
 			if (entry->is_valid() && !entry->is_deleted())
+			{
 				used += SectorSize;
-			entry = iterate_directory();
+				write_index(address, true);
+			}
 		}
 		return true;
 	}
@@ -119,6 +127,41 @@ public:
 		used = 0;
 	}
 
+
+	/**
+	 * Resets the index to zeros.
+	 */
+	void reset_index(void)
+	{
+		uint32_t index_size = capacity / SectorSize / 8;
+		memset(index, 0, index_size);
+	}
+
+
+	/**
+	 * Write an index entry.
+	 * @param sector The address of the sector.
+	 * @param value The new value.
+	 */
+	void write_index(uint32_t sector, bool value)
+	{
+		if (value)
+			index[sector / SectorSize / 8] |= (1 << (sector / SectorSize % 8));
+		else
+			index[sector / SectorSize / 8] &= ~(1 << (sector / SectorSize % 8));
+	}
+
+
+	/**
+	 * Reads an index entry.
+	 * @param sector The address of the sector.
+	 * @returns The value at the index.
+	 */
+	bool read_index(uint32_t sector)
+	{
+		uint8_t byte_value = index[sector / SectorSize / 8];
+		return (byte_value >> (sector / SectorSize % 8)) & 0x01;
+	}
 
 	/**
 	 * @brief 	Gets the directory entry at the specified sector.
@@ -150,7 +193,7 @@ public:
 		// Determine requirements and create template for directory entry.
 		uint32_t sectors = length / UsableSectorSize + 1;
 		uint32_t free_sector = get_free_sector();
-		DirectoryEntry entry {
+		DirectoryEntry entry = {
 			.magic_number = DirectoryEntry::MAGIC_NUMBER,
 			.id = get_last_id() + 1,
 			.sectors = sectors,
@@ -180,6 +223,7 @@ public:
 			if (e != ErrorNone)
 				return e;
 
+			write_index(entry.address, true);
 			entry.index++;
 			entry.address = get_free_sector();
 			written += size;
@@ -188,6 +232,7 @@ public:
 		}
 		return ErrorNone;
 	}
+
 
 	/**
 	 * @brief Writes a file to the filesystem.
@@ -200,7 +245,10 @@ public:
 	{
 		error e = write(address, entry, sizeof(SpiFlashMemoryFilesystem::DirectoryEntry));
 		if (e == SpiFlashMemoryFilesystem::ErrorNone)
+		{
 			used += SectorSize;
+			write_index(address, true);
+		}
 		return e;
 	}
 
@@ -322,11 +370,19 @@ public:
 		if (loop_callback != nullptr)
 			loop_callback();
 
-		DirectoryEntry* entry = read_directory(sector);
-		if (!entry->is_valid())
-			entry->address = sector;
-		sector += SectorSize;
-		return entry;
+		if (read_index(sector))
+		{
+			DirectoryEntry* entry = read_directory(sector);
+			if (!entry->is_valid())
+				entry->address = sector;
+			sector += SectorSize;
+			return entry;
+		}
+		else
+		{
+			sector += SectorSize;
+			return &null_entry;
+		}
 	}
 
 
@@ -363,6 +419,7 @@ public:
 			if (entry->is_valid() && entry->id == id)
 			{
 				sector_erase(entry->address);
+				write_index(entry->address, false);
 				used -= SectorSize;
 			}
 			entry = iterate_directory();
@@ -382,6 +439,7 @@ public:
 			if (entry->is_valid() && !strcmp(filename, entry->filename))
 			{
 				sector_erase(entry->address);
+				write_index(entry->address, false);
 				used -= SectorSize;
 			}
 			entry = iterate_directory();
@@ -467,6 +525,8 @@ private:
 	uint32_t used = 0;
 	uint8_t buffer[PageSize];
 	void (*loop_callback)(void);
+	uint8_t* index;
+	DirectoryEntry null_entry = {0};
 };
 
 #endif /* INC_STM32_TOOLBOX_DEVICES_FLASH_SPIFLASHMEMORYFILESYSTEM_H_ */
