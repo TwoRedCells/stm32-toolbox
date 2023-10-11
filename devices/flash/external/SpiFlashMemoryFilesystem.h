@@ -268,6 +268,9 @@ public:
 	{
 		for (uint32_t sector=start; sector < capacity; sector += SectorSize)
 		{
+			if (loop_callback != nullptr)
+				loop_callback();
+
 			DirectoryEntry* entry = read_directory(sector);
 			if (!entry->is_valid())
 				return sector;
@@ -403,9 +406,6 @@ public:
 		DirectoryEntry* entry = iterate_directory(reset);
 		while (entry != nullptr)
 		{
-			if (loop_callback != nullptr)
-				loop_callback();
-
 			if (entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
 				return entry;
 			entry = iterate_directory();
@@ -473,6 +473,9 @@ public:
 		uint32_t last_id = 0;
 		for (uint32_t i=0; i < capacity; i += SectorSize)
 		{
+			if (loop_callback != nullptr)
+				loop_callback();
+
 			DirectoryEntry* entry = read_directory(i);
 			if (entry->is_valid() && entry->id > last_id)
 				last_id = entry->id;
@@ -491,6 +494,9 @@ public:
 	{
 		for (uint32_t sector=0; sector < capacity; sector += SectorSize)
 		{
+			if (loop_callback != nullptr)
+				loop_callback();
+
 			DirectoryEntry* entry = read_directory(sector);
 			if (entry->is_valid() && entry->id == fileid && entry->index == index)
 				return sector;
