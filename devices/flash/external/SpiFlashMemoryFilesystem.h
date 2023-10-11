@@ -124,6 +124,7 @@ public:
 	void wipe(void)
 	{
 		chip_erase();
+		reset_index();
 		used = 0;
 	}
 
@@ -183,7 +184,7 @@ public:
 	 * @param length Length of the file.
 	 * @returns The error code, if any.
 	 */
-	error write_file(char* filename, void* data, uint32_t length)
+	error write_file(const char* filename, void* data, uint32_t length)
 	{
 		// Overwrite the file if it exists.
 		uint32_t id = get_fileid(filename);
@@ -216,6 +217,7 @@ public:
 
 			uint32_t size = remaining < UsableSectorSize ? remaining : UsableSectorSize;
 			sector_erase(entry.address);
+			write_index(entry.address, true);
 			e = write(entry.address + sizeof(DirectoryEntry), ((uint8_t*)data)+written, size);
 			if (e != ErrorNone)
 				return e;
@@ -223,7 +225,6 @@ public:
 			if (e != ErrorNone)
 				return e;
 
-			write_index(entry.address, true);
 			entry.index++;
 			entry.address = get_free_sector();
 			written += size;
@@ -274,7 +275,7 @@ public:
 	 * @param	filename The name of the file.
 	 * @returns The file id.
 	 */
-	fileid get_fileid(char* filename)
+	fileid get_fileid(const char* filename)
 	{
 		DirectoryEntry* entry = search(filename);
 		return entry->id;
@@ -288,7 +289,7 @@ public:
 	 * @param	length The length of the file.
 	 * @returns	The error code, if any.
 	 */
-	error read_file(char* filename, void* data, uint32_t length)
+	error read_file(const char* filename, void* data, uint32_t length)
 	{
 		fileid id = get_fileid(filename);
 		if (id == 0)
@@ -302,12 +303,12 @@ public:
 	 * @param	filename The name of the file to find.
 	 * @returns	Pointer to the directory entry, or nullptr.
 	 */
-	DirectoryEntry* search(char* filename)
+	DirectoryEntry* search(const char* filename)
 	{
 		DirectoryEntry* entry = iterate_directory(true);
 		while (entry != nullptr)
 		{
-			if (!strcmp(entry->filename, filename) && entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
+			if (entry->is_valid() && !strcmp(entry->filename, filename) && entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
 				return entry;
 			entry = iterate_directory();
 		}
@@ -431,7 +432,7 @@ public:
 	 * @brief	Deletes the specified file.
 	 * @param 	filename The filename.
 	 */
-	void remove(char* filename)
+	void remove(const char* filename)
 	{
 		DirectoryEntry* entry = iterate_directory(true);
 		while (entry != nullptr)
