@@ -76,7 +76,7 @@ public:
 
 		return n;
 	}
-	using Print::write;
+	using PrintLite::write;
 
 
 private:

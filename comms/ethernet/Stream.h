@@ -238,30 +238,30 @@ public:
 	}
 
 
-	String readString()
-	{
-		String ret;
-		int c = timedRead();
-		while (c >= 0)
-		{
-			ret += (char)c;
-			c = timedRead();
-		}
-		return ret;
-	}
-
-
-	String readStringUntil(char terminator)
-	{
-		String ret;
-		int c = timedRead();
-		while (c >= 0 && c != terminator)
-		{
-			ret += (char)c;
-			c = timedRead();
-		}
-		return ret;
-	}
+//	String readString()
+//	{
+//		String ret;
+//		int c = timedRead();
+//		while (c >= 0)
+//		{
+//			ret += (char)c;
+//			c = timedRead();
+//		}
+//		return ret;
+//	}
+//
+//
+//	String readStringUntil(char terminator)
+//	{
+//		String ret;
+//		int c = timedRead();
+//		while (c >= 0 && c != terminator)
+//		{
+//			ret += (char)c;
+//			c = timedRead();
+//		}
+//		return ret;
+//	}
 
 
 protected:

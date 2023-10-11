@@ -17,9 +17,9 @@
 #ifndef server_h
 #define server_h
 
-#include <comms/ethernet/PrintOld.h>
+#include <utility/PrintLite.h>
 
-class Server: public Print
+class Server: public PrintLite
 {
 public:
 	virtual void begin() =0;

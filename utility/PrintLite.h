@@ -287,17 +287,6 @@ public:
 	}
 
 
-//	/**
-//	 * @brief	Prints the specified string.
-//	 * @param	s The string.
-//	 * @param	nl Whether to add a newline at the end.
-//	 */
-//	uint16_t print(char* s, bool nl)
-//	{
-//		return write(s);
-//	}
-
-
 	/**
 	 * @brief	Prints the supplied integer in decimal or hex notation, as specified.
 	 * @param	c The integer value.
