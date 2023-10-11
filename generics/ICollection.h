@@ -50,13 +50,13 @@ public:
 		this->buffer_length = length;
 	}
 
+#if GENERICS_ALLOW_NEW
 	~ICollection()
 	{
 		if (buffer != nullptr)
 			free(buffer);
 	}
 
-#if GENERICS_ALLOW_NEW
 	/**
 	 * Allocates space for the collection.
 	 * @param objects The number of objects to allocate.

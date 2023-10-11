@@ -20,8 +20,8 @@
 #ifndef Printable_h
 #define Printable_h
 
+#include <comms/ethernet/PrintOld.h>
 #include <stdlib.h>
-#include "Print.h"
 
 class Print;
 

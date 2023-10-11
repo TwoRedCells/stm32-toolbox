@@ -21,11 +21,12 @@
 class SpiFlashMemoryFilesystem : public SpiFlashMemory
 {
 public:
-	static constexpr error ErrorFull = 0x8000;
-	static constexpr error ErrorFragmented = 0x4000;
-	static constexpr error ErrorFileNotFound = 0x2000;
-	static constexpr error ErrorInvalidFileId = 0x1000;
-	static constexpr error ErrorFileCorrupt = 0x0800;
+	static constexpr error ErrorFull = 0x00008000;
+	static constexpr error ErrorFragmented = 0x00004000;
+	static constexpr error ErrorFileNotFound = 0x00002000;
+	static constexpr error ErrorInvalidFileId = 0x00001000;
+	static constexpr error ErrorFileCorrupt = 0x00000800;
+	static constexpr error ErrorDirectoryFull = 0xffffffff;
 
 	typedef uint32_t fileid;
 
@@ -194,6 +195,9 @@ public:
 		// Determine requirements and create template for directory entry.
 		uint32_t sectors = length / UsableSectorSize + 1;
 		uint32_t free_sector = get_free_sector();
+		if (free_sector == ErrorDirectoryFull)
+			return ErrorFull;
+
 		DirectoryEntry entry = {
 			.magic_number = DirectoryEntry::MAGIC_NUMBER,
 			.id = get_last_id() + 1,
@@ -227,6 +231,8 @@ public:
 
 			entry.index++;
 			entry.address = get_free_sector();
+			if (entry.address == ErrorDirectoryFull)
+				return ErrorFull;
 			written += size;
 			remaining -= size;
 			used += SectorSize;
@@ -266,7 +272,7 @@ public:
 			if (!entry->is_valid())
 				return sector;
 		}
-		// TODO: return if not found.
+		return ErrorDirectoryFull;
 	}
 
 

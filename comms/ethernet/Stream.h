@@ -22,9 +22,10 @@
 #ifndef Stream_h
 #define Stream_h
 
+//#include <comms/ethernet/PrintOld.h>
 #include <stdint.h>
-#include "Print.h"
 #include "utility/Timer.h"
+#include "utility/PrintLite.h"
 
 
 #define PARSE_TIMEOUT 1000  // default number of milli-seconds to wait
@@ -50,7 +51,7 @@ enum LookaheadMode{
 
 #define NO_IGNORE_CHAR  '\x01' // a char not found in a valid ASCII numeric field
 
-class Stream : public Print
+class Stream : public PrintLite
 {
 public:
 	virtual int available() = 0;

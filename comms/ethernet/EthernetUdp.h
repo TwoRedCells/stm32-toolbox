@@ -109,7 +109,7 @@ public:
 	//	}
 	//}
 
-	using Print::write;
+	using PrintLite::write;
 
 	virtual int beginPacket(IPAddress ip, uint16_t port)
 	{

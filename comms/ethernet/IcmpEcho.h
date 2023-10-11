@@ -50,8 +50,8 @@ struct IcmpEcho
 	 */
 
 	IcmpHeader icmpHeader;
-	uint16_t id;
 	uint16_t seq;
+	uint16_t id;
 	icmp_time_t time;
 	uint8_t payload [REQ_DATASIZE];
 

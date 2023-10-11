@@ -17,7 +17,7 @@
 #ifndef server_h
 #define server_h
 
-#include "Print.h"
+#include <comms/ethernet/PrintOld.h>
 
 class Server: public Print
 {

@@ -99,6 +99,17 @@ public:
 					puth(u);
 					count += 2;
 					break;
+				case 'z':                       // 32 bit heXadecimal
+					u = va_arg(a, uint32_t);
+					puth(u >> 28 & 0xf);
+					puth(u >> 24 & 0xf);
+					puth(u >> 20 & 0xf);
+					puth(u >> 16 & 0xf);
+					puth(u >> 12 & 0xf);
+					puth(u >> 8 & 0xf);
+					puth(u >> 4 & 0xf);
+					puth(u & 0xf);
+					break;
 				case '0':
 					zero_before_decimal = true;
 					format++;
@@ -268,6 +279,7 @@ public:
 	/**
 	 * @brief	Prints the specified string.
 	 * @param	s The string.
+	 * @param	nl Whether to add a newline at the end.
 	 */
 	uint16_t print(const char* s)
 	{
@@ -275,14 +287,15 @@ public:
 	}
 
 
-	/**
-	 * @brief	Prints the specified string.
-	 * @param	s The string.
-	 */
-	uint16_t print(char* s)
-	{
-		return write(s);
-	}
+//	/**
+//	 * @brief	Prints the specified string.
+//	 * @param	s The string.
+//	 * @param	nl Whether to add a newline at the end.
+//	 */
+//	uint16_t print(char* s, bool nl)
+//	{
+//		return write(s);
+//	}
 
 
 	/**
