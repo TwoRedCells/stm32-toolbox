@@ -269,9 +269,6 @@ public:
             zero_or_more_match = *(p_e+1) == '*';
             one_or_more_match = *(p_e+1) == '+';
             
-#ifdef DEBUG_CHARACTERS
-            printf(" %c%c", *p_t, *p_e);
-#endif
             bool class_match = classing && classing->in(*p_t);  // Character is in the current class.
             bool exact_match = !classing && *p_t == *p_e;  // Exact character match.
             bool caseless_match = !classing && (case_insensitive && ((*p_t < 'a' && *p_t+0x20 == *p_e) || (*p_t > 'Z' && *p_t-0x20 == *p_e)));  // Case insensitive match.
@@ -284,19 +281,24 @@ public:
             if (match)
             {
 #ifdef DEBUG_CHARACTERS
-                 printf("=");
+printf(" %c%c", *p_t, *p_e);
 #endif
-                 p_e++;  // Evaluate next character in the pattern.
                  if (p_ma == nullptr)
                     p_ma = p_t;  // Point to the start of the match.
+            }
+            
+            if (unconditional_match)
+            {
+                p_e++;  // Evaluate next character in the pattern.
             }
             
             // Sometimes a match.
             if (zero_or_one_match)
             {
-                if (!unconditional_match)
-                    p_t--;
-                p_e++;  // Most past the modifier.
+                if (unconditional_match)
+                    p_e++;  // Most past the modifier.
+                else
+                    p_t--, p_e += 2;  // Most past the modifier.
                 zero_or_one_match = false;
             }
             
@@ -305,7 +307,7 @@ public:
             {
                 if (unconditional_match)
                 {
-                    p_e--;
+                    p_e++;
                 }
                 else
                 {
@@ -324,8 +326,8 @@ public:
                 }
                 else
                 {
-                    p_e++;  // Most past the modifier.
                     p_t--;
+                    p_e += 2;  // Most past the modifier.
                     one_or_more_match = false;                  
                 }
             }
@@ -366,7 +368,6 @@ public:
      
             p_t++;  // Evaluate the next character in the test string.
        }
-        
         return matches;  // All tests exhausted, return the results.
     }
     
@@ -444,6 +445,7 @@ int main()
     test("zero_or_one", "ca?t", sample1, true);
     test("zero_or_more", "glo*m", sample1, true);
     test("one_or_more", "go+d", sample1, true);
+    test("phone", "\\d+-\\d+-\\d+", sample1);
 
     return 0;
 }
