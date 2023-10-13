@@ -3,117 +3,239 @@
 #include <memory.h>
 
 #define U8 (const uint8_t*)
-//#define DEBUG_CHARACTERS
+#define DEBUG_CHARACTERS
+//#define SAFE_BUFFERS
 
-
+/**
+ * A regular expression resulting match.
+ */
 class Match
 {
     friend class Regex;
+    friend class MatchCollection;
     
 public:
+    /**
+     * Gets the number of characters in the match.
+     * @returns The match length.
+     */
     size_t get_length(void)
     {
         return length;
     }
     
-    void copy(uint8_t* destination)
+    /**
+     * Copies the contents of the match to a provided buffer.
+     * @param   destination The destination buffer.
+     * @param   l The size of the destination buffer (empty/0 for skipping safe checks).
+     */
+#ifdef SAFE_BUFFERS
+    void copy(uint8_t* destination, uint16_t l)
+#else
+    void copy(uint8_t* destination, uint16_t l=0)
+#endif
     {
-        memcpy(destination, match, length);
+ //       memcpy(destination, value, !l ? length : length<l?length:l);
+        memcpy(destination, value, length);
         destination[length] = 0;
     }
     
 private:
-    size_t length;
-    const uint8_t* match;
+    size_t length = 0;
+    uint8_t* value;
 };
 
+
+/**
+ * A collection of regular expression matches.
+ */
 class MatchCollection
 {
+    friend class Regex;
 public:
-    size_t length;
-    Match matches[10];
+    /**
+     * Creates an empty collection instance.
+     */
+    MatchCollection(void)
+    {
+    }
+    
+    
+    /**
+     * Gets thhe number of matches in the collection.
+     * @returns The size of the collection.
+     */
+    size_t get_count(void)
+    {
+        return count;
+    }
+    
+    /**
+     * Returns the match with the specified index.
+     * @param index The index.
+     * @returns A reference to the Match object.
+     */
+    Match& operator [] (size_t index)
+    {
+        return matches[index];
+    }
+    
+private:
+    /**
+     * Adds the specified match to the collection.
+     * @param   match The match to add.
+     * @returns The new size of the collection.
+     */
+    size_t add(Match& match)
+    {
+        matches[count].length = match.length;
+        matches[count].value = match.value;
+        return ++count;
+    }
+
+
+    size_t count = 0;
+    Match matches[250];
 };
 
+
+/**
+ * A class of characters to include (or exclude) when evaluating a regular expression.
+ * @note This class is used internally to Regex only.
+ */
 class CharacterClass
 {
     friend class Regex;
  
- public:
-    CharacterClass(const uint8_t* matches)
-    {
-        this->start = matches+1;
-        this->end = last(matches, 0)-1;
-//        printf("[%d] %s\r\n", end-start, this->start);
-    }
-    
-    bool in(uint8_t test)
-    {
-//        printf("[%c in %s]\r\n", test, start);
-        for (const uint8_t* p=start; p<end; p++)
-            if (*p == test)
-                return true;
-        return false;
-    }
-    
 private:
+    /**
+     * Constructs an empty instance.
+     */
     CharacterClass(void)
     {
     }
+
+    /**
+     * Constructs a CharacterClass instance.
+     * @param matches A list of characters surrounded by square brackets to include in the class. A caret (^) before the first character indicates that the meaning of the class should be negative (exclusive).
+     */
+    CharacterClass(const uint8_t* matches)
+    {
+        set(matches);
+    }
+    
+    /**
+     * Evaluates whether the test character is included (or excluded in the case of inverse operatiob) in the class.
+     * @param   test The test character.
+     * @Returns True on a match; otherwise false.
+     */
+    bool in(uint8_t test)
+    {
+        if (inverted)
+        {
+            for (const uint8_t* p=start; p<end; p++)
+                if (*p == test)
+                    return false;
+            return true;
+        }
+        else
+        {
+            for (const uint8_t* p=start; p<end; p++)
+                if (*p == test)
+                    return true;
+            return false;            
+        }
+    }
+    
+    /**
+     * Sets the internal match pattern.
+     * @param   matches The pattern.
+     */
+    void set(const uint8_t* matches)
+    {
+        start = matches + 1;
+        end = last(matches, ']');
+        if (*start == '^')
+        {
+            inverted = true;
+            start++;
+        }
+    }
+
     /**
      * Returns a pointer to the last character in a set.
      * @param   values The haystack to search.
      * @param   terminators Characters that define the end of the set.
-     * @param   len The length of the haystack (safe) or -1 to use NUL termination (unsafe).
+     * @param   len The length of the haystack (safe).
      * @returns Pointer to the terminating character in the set.
      */
-    static const uint8_t* last(const uint8_t* values, uint8_t terminator, int len=-1)
+#ifdef SAFE_BUFFERS
+    static const uint8_t* last(const uint8_t* values, uint8_t terminator, uint16_t len)
+#else
+    static const uint8_t* last(const uint8_t* values, uint8_t terminator, uint16_t len=0)
+#endif
     {
-        for (const uint8_t* v=values; len==-1 || v-values <= len; v++)
+        for (const uint8_t* v=values; !len || v-values <= len; v++)
             if (*v == terminator)
                 return v;
         return nullptr;
     }
     
     const uint8_t* start;    
-    const uint8_t* end;    
+    const uint8_t* end;  
+    bool inverted = false;
 };
 
 class Regex
 {
 public:
-
+    /**
+     * Constructs a Regex object.
+     * @param   expression The pattern to evaluate against.
+     * @param   case_insensitive True if evaluation should be done ignoring case. Defaults to false.
+     */
     Regex(const uint8_t* expression, bool case_insensitive=false)
     {
         this->expression = expression;
         this->case_insensitive = case_insensitive;
     }
     
+    /**
+     * Constructs a Regex object.
+     * @param   expression The pattern to evaluate against.
+     * @param   case_insensitive True if evaluation should be done ignoring case. Defaults to false.
+     */
     Regex(const char* expression, bool case_insensitive=false)
     {
         this->expression = (uint8_t*) expression;
         this->case_insensitive = case_insensitive;
     }
     
-    
     /**
      * Evaluates the provided string against the regular expression.
      * @param   test The string to evaluate.
-     * @length  length The length of the string (safe), or -1 (unsafe).
+     * @length  length The length of the string (safe).
      * @returns A MatchCollection object containing the matches, if any.
      */
-    MatchCollection match(const uint8_t test[], int length=-1)
+#ifdef SAFE_BUFFERS
+    MatchCollection match(const uint8_t test[], uint16_t length)
+#else
+     MatchCollection match(const uint8_t test[], uint16_t length=0)   
+#endif
     {
         const uint8_t* p_t = test;  // Pointer to the current character in the test string.
         const uint8_t* p_e = expression;  // Pointer to the current character in the regex.
         const uint8_t* p_ma = nullptr;  // Pointer to the first character in the current match.
         CharacterClass* classing = nullptr;  // Pointer to an active character class.
         bool strict_start = false;  // Must match from beginning.
-        MatchCollection matches;
+        bool in_adhoc = false;  // True when evaluating an ad-hoc class.
+        bool zero_or_one_match = false;  // True when subject expression character followed by ?.
+        bool zero_or_more_match = false;  // True when subject expression character followed by *.
+        bool one_or_more_match = false;  // True when subject expression character followed by +.
+        MatchCollection matches;  // The running list of matches.
         
-        while ((*p_t != 0 && length == -1) || (p_t-test < length))
+        while ((*p_t != 0 && !length) || (p_t-test < length))
         {
-//            printf("%c", *p_e);
-//            printf(".");
             // Escaped classes.  e.g. \d
             if (*p_e == '\\')
             {
@@ -128,76 +250,124 @@ public:
                     classing = &class_whitespace;
             }
             
-            // Embedded classes.  e.g. [abc]
+            // Ad-hoc classes.  e.g. [abc]
             else if (*p_e == '[')
             {
-                embedded.start = p_e + 1;
-//                embedded.end = p_e + 2;
-                embedded.end = p_e = CharacterClass::last(p_e, ']');
-                classing = &embedded;
+                adhoc.set(p_e);
+                classing = &adhoc;
+                in_adhoc = true;
             }
-            else if (*p_e == ']')
-            {
-                classing = nullptr;
-            }
-            
-            // Strict start.
+
+            // Strict start.  e.g. ^Test
             else if (*p_e == '^')
             {
                 strict_start = true;
                 p_e++;
             }
             
+            zero_or_one_match = *(p_e+1) == '?';
+            zero_or_more_match = *(p_e+1) == '*';
+            one_or_more_match = *(p_e+1) == '+';
+            
 #ifdef DEBUG_CHARACTERS
-            printf("%c/%c ", *p_t, *p_e);
+            printf(" %c%c", *p_t, *p_e);
 #endif
-
+            bool class_match = classing && classing->in(*p_t);  // Character is in the current class.
+            bool exact_match = !classing && *p_t == *p_e;  // Exact character match.
+            bool caseless_match = !classing && (case_insensitive && ((*p_t < 'a' && *p_t+0x20 == *p_e) || (*p_t > 'Z' && *p_t-0x20 == *p_e)));  // Case insensitive match.
+            bool wildcard_match = !classing && *p_e == '.';  // Wildcard match.
+            bool unconditional_match = class_match || exact_match || caseless_match || wildcard_match;  // Any of the above.
+            bool conditional_match = zero_or_one_match || zero_or_more_match || one_or_more_match;
+            bool match = unconditional_match || conditional_match;  // Any match
+            
             // Now check for matches.
-            // Class evaluation.
-            if (classing && classing->in(*p_t)  // Character is in the current class.
-                || !classing && *p_t == *p_e  // Exact character match.
-                || !classing && (case_insensitive && ((*p_t < 'a' && *p_t+0x20 == *p_e) || (*p_t > 'Z' && *p_t-0x20 == *p_e)))  // Case insensitive match.
-                || !classing && *p_e == '.'  // Wildcard match.
-            )
+            if (match)
             {
-//               printf("=");
-                p_e++;
-                if (p_ma == nullptr)
-                    p_ma = p_t;
-                classing = nullptr;
-            }
-
-            // Enforce strict start.
-            else if (strict_start)
-            {
-                break;
+#ifdef DEBUG_CHARACTERS
+                 printf("=");
+#endif
+                 p_e++;  // Evaluate next character in the pattern.
+                 if (p_ma == nullptr)
+                    p_ma = p_t;  // Point to the start of the match.
             }
             
-            // No match.
-            else
+            // Sometimes a match.
+            if (zero_or_one_match)
             {
-                if (p_ma != nullptr)
-                    p_t = p_ma;
+                if (!unconditional_match)
+                    p_t--;
+                p_e++;  // Most past the modifier.
+                zero_or_one_match = false;
+            }
+            
+            // Sometimes a match.
+            if (zero_or_more_match)
+            {
+                if (unconditional_match)
+                {
+                    p_e--;
+                }
+                else
+                {
+                    p_t--;
+                    p_e += 2;  // Most past the modifier.
+                    zero_or_more_match = false;                  
+                }
+            }
+            
+            // Sometimes a match.
+            if (one_or_more_match)
+            {
+                if (unconditional_match)
+                {
+                    p_e--;
+                }
+                else
+                {
+                    p_e++;  // Most past the modifier.
+                    p_t--;
+                    one_or_more_match = false;                  
+                }
+            }
+
+            if (class_match)
+            {
+                while (in_adhoc && *p_e != ']')  // Move the pattern pointer to the end of the adhoc class definition.
+                    p_e++;
+                classing = nullptr;
+                if (in_adhoc)
+                {
+                    in_adhoc = false;
+                    p_e++;
+                }
+            }
+            
+
+            // Enforce strict start.
+            if (strict_start && p_t == test && !match)
+                break;  // The first character didn't match, so we can give up.
+            
+            // No match, reset the pattern pointer to its start.
+            if (!match)
+            {
                 p_e = expression;
                 p_ma = nullptr;
             }
             
-            // Complete match.
-            if (*p_e == 0)
+            // Complete match found.
+            if (*p_e == 0)  // Pattern's trailing NUL encountered.
             {
-                matches.length++;
-                matches.matches[matches.length].match = p_ma;
-                matches.matches[matches.length].length = p_t - p_ma + 1;
-                uint8_t buf[100];
-                matches.matches[matches.length].copy(buf);
-                printf("Match (%d, %d, [%s])\r\n", p_ma-test, p_t-test, buf);
- 
+                printf("#");
+                Match match;
+                match.value = (uint8_t*) p_ma;
+                match.length = p_t - p_ma + 1;
+                matches.add(match);  // add() will copy the object.
             }
-            
-            p_t++;
-        }
+     
+            p_t++;  // Evaluate the next character in the test string.
+       }
         
-        return matches;
+        return matches;  // All tests exhausted, return the results.
     }
     
     
@@ -205,12 +375,16 @@ public:
      * Determines if a is in B.
      * @param   a The needle.
      * @param   B The haystack.
-     * @param   l The length of the haystack (safe) or -1 to use NUL termination (unsafe).
+     * @param   l The length of the haystack (safe).
      * @returns True if a is in B, otherwise false.
      */
-    static bool in(uint8_t a, const uint8_t B[], int l=-1)
+#ifdef SAFE_BUFFERS
+    static bool in(uint8_t a, const uint8_t B[])
+#else
+    static bool in(uint8_t a, const uint8_t B[], uint16_t l=0)
+#endif
     {
-        for (const uint8_t* p=B; l==-1 || p-B <= l; p++)
+        for (const uint8_t* p=B; !l || p-B <= l; p++)
         {
             if (a == *p)  // Character match.
                 return  true;
@@ -219,8 +393,7 @@ public:
         }
         return false;  // No matches.
     }
-    
-    
+
 
 private:
     static inline CharacterClass class_numeric = CharacterClass(U8"[0123456789]");  // \d
@@ -228,8 +401,8 @@ private:
     static inline CharacterClass class_alpha_upper = CharacterClass(U8"[ABCDEFGHIJKLMNOPQRSTUVWXYZ]");  // \W
     static inline CharacterClass class_alpha = CharacterClass(U8"[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]"); // \A
     static inline CharacterClass class_whitespace = CharacterClass(U8"[\t\r\n ]");  // \s
-    CharacterClass embedded;
-    const uint8_t* set_literals = U8"()[].+\\?";
+    CharacterClass adhoc;
+    const uint8_t* set_literals = U8"()[].+\\?^$";
     const uint8_t* set_classes = U8"dwbs";
 
     const uint8_t* expression;
@@ -237,47 +410,40 @@ private:
 };
 
 
+void test(const char* name, const char* pattern, const uint8_t* string, bool case_insensitive=false)
+{
+    printf("\r\n* %s : /%s/ ", name, pattern);
+    Regex regex(pattern, case_insensitive);
+    MatchCollection matches = regex.match(string);
+    uint8_t buffer[100];
+    printf("= %d matches.\r\n", matches.get_count());
+    for (size_t i=0; i < matches.get_count(); i++)
+    {
+        matches[i].copy(buffer, 100);
+        printf("`%s`\r\n", buffer);
+    }
+}
+
+
 int main()
 {
     MatchCollection matches;
     printf("Starting.\r\n");
-    uint8_t test[] = "Now is the time for all good (goons) to come to the aid of their good country. My Phone number is 519-760-2914.";
+    uint8_t sample1[] = "Now is the time for all good men (goons) to come to the aid of their good country. In God we trust. Glm glom gloom! Toffee is goooey, gah!. My Phone number is 519-760-2914. CT scans are called cat scans.";
     
-    printf("* in test pass : %d\r\n", Regex::in('d', U8"abcdefg"));
-    printf("* in test fail : %d\r\n", Regex::in('x', U8"abcdefg"));
-
-    
-    printf("* strict start pass\r\n");
-    Regex regex1("^Now");
-    matches = regex1.match(test);
-    
-    printf("* strict start fail\r\n");
-    Regex regex2("^is");
-    matches = regex2.match(test);
-
-    printf("* exact match pass\r\n");
-    Regex regex3("good");
-    matches = regex3.match(test);
-
-    printf("* dot subtitution\r\n");
-    Regex regex4("..oo");
-    matches = regex4.match(test);
-
-    printf("* escaped literal\r\n");
-    Regex regex5("\\(go");
-    matches = regex5.match(test);
-
-    printf("* whitespace\r\n");
-    Regex regex6("\\sa");
-    matches = regex6.match(test);
-
-    printf("* embedded class\r\n");
-    Regex regex7("[())]");
-    matches = regex7.match(test);
-
-    printf("* phone\r\n");
-    Regex regex8("\\d\\d\\d-\\d\\d\\d-\\d\\d\\d\\d");
-    matches = regex8.match(test);
+    test("strict start pass", "^Now", sample1);
+    test("strict start fail", "^is", sample1);
+    test("exact match pass", "good", sample1);
+    test("dot subtitution", "..oo", sample1);
+    test("escaped literal", "\\(go", sample1);
+    test("whitespace", "\\sa", sample1);
+    test("ad-hoc class", "[aeiou][aeiou]", sample1);
+    test("inverted ad-hoc class", "[^abcdefghijklmnopqrstuvwxyz]", sample1);
+    test("phone", "\\d\\d\\d-\\d\\d\\d-\\d\\d\\d\\d", sample1);
+    test("phone partial", "[0123456789]-[0123456789]", sample1);
+    test("zero_or_one", "ca?t", sample1, true);
+    test("zero_or_more", "glo*m", sample1, true);
+    test("one_or_more", "go+d", sample1, true);
 
     return 0;
 }
