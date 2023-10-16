@@ -19,7 +19,8 @@
  * * Ad-hoc character classes (`[]` operators), such as `[aeiou]`.
  * * Predefined character classes (`\w` => alpha, `\d` => numeric, `\s` => whitespace).
  * * Repetition operators (`?` => zero or one, `*` => zero or more, `+` => one or more).
- * * Start of string matching (`^` operator).
+ * * Start-of-string and end-of-string matching (`^$` operators).
+ * * Boundary matching (`\b` operator).
  * * Escaping of reserved charcaters with `\\`.
  * 
  * Limitations
@@ -117,8 +118,7 @@ public:
     MatchCollection(void)
     {
     }
-    
-    
+        
     /**
      * Gets thhe number of matches in the collection.
      * @returns The size of the collection.
@@ -244,6 +244,26 @@ private:
     bool inverted = false;
 };
 
+
+/**
+ * Represents a repetition definition, enclosed in curly braces.
+ */  
+class Repetition
+{
+	friend class Regex;
+
+private:
+	size_t min;
+	size_t max;
+	
+	void parse(const uint8_t* definition, size_t length)
+	{
+		
+	}
+	
+};
+
+
 class Regex
 {
 public:
@@ -290,14 +310,22 @@ public:
         bool in_adhoc = false;  // True when evaluating an ad-hoc class.
         MatchCollection matches;  // The running list of matches.
         size_t lookahead = 0;
-        
+      
         while ((*p_t != 0 && !length) || (p_t-test < length))
         {
+			bool boundary_test = false;  // True when looking for a word boundary.
             // STEP 1: SET THE CURRENT STATE BASED ON MODIFIERS.
 #ifdef DEBUG_CHARACTERS
             printf("%s %c/%c", p_e == expression ? "\r\n" : "", *p_e, *p_t);
 #endif
             
+			// Check for boundary testing.
+			if (*p_e == '\\' && *(p_e+1) == 'b')
+			{
+				boundary_test = true;
+				p_e++;
+			}
+			
             // When in the 'classing' state, the value of the expression pointer represents a class of one or more characters,
             // so instead of checking for value equality we check if the set includes the test subject.
             if (!classing)
@@ -310,27 +338,21 @@ public:
 					{
                     case 'd':
                         classing = &class_numeric;
-						classing->inverted = false;
 						break;
                     case 'D':
-                        classing = &class_numeric;
-						classing->inverted = true;
+                        classing = &class_not_numeric;
 						break;
                     case 'w':
                         classing = &class_alpha;
-						classing->inverted = false;
 						break;
                     case 'W':
-                        classing = &class_alpha;
-						classing->inverted = true;
+                        classing = &class_not_alpha;
 						break;
-					case 's':
+ 					case 's':
                         classing = &class_whitespace;
-						classing->inverted = false;
 						break;
 					case 'S':
-                        classing = &class_whitespace;
-						classing->inverted = true;
+                        classing = &class_not_whitespace;
 						break;
 					}
                 }
@@ -374,10 +396,12 @@ public:
             bool wildcard_match = !classing && *p_e == '.';  // Wildcard match.
             bool unconditional_match = class_match || exact_match || caseless_match || wildcard_match;  // Any of the above.
             // The above are true matches, where the test pointer matches the exact meaning of the expression pointer.
+
             // Whereas the following are conditional on what follows.
+ 			bool boundary_match = boundary_test && ((p_t == test && class_alpha.includes(*p_t)) || (*p_t == 0 && class_alpha.includes(*(p_t-1))) || (p_t != test && class_alpha.includes(*(p_t+1)) && class_whitespace.includes(*p_t)) || (*p_t != 0 && class_alpha.includes(*(p_t-1)) && class_whitespace.includes(*p_t)));
             bool more_match = (zero_or_more_match || one_or_more_match) && unconditional_match;  // Matched because additional charcaters in a 'many' match.
             bool zero_match = (zero_or_one_match || zero_or_more_match || one_or_more_match) && !unconditional_match;  // Matched because the first character matches everything.
-            bool match = unconditional_match || zero_match;  // Any match
+            bool match = unconditional_match || zero_match || boundary_match;  // Any match
 
             // STEP 3: TAKE ACTIONS BASED ON MATCHES OR LACK OF MATCHES. THIS MAY MEAN MOVING THE EXPRESSION POINTER OR THE TEST POINTER.
             // Enforce strict start.
@@ -396,7 +420,7 @@ public:
                 p_m = p_t;  // Pick up where we left off.
                 classing = nullptr;
                 continue;
-            }
+            }			
 
             // A zero match doesn't capture any new characters, but it advances the expression pointer.
             if (zero_match)
@@ -414,6 +438,13 @@ public:
                 p_e += 0;
             }
             
+			// Boundary match where the start of the boundary is the start of the test.
+			else if (boundary_match)
+			{
+				p_t += 0;
+				p_e++;
+			}
+
             // All others.
             else
             {
@@ -470,16 +501,20 @@ public:
 
 private:
     static inline CharacterClass class_numeric = CharacterClass(U8"[0123456789]");  // \d
-    static inline CharacterClass class_alpha_lower = CharacterClass(U8"[abcdefghijklmnopqrstuvwxyz]");  // \w
-    static inline CharacterClass class_alpha_upper = CharacterClass(U8"[ABCDEFGHIJKLMNOPQRSTUVWXYZ]");  // \W
+    static inline CharacterClass class_not_numeric = CharacterClass(U8"[^0123456789]");  // \d
     static inline CharacterClass class_alpha = CharacterClass(U8"[ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]"); // \w
+    static inline CharacterClass class_not_alpha = CharacterClass(U8"[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]"); // \w
     static inline CharacterClass class_whitespace = CharacterClass(U8"[\t\r\n ]");  // \s
+    static inline CharacterClass class_not_whitespace = CharacterClass(U8"[^\t\r\n ]");  // \s
     static inline CharacterClass class_lookahead = CharacterClass(U8"[?*+]");  // \s
     CharacterClass adhoc;
     const uint8_t* set_literals = U8"()[].+\\?^$";
     const uint8_t* set_classes = U8"dwbs";
     const uint8_t* expression;
     bool case_insensitive = false;
+	Repetition _repetition;
+	Repetition* repetition = nullptr;
+
 };
 
 
@@ -519,10 +554,11 @@ int main()
     test("phone", "\\d\\d\\d-\\d\\d\\d-\\d\\d\\d\\d", sample1, 1);
     test("phone partial", "[0123456789]-[0123456789]", sample1, 2);
     test("zero_or_one1", "ca?t", sample1, 2, true);
-    test("zero_or_one2", "\\d?\\d", sample1, 2, true);
+    test("zero_or_one2", "\\d?\\d", sample1, 4, true);
     test("zero_or_more1", "glo*m", sample1, 4, true);
-    test("one_or_more", "go+d", sample1, 2, true);
+    test("one_or_more", "go+d", sample1, 3, true);
     test("phone", "\\d+-\\d+-\\d+", sample1, 1);
 	test("postal", "\\w\\d\\w \\d\\w\\d", sample1, 2, true);
+	test("boundary", "\\bt", sample1, 999, true);
     return 0;
 }
