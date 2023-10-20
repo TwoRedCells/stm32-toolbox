@@ -21,11 +21,12 @@
 class SpiFlashMemoryFilesystem : public SpiFlashMemory
 {
 public:
-	static constexpr error ErrorFull = 0x8000;
-	static constexpr error ErrorFragmented = 0x4000;
-	static constexpr error ErrorFileNotFound = 0x2000;
-	static constexpr error ErrorInvalidFileId = 0x1000;
-	static constexpr error ErrorFileCorrupt = 0x0800;
+	static constexpr error ErrorFull = 0x00008000;
+	static constexpr error ErrorFragmented = 0x00004000;
+	static constexpr error ErrorFileNotFound = 0x00002000;
+	static constexpr error ErrorInvalidFileId = 0x00001000;
+	static constexpr error ErrorFileCorrupt = 0x00000800;
+	static constexpr error ErrorDirectoryFull = 0xffffffff;
 
 	typedef uint32_t fileid;
 
@@ -87,6 +88,7 @@ public:
 		loop_callback = nullptr;
 	}
 
+
 	/**
 	 * @brief	Checks if the filesystem is initialized, and initializes it if it isn't.
 	 * @returns	True if successful; otherwise false.
@@ -98,13 +100,20 @@ public:
 			return false;
 		capacity = pow(2, rdid.capacity);
 
+		// Allocate index.
+		uint32_t index_size = capacity / SectorSize / 8;
+		index = (uint8_t*) malloc(index_size);
+		memset(index, 0, index_size);
+
 		// Determine used and free space.
-		DirectoryEntry* entry = iterate_directory(true);
-		while (entry != nullptr)
+		for (uint32_t address=0; address<capacity; address += SectorSize)
 		{
+			DirectoryEntry* entry = read_directory(address);
 			if (entry->is_valid() && !entry->is_deleted())
+			{
 				used += SectorSize;
-			entry = iterate_directory();
+				write_index(address, true);
+			}
 		}
 		return true;
 	}
@@ -116,9 +125,45 @@ public:
 	void wipe(void)
 	{
 		chip_erase();
+		reset_index();
 		used = 0;
 	}
 
+
+	/**
+	 * Resets the index to zeros.
+	 */
+	void reset_index(void)
+	{
+		uint32_t index_size = capacity / SectorSize / 8;
+		memset(index, 0, index_size);
+	}
+
+
+	/**
+	 * Write an index entry.
+	 * @param sector The address of the sector.
+	 * @param value The new value.
+	 */
+	void write_index(uint32_t sector, bool value)
+	{
+		if (value)
+			index[sector / SectorSize / 8] |= (1 << (sector / SectorSize % 8));
+		else
+			index[sector / SectorSize / 8] &= ~(1 << (sector / SectorSize % 8));
+	}
+
+
+	/**
+	 * Reads an index entry.
+	 * @param sector The address of the sector.
+	 * @returns The value at the index.
+	 */
+	bool read_index(uint32_t sector)
+	{
+		uint8_t byte_value = index[sector / SectorSize / 8];
+		return (byte_value >> (sector / SectorSize % 8)) & 0x01;
+	}
 
 	/**
 	 * @brief 	Gets the directory entry at the specified sector.
@@ -140,7 +185,7 @@ public:
 	 * @param length Length of the file.
 	 * @returns The error code, if any.
 	 */
-	error write_file(char* filename, void* data, uint32_t length)
+	error write_file(const char* filename, void* data, uint32_t length)
 	{
 		// Overwrite the file if it exists.
 		uint32_t id = get_fileid(filename);
@@ -150,7 +195,10 @@ public:
 		// Determine requirements and create template for directory entry.
 		uint32_t sectors = length / UsableSectorSize + 1;
 		uint32_t free_sector = get_free_sector();
-		DirectoryEntry entry {
+		if (free_sector == ErrorDirectoryFull)
+			return ErrorFull;
+
+		DirectoryEntry entry = {
 			.magic_number = DirectoryEntry::MAGIC_NUMBER,
 			.id = get_last_id() + 1,
 			.sectors = sectors,
@@ -173,6 +221,7 @@ public:
 
 			uint32_t size = remaining < UsableSectorSize ? remaining : UsableSectorSize;
 			sector_erase(entry.address);
+			write_index(entry.address, true);
 			e = write(entry.address + sizeof(DirectoryEntry), ((uint8_t*)data)+written, size);
 			if (e != ErrorNone)
 				return e;
@@ -182,12 +231,15 @@ public:
 
 			entry.index++;
 			entry.address = get_free_sector();
+			if (entry.address == ErrorDirectoryFull)
+				return ErrorFull;
 			written += size;
 			remaining -= size;
 			used += SectorSize;
 		}
 		return ErrorNone;
 	}
+
 
 	/**
 	 * @brief Writes a file to the filesystem.
@@ -200,7 +252,10 @@ public:
 	{
 		error e = write(address, entry, sizeof(SpiFlashMemoryFilesystem::DirectoryEntry));
 		if (e == SpiFlashMemoryFilesystem::ErrorNone)
+		{
 			used += SectorSize;
+			write_index(address, true);
+		}
 		return e;
 	}
 
@@ -217,7 +272,7 @@ public:
 			if (!entry->is_valid())
 				return sector;
 		}
-		// TODO: return if not found.
+		return ErrorDirectoryFull;
 	}
 
 
@@ -226,7 +281,7 @@ public:
 	 * @param	filename The name of the file.
 	 * @returns The file id.
 	 */
-	fileid get_fileid(char* filename)
+	fileid get_fileid(const char* filename)
 	{
 		DirectoryEntry* entry = search(filename);
 		return entry->id;
@@ -240,7 +295,7 @@ public:
 	 * @param	length The length of the file.
 	 * @returns	The error code, if any.
 	 */
-	error read_file(char* filename, void* data, uint32_t length)
+	error read_file(const char* filename, void* data, uint32_t length)
 	{
 		fileid id = get_fileid(filename);
 		if (id == 0)
@@ -254,12 +309,12 @@ public:
 	 * @param	filename The name of the file to find.
 	 * @returns	Pointer to the directory entry, or nullptr.
 	 */
-	DirectoryEntry* search(char* filename)
+	DirectoryEntry* search(const char* filename)
 	{
 		DirectoryEntry* entry = iterate_directory(true);
 		while (entry != nullptr)
 		{
-			if (!strcmp(entry->filename, filename) && entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
+			if (entry->is_valid() && !strcmp(entry->filename, filename) && entry->index == 0 && entry->deleted == DirectoryEntry::FILE_NOT_DELETED)
 				return entry;
 			entry = iterate_directory();
 		}
@@ -322,11 +377,19 @@ public:
 		if (loop_callback != nullptr)
 			loop_callback();
 
-		DirectoryEntry* entry = read_directory(sector);
-		if (!entry->is_valid())
-			entry->address = sector;
-		sector += SectorSize;
-		return entry;
+		if (read_index(sector))
+		{
+			DirectoryEntry* entry = read_directory(sector);
+			if (!entry->is_valid())
+				entry->address = sector;
+			sector += SectorSize;
+			return entry;
+		}
+		else
+		{
+			sector += SectorSize;
+			return &null_entry;
+		}
 	}
 
 
@@ -363,6 +426,7 @@ public:
 			if (entry->is_valid() && entry->id == id)
 			{
 				sector_erase(entry->address);
+				write_index(entry->address, false);
 				used -= SectorSize;
 			}
 			entry = iterate_directory();
@@ -374,7 +438,7 @@ public:
 	 * @brief	Deletes the specified file.
 	 * @param 	filename The filename.
 	 */
-	void remove(char* filename)
+	void remove(const char* filename)
 	{
 		DirectoryEntry* entry = iterate_directory(true);
 		while (entry != nullptr)
@@ -382,6 +446,7 @@ public:
 			if (entry->is_valid() && !strcmp(filename, entry->filename))
 			{
 				sector_erase(entry->address);
+				write_index(entry->address, false);
 				used -= SectorSize;
 			}
 			entry = iterate_directory();
@@ -467,6 +532,8 @@ private:
 	uint32_t used = 0;
 	uint8_t buffer[PageSize];
 	void (*loop_callback)(void);
+	uint8_t* index;
+	DirectoryEntry null_entry = {0};
 };
 
 #endif /* INC_STM32_TOOLBOX_DEVICES_FLASH_SPIFLASHMEMORYFILESYSTEM_H_ */

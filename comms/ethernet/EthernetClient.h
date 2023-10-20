@@ -9,8 +9,6 @@
 class EthernetClient : public Client
 {
 public:
-	using Print::print;
-
 //	virtual int connect(const char *host, uint16_t port);
 	size_t write(const char *buf, size_t size) { return write((const uint8_t *)buf, size); }
 	size_t write(const char *buf) { return write((const uint8_t *)buf, strlen(buf)); }
@@ -99,11 +97,11 @@ public:
 	size_t write(const uint8_t *buf, size_t size)
 	{
 		if (_sock == MAX_SOCK_NUM) {
-			setWriteError();
+//			setWriteError();
 			return 0;
 		}
 		if (!socket->send(_sock, buf, size)) {
-			setWriteError();
+//			setWriteError();
 			return 0;
 		}
 		return size;

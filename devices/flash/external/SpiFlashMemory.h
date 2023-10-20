@@ -59,11 +59,11 @@ public:
 	static constexpr uint8_t ReadManufacturerId = 0x90;
 	static constexpr uint8_t ReadIdentification = 0x9f;
 
-	typedef uint16_t error;
-	static constexpr error ErrorNone = 0x00;
-	static constexpr error ErrorMisalignedPage = 0x01;  /// The address provided does not align with a page boundary.
-	static constexpr error ErrorLargerThanPage = 0x02;  /// An attempt was made to use program_page to program more than a page.
-	static constexpr error ErrorVerifyFailed = 0x04;   /// The written data was read back and it does not match.
+	typedef uint32_t error;
+	static constexpr error ErrorNone = 0x00000000;
+	static constexpr error ErrorMisalignedPage = 0x00000001;  /// The address provided does not align with a page boundary.
+	static constexpr error ErrorLargerThanPage = 0x00000002;  /// An attempt was made to use program_page to program more than a page.
+	static constexpr error ErrorVerifyFailed = 0x00000004;   /// The written data was read back and it does not match.
 
 	static constexpr uint32_t PageSize = 0x100;
 	static constexpr uint32_t SectorSize = 0x1000;
@@ -75,7 +75,7 @@ public:
 
 		bool is_valid(void)
 		{
-			return capacity != 0 && !(manufacturer == type == capacity);
+			return capacity != 0 && !((manufacturer == type) == capacity);
 		}
 	} RDID;
 

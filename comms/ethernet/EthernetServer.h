@@ -58,7 +58,7 @@ public:
 
 	virtual size_t write(uint8_t c)
 	{
-		write(&c, 1);
+		return write(&c, 1);
 	}
 
 
@@ -76,7 +76,7 @@ public:
 
 		return n;
 	}
-	using Print::write;
+	using PrintLite::write;
 
 
 private:

@@ -16,7 +16,6 @@
 
 #ifndef client_h
 #define client_h
-#include "Print.h"
 #include "Stream.h"
 #include "IPAddress.h"
 

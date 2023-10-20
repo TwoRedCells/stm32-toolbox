@@ -7,13 +7,11 @@
 #include "Ethernet.h"
 #include "utility/Timer.h"
 #include "w5500.h"
+#include "IcmpEcho.h"
+#include "IcmpEchoReply.h"
+#include "IcmpHeader.h"
+#include "IcmpStatus.h"
 
-#define REQ_DATASIZE 64
-#define ICMP_ECHOREPLY 0
-#define ICMP_ECHOREQ 8
-#define ICMP_ECHOREP 0
-#define TIME_EXCEEDED 11
-#define PING_TIMEOUT 1000
 
 #ifdef ICMPPING_INSERT_YIELDS
 #define ICMPPING_DOYIELD()		delay(2)
@@ -21,8 +19,6 @@
 #define ICMPPING_DOYIELD()
 #endif
 
-namespace Ping
-{
 
 // ICMPPING_ASYNCH_ENABLE -- define this to enable asynch operations
 //#define ICMPPING_ASYNCH_ENABLE
@@ -35,180 +31,8 @@ namespace Ping
 // will call a short delay() at critical junctures.
 // #define ICMPPING_INSERT_YIELDS
 
-typedef unsigned long icmp_time_t;
 
-
-typedef enum
-{
-	/*
-    Indicates whether a ping succeeded or failed due to one of various error
-    conditions. These correspond to error conditions that occur in this
-    library, not anything defined in the ICMP protocol.
-	 */
-	SUCCESS = 0,
-	SEND_TIMEOUT = 1, // Timed out sending the request
-	NO_RESPONSE = 2, // Died waiting for a response
-	BAD_RESPONSE = 3, // we got back the wrong type
-	ASYNC_SENT = 4
-} Status;
-
-
-struct ICMPHeader
-{
-	/*
-    Header for an ICMP packet. Does not include the IP header.
-	 */
-	uint8_t type;
-	uint8_t code;
-	uint16_t checksum;
-};
-
-
-struct ICMPEcho
-{
-	/*
-    Contents of an ICMP echo packet, including the ICMP header. Does not
-    include the IP header.
-	 */
-
-
-	/*
-    This constructor sets all fields and calculates the checksum. It is used
-    to create ICMP packet data when we send a request.
-    @param type: ICMP_ECHOREQ or ICMP_ECHOREP.
-    @param _id: Some arbitrary id. Usually set once per process.
-    @param _seq: The sequence number. Usually started at zero and incremented
-    once per request.
-    @param payload: An arbitrary chunk of data that we expect to get back in
-    the response.
-	 */
-	ICMPEcho(uint8_t type, uint16_t _id, uint16_t _seq, uint8_t * _payload)
-	: seq(_seq), id(_id), time(millis())
-	{
-		memcpy(payload, _payload, REQ_DATASIZE);
-		icmpHeader.type = type;
-		icmpHeader.code = 0;
-		icmpHeader.checksum = _checksum(*this);
-	}
-
-	/*
-    This constructor leaves everything zero. This is used when we receive a
-    response, since we nuke whatever is here already when we copy the packet
-    data out of the W5100.
-	 */
-	ICMPEcho()
-	: seq(0), id(0), time(0)
-	{
-		memset(payload, 0, sizeof(payload));
-		icmpHeader.code = 0;
-		icmpHeader.type = 0;
-		icmpHeader.checksum = 0;
-	}
-
-	/*
-    Serialize the header as a byte array, in big endian format.
-	 */
-
-	ICMPHeader icmpHeader;
-	uint16_t id;
-	uint16_t seq;
-	icmp_time_t time;
-	uint8_t payload [REQ_DATASIZE];
-
-
-	/*
-    Serialize the header as a byte array, in big endian format.
-	 */
-	void serialize(uint8_t * binData) const
-	{
-		*(binData++) = icmpHeader.type;
-		*(binData++) = icmpHeader.code;
-
-		*(uint16_t *)binData = htons(icmpHeader.checksum); binData += 2;
-		*(uint16_t *)binData = htons(id);                  binData += 2;
-		*(uint16_t *)binData = htons(seq);                 binData += 2;
-		*(icmp_time_t *)  binData = htonl(time);                binData += 4;
-
-		memcpy(binData, payload, sizeof(payload));
-	}
-
-	/*
-    Serialize the header as a byte array, in big endian format.
-	 */
-	void deserialize(uint8_t const * binData)
-	{
-		icmpHeader.type = *(binData++);
-		icmpHeader.code = *(binData++);
-
-		icmpHeader.checksum = ntohs(*(uint16_t *)binData); binData += 2;
-		id                  = ntohs(*(uint16_t *)binData); binData += 2;
-		seq                 = ntohs(*(uint16_t *)binData); binData += 2;
-
-		if (icmpHeader.type != TIME_EXCEEDED)
-		{
-			time = ntohl(*(icmp_time_t *)binData);   binData += 4;
-		}
-
-		memcpy(payload, binData, sizeof(payload));
-	}
-
-private:
-	uint16_t _checksum(const ICMPEcho& echo)
-	{
-		// calculate the checksum of an ICMPEcho with all fields but icmpHeader.checksum populated
-		unsigned long sum = 0;
-
-		// add the header, bytes reversed since we're using little-endian arithmetic.
-		sum += _makeUint16(echo.icmpHeader.type, echo.icmpHeader.code);
-
-		// add id and sequence
-		sum += echo.id + echo.seq;
-
-		// add time, one half at a time.
-		uint16_t const * time = (uint16_t const *)&echo.time;
-		sum += *time + *(time + 1);
-
-		// add the payload
-		for (uint8_t const * b = echo.payload; b < echo.payload + sizeof(echo.payload); b+=2)
-		{
-			sum += _makeUint16(*b, *(b + 1));
-		}
-
-		// ones complement of ones complement sum
-		sum = (sum >> 16) + (sum & 0xffff);
-		sum += (sum >> 16);
-		return ~sum;
-	}
-
-	inline uint16_t _makeUint16(const uint8_t& highOrder, const uint8_t& lowOrder)
-	{
-		// make a 16-bit unsigned integer given the low order and high order bytes.
-		// lowOrder first because the Arduino is little endian.
-		uint8_t value [] = {lowOrder, highOrder};
-		return *(uint16_t *)&value;
-	}
-};
-
-
-struct ICMPEchoReply
-{
-	/*
-    Struct returned by ICMPPing().
-    @param data: The packet data, including the ICMP header.
-    @param ttl: Time to live
-    @param status: SUCCESS if the ping succeeded. One of various error codes
-    if it failed.
-    @param addr: The ip address that we received the response from. Something
-    is borked if this doesn't match the IP address we pinged.
-	 */
-	ICMPEcho data;
-	uint8_t ttl;
-	Status status;
-	IPAddress addr;
-};
-
-
-class ICMPPing
+class Ping
 {
 	/*
     Function-object for sending ICMP ping requests.
@@ -221,7 +45,7 @@ public:
     @param id: The id to put in the ping packets. Can be pretty much any
     arbitrary number.
 	 */
-	ICMPPing(W5500* w5500, SOCKET socket, uint8_t id) :
+	Ping(W5500* w5500, SOCKET socket, uint8_t id) :
 #ifdef ICMPPING_ASYNCH_ENABLE
 		_curSeq(0), _numRetries(0), _asyncstart(0), _asyncstatus(BAD_RESPONSE),
 #endif
@@ -247,10 +71,10 @@ public:
     @param nRetries: Number of times to rety before giving up.
     @param result: ICMPEchoReply that will hold the result.
 	 */
-	void operator()(const IPAddress& addr, int nRetries, ICMPEchoReply& result)
+	void operator()(const IPAddress& addr, int nRetries, IcmpEchoReply& result)
 	{
 		openSocket();
-		ICMPEcho echoReq(ICMP_ECHOREQ, _id, _nextSeq++, _payload);
+		IcmpEcho echoReq(ICMP_ECHOREQ, _id, _nextSeq++, _payload);
 
 		for (_attempt=0; _attempt<nRetries; ++_attempt)
 		{
@@ -258,12 +82,12 @@ public:
 			ICMPPING_DOYIELD();
 
 			result.status = sendEchoRequest(addr, echoReq);
-			if (result.status == SUCCESS)
+			if (result.status == Success)
 			{
 				ICMPPING_DOYIELD();
 				receiveEchoReply(echoReq, addr, result);
 			}
-			if (result.status == SUCCESS)
+			if (result.status == Success)
 			{
 				break;
 			}
@@ -282,9 +106,9 @@ public:
     failed. If the request failed, the status indicates the reason for
     failure on the last retry.
 	 */
-	ICMPEchoReply operator()(const IPAddress& addr, int nRetries)
+	IcmpEchoReply operator()(const IPAddress& addr, int nRetries)
 	{
-		ICMPEchoReply reply;
+		IcmpEchoReply reply;
 		operator()(addr, nRetries, reply);
 		return reply;
 	}
@@ -364,7 +188,7 @@ private:
 		w5500->execute_command(_socket, Sock_OPEN);
 	}
 
-	Status sendEchoRequest(const IPAddress& addr, const ICMPEcho& echoReq)
+	IcmpStatus sendEchoRequest(const IPAddress& addr, const IcmpEcho& echoReq)
 	{
 		// I wish there were a better way of doing this, but if we use the uint32_t
 		// cast operator, we're forced to (1) cast away the constness, and (2) deal
@@ -376,10 +200,10 @@ private:
 		// write zero. This probably isn't actually necessary.
 		w5500->writeSnDPORT(_socket, 0);
 
-		uint8_t serialized [sizeof(ICMPEcho)];
+		uint8_t serialized [sizeof(IcmpEcho)];
 		echoReq.serialize(serialized);
 
-		w5500->send_data_processing(_socket, serialized, sizeof(ICMPEcho));
+		w5500->send_data_processing(_socket, serialized, sizeof(IcmpEcho));
 		w5500->execute_command(_socket, Sock_SEND);
 
 		while ((w5500->readSnIR(_socket) & SnIR::SEND_OK) != SnIR::SEND_OK)
@@ -387,17 +211,17 @@ private:
 			if (w5500->readSnIR(_socket) & SnIR::TIMEOUT)
 			{
 				w5500->writeSnIR(_socket, (SnIR::SEND_OK | SnIR::TIMEOUT));
-				return SEND_TIMEOUT;
+				return SendTimeout;
 			}
 
 			ICMPPING_DOYIELD();
 		}
 		w5500->writeSnIR(_socket, SnIR::SEND_OK);
-		return Status::SUCCESS;
+		return Success;
 	}
 
 
-	void receiveEchoReply(const ICMPEcho& echoReq, const IPAddress& addr, ICMPEchoReply& echoReply)
+	void receiveEchoReply(const IcmpEcho& echoReq, const IPAddress& addr, IcmpEchoReply& echoReply)
 	{
 		icmp_time_t start = millis();
 		while (millis() - start < ping_timeout)
@@ -422,9 +246,9 @@ private:
 			uint8_t dataLen = ipHeader[4];
 			dataLen = (dataLen << 8) + ipHeader[5];
 
-			uint8_t serialized[sizeof(ICMPEcho)];
-			if (dataLen > sizeof(ICMPEcho))
-				dataLen = sizeof(ICMPEcho);
+			uint8_t serialized[sizeof(IcmpEcho)];
+			if (dataLen > sizeof(IcmpEcho))
+				dataLen = sizeof(IcmpEcho);
 			w5500->read_data(_socket, (uint16_t) buffer, serialized, dataLen);
 			echoReply.data.deserialize(serialized);
 
@@ -440,7 +264,7 @@ private:
 			case ICMP_ECHOREP: {
 				if (echoReply.data.id == echoReq.id
 						&& echoReply.data.seq == echoReq.seq) {
-					echoReply.status = Status::SUCCESS;
+					echoReply.status = Success;
 					return;
 				}
 				break;
@@ -460,7 +284,7 @@ private:
 				uint16_t sourceSeq = ntohs(*(uint16_t * )(sourceIcmpHeader + 6));
 
 				if (sourceId == echoReq.id && sourceSeq == echoReq.seq) {
-					echoReply.status = BAD_RESPONSE;
+					echoReply.status = BadResponse;
 					return;
 				}
 				break;
@@ -469,7 +293,7 @@ private:
 
 
 		}
-		echoReply.status = NO_RESPONSE;
+		echoReply.status = NoResponse;
 	}
 
 
@@ -479,9 +303,9 @@ private:
 	 * When ICMPPING_ASYNCH_ENABLE is defined, we have access to the
 	 * asyncStart()/asyncComplete() methods from the API.
 	 */
-	bool asyncSend(ICMPEchoReply& result)
+	bool asyncSend(EchoReply& result)
 	{
-		ICMPEcho echoReq(ICMP_ECHOREQ, _id, _curSeq, _payload);
+		Echo echoReq(ICMP_ECHOREQ, _id, _curSeq, _payload);
 
 		Status sendOpResult(NO_RESPONSE);
 		bool sendSuccess = false;
@@ -515,7 +339,7 @@ private:
      @return: true on async request sent, false otherwise.
      @author: Pat Deegan, http://psychogenic.com
 	 */
-	bool asyncStart(const IPAddress& addr, int nRetries, ICMPEchoReply& result)
+	bool asyncStart(const IPAddress& addr, int nRetries, EchoReply& result)
 	{
 		openSocket();
 
@@ -539,7 +363,7 @@ private:
               false if we're still waiting for it to complete.
      @author: Pat Deegan, http://psychogenic.com
 	 */
-	bool asyncComplete(ICMPEchoReply& result)
+	bool asyncComplete(EchoReply& result)
 	{
 		if (_asyncstatus != ASYNC_SENT)
 		{
@@ -554,7 +378,7 @@ private:
 		if (w5500->get_rx_received_size(_socket))
 		{
 			// ooooh, we've got a pending reply
-			ICMPEcho echoReq(ICMP_ECHOREQ, _id, _curSeq, _payload);
+			Echo echoReq(ICMP_ECHOREQ, _id, _curSeq, _payload);
 			receiveEchoReply(echoReq, _addr, result);
 			_asyncstatus = result.status; // make note of this status, whatever it is.
 			return true; // whatever the result of the receiveEchoReply(), the async op is done.
@@ -594,6 +418,9 @@ private:
 
 #endif	/* ICMPPING_ASYNCH_ENABLE */
 
+
+
+
 	// holds the timeout, in ms, for all objects of this class.
 	static inline uint16_t ping_timeout = PING_TIMEOUT;
 #ifdef ICMPPING_ASYNCH_ENABLE
@@ -610,6 +437,6 @@ private:
 	uint8_t _payload[REQ_DATASIZE];
 	W5500* w5500;
 };
-}
+
 
 #endif /* INC_STM32_TOOLBOX_COMMS_ETHERNET_PING_H_ */

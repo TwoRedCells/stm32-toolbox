@@ -32,7 +32,7 @@ public:
 					buffer[offset] = hue;
 			}
 		}
-		else
+		else if (x < OLED_SSD1306_WIDTH && y < OLED_SSD1306_HEIGHT)
 		{
 			OledSsd1306::pixel(x, y, hue);
 		}
