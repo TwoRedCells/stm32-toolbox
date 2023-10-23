@@ -55,7 +55,7 @@ public:
 	// These include faulted batteries.
 	float virtual_all_voltage; // mV
 	uint8_t virtual_all_state_of_charge;
-	int8_t virtual_all_temperature; // 0.125C
+	int16_t virtual_all_temperature; // 0.125C
 	uint16_t heater_status;
 	uint8_t master_node_id;
 
