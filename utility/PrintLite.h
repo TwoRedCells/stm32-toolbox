@@ -109,6 +109,7 @@ public:
 					puth(u >> 8 & 0xf);
 					puth(u >> 4 & 0xf);
 					puth(u & 0xf);
+					count += 8;
 					break;
 				case '0':
 					zero_before_decimal = true;
