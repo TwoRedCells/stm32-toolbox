@@ -274,7 +274,7 @@ public:
 	 */
 	void binaryfile(NeoPixelBinaryFile *binaryfile, uint8_t channel)
 	{
-		clear();
+//		clear();
 		pattern = LED_PATTERN_BINARYFILE;
 		binary_file = binaryfile;
 		binary_channel = channel;
@@ -284,6 +284,7 @@ public:
 		binary_refresh_time = binary_file->file_header->refresh_time;
 		binary_frame_length = sizeof(NeoPixelBinaryFile::FrameHeader) + binary_channel_count * sizeof(NeoPixelBinaryFile::Pixel) * binary_pixel_count;
 		binary_frame_index = 0;
+		timer.reset();
 	}
 #endif
 

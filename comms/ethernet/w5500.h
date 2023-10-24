@@ -246,6 +246,7 @@ public:
 	}
 
 
+private:
 	/**
 	 * Sends 8-bit data over the SPI peripheral.
 	 * @param spi SPI peripheral handle.
@@ -320,7 +321,6 @@ public:
 	}
 
 
-private:
 	void write(uint16_t _addr, uint8_t _cb, uint8_t _data)
 	{
 		select_ss();
