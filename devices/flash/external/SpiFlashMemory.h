@@ -12,6 +12,7 @@
 
 
 #include <stdint.h>
+#include <memory.h>
 #include "comms/SPI.h"
 
 

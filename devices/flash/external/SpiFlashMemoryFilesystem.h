@@ -11,6 +11,7 @@
 #define INC_STM32_TOOLBOX_DEVICES_FLASH_SPIFLASHMEMORYFILESYSTEM_H_
 
 #include <math.h>
+#include <string.h>
 #include "tinycrypt/tiny_md5.h"
 #include "SpiFlashMemory.h"
 
