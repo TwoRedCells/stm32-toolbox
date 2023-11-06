@@ -12,7 +12,6 @@
 #define INC_OUTPUTS_FAN_H_
 
 #include <math.h>
-#include "devices/basic/Pwm.h"
 #include "utility/Timer.h"
 
 
