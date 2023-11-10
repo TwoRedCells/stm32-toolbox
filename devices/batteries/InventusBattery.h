@@ -111,7 +111,7 @@ public:
 	{
 		uint8_t type = battery_type >> 4;
 		assert(type >= 0 && type < 14);
-		const char* long_strings[] = { "Unknown", "Lead acid", "Nickel cadmium", "Nickel zinc", "Nickel iron", "Silver oxide", "Nickel hydrogen", "Nickel metal hydride", "Zinc/Alkaline/Manganese dioxide", "Lithium-ion", "Zinc bromine", "Metal air", "Lithium/Iron sulfide", "Sodium beta" };
+		const char* long_strings[] = { "Unknown", "Lead acid", "Nickel cadmium", "Nickel zinc", "Nickel iron", "Silver oxide", "Nickel hydrogen", "Nickel metal hydride", "Zinc/Alkaline/Manganese dioxide", "Lithium-ion", "Nickel Cobalt Manganese", "Metal air", "Lithium/Iron sulfide", "Sodium beta" };
 		return long_strings[type];
 	}
 
