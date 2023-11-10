@@ -19,8 +19,8 @@ class Inventus : public CanOpen, CanOpen::ICanOpenCallback
 {
 public:
 	static constexpr uint16_t Index_ManufacturerInformation = 0x1018;
-	static constexpr uint8_t Subindex_PartNumber1 = 0x02;
-	static constexpr uint8_t Subindex_PartNumber2 = 0x03;
+	static constexpr uint8_t Subindex_ProductCode = 0x02;
+	static constexpr uint8_t Subindex_RevisionNumber = 0x03;
 	static constexpr uint16_t Index_BatteryStatus = 0x6000;
 	static constexpr uint16_t Index_ChargerStatus = 0x6001;
 	static constexpr uint16_t Index_Temperature = 0x6010;
@@ -245,11 +245,11 @@ private:
 		}
 		else if (index == Index_BatterySerial)
 		{
-			battery->serial_number[8] = 0;
 			if (subindex == Subindex_BatterySerial1)
 				bytes_to_string(data, battery->serial_number, 4, false);
 			else if (subindex == Subindex_BatterySerial2)
 				bytes_to_string(data, battery->serial_number+4, 4, false);
+			battery->serial_number[5] = 0;
 		}
 		else if (index == Index_CumulativeCharge)
 			battery->cumulative_charge = lsb_uint32_to_uint32(data);
@@ -291,9 +291,9 @@ private:
 		{
 			battery->part_number[4] = '-';
 			battery->part_number[9] = 0;
-			if (subindex == Subindex_PartNumber1)
+			if (subindex == Subindex_ProductCode)
 				bytes_to_string(data, battery->part_number, 4, false);
-			else if (subindex == Subindex_PartNumber2)
+			else if (subindex == Subindex_RevisionNumber)
 				bytes_to_string(data, battery->part_number+5, 4, false);
 		}
 
