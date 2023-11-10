@@ -122,7 +122,7 @@ public:
 	 */
 	static const char* get_mode_string(uint8_t mode)
 	{
-		assert(mode < 8);
+		assert(mode < 9);
 		const char* mode_strings[] = { "NONE", "BALANCING",	"SHIP",	"PRE-DISCHARGE", "STANDBY",	"DISCHARGE", "CHARGE", "FAULT",	"PRE-CHARGE" };
 		return mode_strings[mode];
 	}
