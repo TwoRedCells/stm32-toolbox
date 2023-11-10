@@ -80,6 +80,9 @@ public:
 	uint32_t cumulative_charge = 0;
 	char serial_number[9] = {0};
 	char part_number[10] = {0};
+	char mfr_firmware[5] = {0};
+	char bms_firmware[5] = {0};
+	float cell_voltage[16] = {0};
 	uint16_t number_of_cells = 0;
 	uint16_t max_charge_current = 0;
 	uint16_t battery_capacity = 0;
