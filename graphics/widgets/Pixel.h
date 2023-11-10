@@ -36,7 +36,7 @@ public:
 
 	/**
 	 * Renders this widget on a canvas.
-	 * @param canvas The canvas to paint on.
+	 * @param surface The canvas to paint on.
 	 */
 	void render(IPaintable<TColour>* surface) override
 	{
@@ -44,7 +44,18 @@ public:
 			surface->pixel(this->origin_x, this->origin_y, this->colour);
 	}
 
-protected:
+
+	/**
+	 * Renders a single pixel.
+	 * @param surface The canvas to paint on.
+	 * @param x The x-coordinate.
+	 * @param y The y-coordinate.
+	 * @param colour The colour.
+	 */
+	static void render(IPaintable<TColour>* surface, uint32_t x, uint32_t y, TColour colour)
+	{
+		surface->pixel(x, y, colour);
+	}
 };
 
 #endif /* LIB_STM32_TOOLBOX_GRAPHICS_PIXEL_H_ */
