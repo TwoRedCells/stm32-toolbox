@@ -65,10 +65,7 @@ public:
 	{
 		set_callback(this);
 		for (uint8_t i=0; i<maximum_parallel_batteries; i++)
-		{
-			batteries[i] = {0};
 			batteries[i].node_id = 0x31 + i;
-		}
 	}
 
 
@@ -412,10 +409,9 @@ private:
 		battery->timestamp_tpdo6 = Timer::now();
 	}
 
-	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3f
-
 
 private:
+	InventusBattery batteries[maximum_parallel_batteries];  // 0x31 to 0x3f
 	const uint32_t online_time = seconds(30);
 
 };
