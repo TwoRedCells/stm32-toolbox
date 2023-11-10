@@ -441,7 +441,7 @@ public:
 	static void bytes_to_string(uint8_t* data, char* dest, uint8_t length, bool terminate=true)
 	{
 		for (uint8_t i=0; i < length; i++)
-			dest[i] = (char)data[length-1-i];
+			dest[i] = (char)data[i];
 		if (terminate)
 			dest[length] = '\0';
 	}

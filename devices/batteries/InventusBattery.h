@@ -79,6 +79,7 @@ public:
 	float charge_expended_during_last_charge = 0;
 	uint32_t cumulative_charge = 0;
 	char serial_number[9] = {0};
+	char part_number[10] = {0};
 	uint16_t number_of_cells = 0;
 	uint16_t max_charge_current = 0;
 	uint16_t battery_capacity = 0;

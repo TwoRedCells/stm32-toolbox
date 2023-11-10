@@ -18,6 +18,9 @@
 class Inventus : public CanOpen, CanOpen::ICanOpenCallback
 {
 public:
+	static constexpr uint16_t Index_ManufacturerInformation = 0x1018;
+	static constexpr uint8_t Subindex_PartNumber1 = 0x02;
+	static constexpr uint8_t Subindex_PartNumber2 = 0x03;
 	static constexpr uint16_t Index_BatteryStatus = 0x6000;
 	static constexpr uint16_t Index_ChargerStatus = 0x6001;
 	static constexpr uint16_t Index_Temperature = 0x6010;
@@ -284,6 +287,15 @@ private:
 			battery->minimum_cell_voltage = lsb_uint16_to_float(data, 1000);
 		else if (index == Index_BatteryMaximumCellVoltage)
 			battery->maximum_cell_voltage = lsb_uint16_to_float(data, 1000);
+		else if (index == Index_ManufacturerInformation)
+		{
+			battery->part_number[4] = '-';
+			battery->part_number[9] = 0;
+			if (subindex == Subindex_PartNumber1)
+				bytes_to_string(data, battery->part_number, 4, false);
+			else if (subindex == Subindex_PartNumber2)
+				bytes_to_string(data, battery->part_number+5, 4, false);
+		}
 
 		battery->metadata_received = true;
 	}
