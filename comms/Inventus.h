@@ -321,11 +321,11 @@ private:
 			break;
 
 		case Index_BatteryMinimumCellTemperature:
-			battery->minimum_cell_temperature = lsb_uint16_to_float(data, 8);
+			battery->minimum_cell_temperature = lsb_int16_to_float(data, 8);
 			break;
 
 		case Index_BatteryMaximumCellTemperature:
-			battery->maximum_cell_temperature = lsb_uint16_to_float(data, 8);
+			battery->maximum_cell_temperature = lsb_int16_to_float(data, 8);
 			break;
 
 		case Index_BatteryMinimumCellVoltage:
