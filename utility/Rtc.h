@@ -7,9 +7,10 @@
 /// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
 
 
+#include "utility/DateTime.h"
+
 #ifndef INC_STM32_TOOLBOX_DEVICES_RTC_H_
 #define INC_STM32_TOOLBOX_DEVICES_RTC_H_
-
 
 class Rtc
 {
@@ -21,29 +22,14 @@ public:
 	 * Gets the RTC value as a UNIX timestamp.
 	 * @returns	The RTC value.
 	 */
-	uint32_t get_time()
+	int32_t get_time()
 	{
 		RTC_TimeTypeDef rtc_time;
 		RTC_DateTypeDef rtc_date;
-		uint32_t epoch_time;
-
-		// Get RTC time and date
 		HAL_RTC_GetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
 		HAL_RTC_GetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
-
-		// Convert RTC time and date to UNIX epoch timestamp
-		epoch_time = (rtc_date.Year + 2000 - 1970) * 31536000; // Years to seconds
-		for (int i = 1970; i < rtc_date.Year + 2000; i++) {
-			if (is_leap_year(i)) {
-				epoch_time += 86400; // Add leap day
-			}
-		}
-		epoch_time += (rtc_date.Date - 1) * 86400; // Days to seconds
-		epoch_time += rtc_time.Hours * 3600; // Hours to seconds
-		epoch_time += rtc_time.Minutes * 60; // Minutes to seconds
-		epoch_time += rtc_time.Seconds; // Seconds
-
-		return epoch_time;
+		DateTime now(rtc_date.Year+2000, rtc_date.Month-1, rtc_date.Date-1, rtc_time.Hours, rtc_time.Minutes, rtc_time.Seconds);
+		return now.ToTimestamp();
 	}
 
 
@@ -51,7 +37,7 @@ public:
 	 * Sets the RTC to the specified value.
 	 * @param	time The time as a UNIX timestamp.
 	 */
-	void set_time(uint32_t time)
+	void set_time(int32_t time)
 	{
 		RTC_TimeTypeDef rtc_time;
 		RTC_DateTypeDef rtc_date;
@@ -70,10 +56,26 @@ public:
 		remaining_time /= 12;
 		rtc_date.Year = remaining_time - 30;
 
-		// Set RTC time and date
 		HAL_RTC_SetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
 		HAL_RTC_SetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
 	}
+
+	void set_time(DateTime time)
+	{
+		RTC_TimeTypeDef rtc_time {
+			.Hours = time.hour,
+					.Minutes = time.minute,
+					.Seconds = time.second
+		};
+		RTC_DateTypeDef rtc_date {
+					.Month = time.month + 1,
+					.Date = time.day + 1,
+					.Year = time.year - 2000,
+		};
+		HAL_RTC_SetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
+		HAL_RTC_SetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
+	}
+
 
 private:
 	RTC_HandleTypeDef* hrtc_;

@@ -16,6 +16,8 @@
 #define INC_COMMS_SERIAL_HPP_
 
 #include "utility/PrintLite.h"
+#include "toolbox.h"
+
 
 /**
  * @brief	Wrapper for serial communications.
@@ -40,29 +42,24 @@ public:
 	 */
 	size_t write(uint8_t c)
 	{
-#ifdef FREERTOS
-		osMutexAcquire(mutex, osWaitForever);
+#ifdef FREERTOS_CONFIG_H
+//		osMutexAcquire(mutex, osWaitForever);
 #endif
+#if SERIAL_USE_DMA_TX
+		HAL_UART_Transmit_DMA(handle, &c, 1);
+
+#else
 		HAL_UART_Transmit(handle, &c, 1, HAL_MAX_DELAY);
-#ifdef FREERTOS
-		osMutexRelease(mutex);
+#endif
+#ifdef FREERTOS_CONFIG_H
+//		osMutexRelease(mutex);
 #endif
 		return 1;
 	}
 
-	void end(void)
-	{
-		// For compatibility.
-	}
-
-	void flush(void)
-	{
-		// The FIFO automatically empties on STM32.
-	}
-
 private:
 	UART_HandleTypeDef *handle;
-#ifdef FREERTOS
+#ifdef FREERTOS_CONFIG_H
     osMutexId_t mutex;
 #endif
 } ;

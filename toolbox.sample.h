@@ -14,6 +14,9 @@
 #define HIGH (GPIO_PIN_SET)
 #define LOW (GPIO_PIN_RESET)
 
+// FreeRTOS
+#define FREERTOS
+
 // CAN
 #define CAN_DEFAULT_BITRATE (125000)
 
@@ -68,6 +71,9 @@
 
 // Displays
 #define ENABLE_ILI9488_DMA (0)  // Stopped working.
+
+// Serial.
+#define SERIAL_USE_DMA_TX (0)  // Whether to use DMA for transmitting.
 
 // Used by `Revision`, possibly others. Set to 0 if compiler says functions don't exist.
 #define ENABLE_ADC_CALIBRATION (0)

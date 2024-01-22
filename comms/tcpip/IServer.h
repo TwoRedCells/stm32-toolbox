@@ -19,7 +19,7 @@
 
 #include <utility/PrintLite.h>
 
-class Server: public PrintLite
+class IServer: public PrintLite
 {
 public:
 	virtual void begin() =0;

@@ -38,6 +38,14 @@
  * @remarks	The functionality of this class is optimized to be as small as possible for use with microcontrollers with limited
  *  		resources. As such, it should not be considered a substitute for a full printf function, either in terms of scope
  *			of features, or compatibility.
+ *
+ *			Usage:
+ *			%% - The percent sign
+ *			%c - An ASCII character (char)
+ *			%s - A NUL-terminated string (char *)
+ *			%d - An integer (uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t)
+ *			%04d - An integer padded with preceding zeros to a width of 4 characters.
+ *
  */
 class PrintLite
 {
@@ -53,91 +61,127 @@ public:
 	{
 		va_list a;
 		va_start(a, format);
-		int32_t n;
-		uint32_t u;
 		uint16_t count = 0;
 
-		bool zero_before_decimal = false;
+		// Internal state.
+		bool zero_padding = false;
+		uint8_t decimals = 0;
+		int8_t fixed_width = Auto;
+
 
 		while(char c = *format++)
 		{
 			if(c == '%')
 			{
-				switch(c = *format++)
+				for(bool formatting=true; formatting;)
 				{
-				case 's':                       // String
-					write(va_arg(a, char*));
-					break;
-				case 'c':                       // Char
-					write(va_arg(a, int));
-					count++;
-					break;
-				case 'd':
-				case 'i':                       // 16 bit signed integer
-				case 'u':                       // 16 bit unsigned integer
-					n = va_arg(a, int32_t);
-					if(c == 'i' && n < 0) n = -n, write('-');
-					count += xtoa((uint16_t)n);
-					break;
-				case 'l':                       // 32 bit long signed integer
-				case 'n':                       // 32 bit long unsigned integer
-					n = va_arg(a, int32_t);
-					if(c == 'l' && n < 0) n = -n, write('-');
-					count += xtoa((uint32_t)n);
-					break;
-				case 'x':                       // 16 bit heXadecimal
-					u = va_arg(a, uint32_t);
-					puth(u >> 12);
-					puth(u >> 8);
-					puth(u >> 4);
-					puth(u);
-					count += 4;
-					break;
-				case 'y':                       // 8 bit heXadecimal
-					u = va_arg(a, uint32_t);
-					puth(u >> 4);
-					puth(u);
-					count += 2;
-					break;
-				case 'z':                       // 32 bit heXadecimal
-					u = va_arg(a, uint32_t);
-					puth(u >> 28 & 0xf);
-					puth(u >> 24 & 0xf);
-					puth(u >> 20 & 0xf);
-					puth(u >> 16 & 0xf);
-					puth(u >> 12 & 0xf);
-					puth(u >> 8 & 0xf);
-					puth(u >> 4 & 0xf);
-					puth(u & 0xf);
-					count += 8;
-					break;
-				case '0':
-					zero_before_decimal = true;
-					format++;
-					// Fall through.
-				case '.':						// float
-				{
-					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
-					double f = va_arg(a, double);
-					if (f < 0) f = -f, write('-'), count++;  // Negative.
-					uint32_t whole = (uint32_t)f;
-					if (whole == 0 && zero_before_decimal)
-						write('0'), count++;
-					else
-						count += xtoa(f);
-					if (dec > 0)
+					switch(c = *format++)
 					{
-						write('.'), count++;
-						count += xtoa((f - (int16_t)f) * pow(10, dec), dec);
+					case 's':                       // String
+						write(va_arg(a, char*));
+						formatting = false;
+						break;
+					case 'c':                       // Char
+						write(va_arg(a, int));
+						count++;
+						formatting = false;
+						break;
+					case 'i':                       // 16 bit signed integer
+					case 'u':                       // 16 bit unsigned integer
+						//						n = va_arg(a, int32_t);
+						//						if(c == 'i' && n < 0) n = -n, write('-');
+						//						count += xtoa((uint16_t)n);
+						//						fixed_width = 0;
+						//						break;
+					case 'd':
+					case 'l':                       // 32 bit long signed integer
+					case 'n':                       // 32 bit long unsigned integer
+					{
+						int32_t n = va_arg(a, int32_t);
+						if(c == 'l' && n < 0) n = -n, write('-');
+						count += xtoa((uint32_t)n, fixed_width);
+						fixed_width = Auto;
+						zero_padding = false;
+						formatting = false;
+						break;
 					}
-					format++;  // Discard the f.
-					zero_before_decimal = false;
-					break;
-				}
-				case 0:
-					return count;
-				default:
-					goto bad_fmt;
+					case 'x':                       // 16 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						puth(u >> 12);
+						puth(u >> 8);
+						puth(u >> 4);
+						puth(u);
+						count += 4;
+						formatting = false;
+						break;
+					}
+					case 'y':                       // 8 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						puth(u >> 4);
+						puth(u);
+						count += 2;
+						formatting = false;
+						break;
+					}
+					case 'z':                       // 32 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						puth(u >> 28 & 0xf);
+						puth(u >> 24 & 0xf);
+						puth(u >> 20 & 0xf);
+						puth(u >> 16 & 0xf);
+						puth(u >> 12 & 0xf);
+						puth(u >> 8 & 0xf);
+						puth(u >> 4 & 0xf);
+						puth(u & 0xf);
+						count += 8;
+						formatting = false;
+						break;
+					}
+					case '0':
+						zero_padding = true;
+						format++;
+						break;
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						fixed_width = c - 0x30;
+						zero_padding = true;
+						break;
+					case '.':						// float
+						decimals = c - 0x30;  // Number of digits to the right of the decimal.
+						break;
+					case 'f':
+					{
+						double f = va_arg(a, double);
+						if (f < 0) f = -f, write('-'), count++;  // Negative.
+						uint32_t whole = (uint32_t)f;
+						if (whole == 0 && zero_padding)
+							write('0'), count++;
+						else
+							count += xtoa(f);
+						if (decimals > 0)
+						{
+							write('.'), count++;
+							count += xtoa((f - (int16_t)f) * pow(10, decimals), decimals);
+						}
+						zero_padding = false;
+						formatting = false;
+						break;
+					}
+					case 0:
+						return count;
+					default:
+						goto bad_fmt;
+					}
 				}
 			}
 			else
@@ -173,96 +217,125 @@ public:
 	static uint16_t vsprintf(char* buffer, const char *format, va_list a)
 	{
 		char* p = buffer;  // Pointer to current character.
-		bool zero_before_decimal = false;
+
+		// Internal state.
+		bool zero_padding = false;
+		uint8_t decimals = 0;
+		int8_t fixed_width = Auto;
 
 		while(char c = *format++)
 		{
 			if(c == '%')
 			{
-				switch(c = *format++)
+				for (bool formatting=true; formatting;)
 				{
-				case 's':                       // String
-				{
-					char* str = va_arg(a, char*);
-					while (*str != '\0')
-						*p++ = *str++;
-					break;
-				}
-				case 'c':                       // Char
-					*p++ = va_arg(a, int);
-					break;
-				case 'd':
-				case 'i':                       // 16 bit signed integer
-				case 'u':                       // 16 bit unsigned integer
-				{
-					int32_t n = va_arg(a, int32_t);
-					if(c == 'i' && n < 0) n = -n, *p++ = '-';
-					p += xtoa((uint16_t)n, p);
-					break;
-				}
-				case 'l':                       // 32 bit long signed integer
-				case 'n':                       // 32 bit long unsigned integer
-				{
-					int32_t n = va_arg(a, int32_t);
-					if(c == 'l' && n < 0) n = -n, *p++ = '-';
-					p += xtoa((uint32_t)n, p);
-					break;
-				}
-				case 'x':                       // 16 bit heXadecimal
-				{
-					uint32_t u = va_arg(a, uint32_t);
-					*p++ = hex[u >> 12 & 0xf];
-					*p++ = hex[u >> 8 & 0xf];
-					*p++ = hex[u >> 4 & 0xf];
-					*p++ = hex[u & 0xf];
-					break;
-				}
-				case 'y':                       // 8 bit heXadecimal
-				{
-					uint32_t u = va_arg(a, uint32_t);
-					*p++ = hex[u >> 4 & 0xf];
-					*p++ = hex[u & 0xf];
-					break;
-				}
-				case 'z':                       // 32 bit heXadecimal
-				{
-					uint32_t u = va_arg(a, uint32_t);
-					*p++ = hex[u >> 28 & 0xf];
-					*p++ = hex[u >> 24 & 0xf];
-					*p++ = hex[u >> 20 & 0xf];
-					*p++ = hex[u >> 16 & 0xf];
-					*p++ = hex[u >> 12 & 0xf];
-					*p++ = hex[u >> 8 & 0xf];
-					*p++ = hex[u >> 4 & 0xf];
-					*p++ = hex[u & 0xf];
-					break;
-				}
-				case '0':
-					zero_before_decimal = true;
-					format++;
-				case '.':						// float
-				{
-					uint32_t dec = *format++ - 0x30;  // Number of digits to the right of the decimal.
-					double f = va_arg(a, double);
-					if (f < 0) f = -f, *p++ = '-';  // Negative.
-					uint32_t whole = (uint32_t)f;
-					if (count_digits(whole) == 0 && zero_before_decimal)
-						*p++ = '0';
-					else
-						p += xtoa(f, p);
-					if (dec > 0)
+					switch(c = *format++)
 					{
-						*p++ = '.';
-						p += xtoa((f - (int16_t)f) * pow(10, dec), p, dec);
+					case 's':                       // String
+					{
+						char* str = va_arg(a, char*);
+						while (*str != '\0')
+							*p++ = *str++;
+						formatting = false;
+						break;
 					}
-					format++;  // Discard the f.
-					zero_before_decimal = false;
-					break;
-				}
-				case 0:
-					return p - buffer;
-				default:
-					goto bad_fmt;
+					case 'c':                       // Char
+						*p++ = va_arg(a, int);
+						formatting = false;
+						break;
+					case 'd':
+					case 'i':                       // 16 bit signed integer
+					case 'u':                       // 16 bit unsigned integer
+						//				{
+						//					int32_t n = va_arg(a, int32_t);
+						//					if(c == 'i' && n < 0) n = -n, *p++ = '-';
+						//					p += xtoa((uint16_t)n, p);
+						//					break;
+						//				}
+					case 'l':                       // 32 bit long signed integer
+					case 'n':                       // 32 bit long unsigned integer
+					{
+						int32_t n = va_arg(a, int32_t);
+						if(c == 'l' && n < 0) n = -n, *p++ = '-';
+						p += xtoa((uint32_t)n, p, fixed_width);
+						fixed_width = Auto;
+						zero_padding = false;
+						formatting = false;
+						break;
+					}
+					case 'x':                       // 16 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						*p++ = hex[u >> 12 & 0xf];
+						*p++ = hex[u >> 8 & 0xf];
+						*p++ = hex[u >> 4 & 0xf];
+						*p++ = hex[u & 0xf];
+						formatting = false;
+						break;
+					}
+					case 'y':                       // 8 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						*p++ = hex[u >> 4 & 0xf];
+						*p++ = hex[u & 0xf];
+						formatting = false;
+						break;
+					}
+					case 'z':                       // 32 bit heXadecimal
+					{
+						uint32_t u = va_arg(a, uint32_t);
+						*p++ = hex[u >> 28 & 0xf];
+						*p++ = hex[u >> 24 & 0xf];
+						*p++ = hex[u >> 20 & 0xf];
+						*p++ = hex[u >> 16 & 0xf];
+						*p++ = hex[u >> 12 & 0xf];
+						*p++ = hex[u >> 8 & 0xf];
+						*p++ = hex[u >> 4 & 0xf];
+						*p++ = hex[u & 0xf];
+						formatting = false;
+						break;
+					}
+					case '0':
+						zero_padding = true;
+						break;
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						fixed_width = c - 0x30;
+						zero_padding = true;
+						break;
+					case '.':						// float
+						decimals = c - 0x30;  // Number of digits to the right of the decimal.
+						break;
+					case 'f':
+					{
+						double f = va_arg(a, double);
+						if (f < 0) f = -f, *p++ = '-';  // Negative.
+						uint32_t whole = (uint32_t)f;
+						if (count_digits(whole) == 0 && zero_padding)
+							*p++ = '0';
+						else
+							p += xtoa(f, p);
+						if (decimals > 0)
+						{
+							*p++ = '.';
+							p += xtoa((f - (int16_t)f) * pow(10, decimals), p, decimals);
+						}
+						zero_padding = false;
+						formatting = false;
+						break;
+					}
+					case 0:
+						return p - buffer;
+					default:
+						goto bad_fmt;
+					}
 				}
 			}
 			else

@@ -37,7 +37,7 @@ public:
     /**
      * Performs one-time initialization of the logging subsystem.
      */
-    void setup(Serial *port)
+    Log(Serial *port)
     {
         #ifdef DEBUG
     	serial = port;
@@ -68,7 +68,6 @@ public:
 
         serial->printf("\r\n# %s: ", level_names[level]);
         serial->printf(format, args...);
-        serial->flush();
         last_level = level;
         #endif
     }
@@ -86,7 +85,6 @@ public:
             return;
         serial->printf(format, args...);
         serial->print(" ");
-        serial->flush();
         #endif
     }
 
@@ -102,7 +100,6 @@ public:
             return;
         serial->print(message, base);
         serial->print(" ");
-        serial->flush();
         #endif    
     }
 

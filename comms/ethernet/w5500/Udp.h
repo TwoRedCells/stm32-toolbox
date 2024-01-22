@@ -39,58 +39,41 @@
 
 
 #include "Socket.h"
-#include "Udp.h"
-#include "Ethernet.h"
+#include "comms/tcpip/IUdp.h"
+#include "comms/tcpip/IPAddress.h"
 
-class EthernetUDP : public Udp
+#ifndef word
+#define word(a, b) ( (uint16_t)((a)<<8) | (b) )
+#endif
+
+
+class Udp : public IUdp
 {
 public:
-	/* Constructor */
-	EthernetUDP(Socket* socket) : _sock(MAX_SOCK_NUM)
+	Udp(Socket* socket)
 	{
 		this->socket = socket;
 	}
 
-	/* Start EthernetUDP socket, listening at local port PORT */
-	virtual uint8_t begin(uint16_t port) {
-		if (_sock != MAX_SOCK_NUM)
-			return 0;
-
-		for (int i = 0; i < MAX_SOCK_NUM; i++) {
-			uint8_t s = socket->status(i);
-			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
-				_sock = i;
-				break;
-			}
-		}
-
-		if (_sock == MAX_SOCK_NUM)
-			return 0;
-
-		_port = port;
+	virtual uint8_t begin(uint16_t port) override
+	{
+		this->port = port;
 		_remaining = 0;
-		socket->open(_sock, SnMR::UDP, _port, 0);
-
+		socket->open(SnMR::UDP, port, 0);
 		return 1;
 	}
 
 	/* return number of bytes available in the current packet,
 	   will return zero if parsePacket hasn't been called yet */
-	virtual int available()
+	virtual int available() override
 	{
 		return _remaining;
 	}
 
 	/* Release any resources being used by this EthernetUDP instance */
-	virtual void stop()
+	virtual void stop() override
 	{
-		if (_sock == MAX_SOCK_NUM)
-			return;
-
-		socket->close(_sock);
-
-		Ethernet::server_port[_sock] = 0;
-		_sock = MAX_SOCK_NUM;
+		socket->close();
 	}
 
 	//int EthernetUDP::beginPacket(const char *host, uint16_t port)
@@ -111,41 +94,41 @@ public:
 
 	using PrintLite::write;
 
-	virtual int beginPacket(IPAddress ip, uint16_t port)
+	virtual int beginPacket(IPAddress ip, uint16_t port) override
 	{
 		_offset = 0;
-		return socket->startUDP(_sock, rawIPAddress(ip), port);
+		return socket->start_udp(ip, port);
 	}
 
-	virtual int endPacket()
+	virtual int endPacket() override
 	{
-		return socket->sendUDP(_sock);
+		return socket->send_udp();
 	}
 
-	virtual size_t write(uint8_t byte)
+	virtual size_t write(uint8_t byte) override
 	{
 		return write(&byte, 1);
 	}
 
-	virtual size_t write(const uint8_t *buffer, size_t size)
+	virtual size_t write(const uint8_t *buffer, size_t size) override
 	{
-		uint16_t bytes_written = socket->bufferData(_sock, _offset, buffer, size);
+		uint16_t bytes_written = socket->bufferData(_offset, buffer, size);
 		_offset += bytes_written;
 		return bytes_written;
 	}
 
-	virtual int parsePacket()
+	virtual int parsePacket() override
 	{
 		// discard any remaining bytes in the last packet
-		flush();
+//		flush();
 
-		if (socket->recvAvailable(_sock) > 0)
+		if (socket->available() > 0)
 		{
 			//HACK - hand-parse the UDP packet using TCP recv method
 			uint8_t tmpBuf[8];
 			int ret =0;
 			//read 8 header bytes and get IP and port from it
-			ret = socket->recv(_sock,tmpBuf,8);
+			ret = socket->recv(tmpBuf,8);
 			if (ret > 0)
 			{
 				_remoteIP = tmpBuf;
@@ -161,11 +144,11 @@ public:
 		return 0;
 	}
 
-	virtual int read()
+	virtual int read() override
 	{
 		uint8_t byte;
 
-		if ((_remaining > 0) && (socket->recv(_sock, &byte, 1) > 0))
+		if ((_remaining > 0) && (socket->recv(&byte, 1) > 0))
 		{
 			// We read things without any problems
 			_remaining--;
@@ -176,7 +159,7 @@ public:
 		return -1;
 	}
 
-	virtual int read(unsigned char* buffer, size_t len)
+	virtual int read(uint8_t* buffer, size_t len) override
 	{
 
 		if (_remaining > 0)
@@ -187,13 +170,13 @@ public:
 			if (_remaining <= len)
 			{
 				// data should fit in the buffer
-				got = socket->recv(_sock, buffer, _remaining);
+				got = socket->recv( buffer, _remaining);
 			}
 			else
 			{
 				// too much data for the buffer,
 				// grab as much as will fit
-				got = socket->recv(_sock, buffer, len);
+				got = socket->recv( buffer, len);
 			}
 
 			if (got > 0)
@@ -206,10 +189,9 @@ public:
 
 		// If we get here, there's no data available or recv failed
 		return -1;
-
 	}
 
-	virtual int peek()
+	virtual int peek() override
 	{
 		uint8_t b;
 		// Unlike recv, peek doesn't check to see if there's any data available, so we must.
@@ -217,11 +199,11 @@ public:
 		// may get the Udp header
 		if (!_remaining)
 			return -1;
-		socket->peek(_sock, &b);
+		socket->peek(&b);
 		return b;
 	}
 
-	virtual void flush()
+	virtual void flush() override
 	{
 		// could this fail (loop endlessly) if _remaining > 0 and recv in read fails?
 		// should only occur if recv fails after telling us the data is there, lets
@@ -233,39 +215,25 @@ public:
 		}
 	}
 
-	/* Start EthernetUDP socket, listening at local port PORT */
-	virtual uint8_t beginMulticast(IPAddress ip, uint16_t port)
-	{
-		if (_sock != MAX_SOCK_NUM)
-			return 0;
-
-		for (int i = 0; i < MAX_SOCK_NUM; i++) {
-			uint8_t s = socket->status(i);
-			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT) {
-				_sock = i;
-				break;
-			}
-		}
-
-		if (_sock == MAX_SOCK_NUM)
-			return 0;
-
-		// Calculate MAC address from Multicast IP Address
-		uint8_t mac[] = {  0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
-
-		mac[3] = ip[1] & 0x7F;
-		mac[4] = ip[2];
-		mac[5] = ip[3];
-
-		socket->set(_sock, mac, rawIPAddress(ip), port);
-		//W5100.writeSnDIPR(_sock, rawIPAddress(ip));
-		//W5100.writeSnDPORT(_sock, port);
-		//W5100.writeSnDHAR(_sock,mac);
-
-		_remaining = 0;
-		socket->open(_sock, SnMR::UDP, port, SnMR::MULTI);
-		return 1;
-	}
+//	/* Start EthernetUDP socket, listening at local port PORT */
+//	virtual uint8_t beginMulticast(IPAddress ip, uint16_t port)
+//	{
+//		// Calculate MAC address from Multicast IP Address
+//		uint8_t mac[] = {  0x01, 0x00, 0x5E, 0x00, 0x00, 0x00 };
+//
+//		mac[3] = ip[1] & 0x7F;
+//		mac[4] = ip[2];
+//		mac[5] = ip[3];
+//
+//		socket->set(mac, ip.raw_address(), port);
+//		//W5100.writeSnDIPR(_sock, rawIPAddress(ip));
+//		//W5100.writeSnDPORT(_sock, port);
+//		//W5100.writeSnDHAR(_sock,mac);
+//
+//		_remaining = 0;
+//		socket->open(SnMR::UDP, port, SnMR::MULTI);
+//		return 1;
+//	}
 
 
 	// Return the IP address of the host who sent the current incoming packet
@@ -275,8 +243,7 @@ public:
 
 private:
 private:
-	uint8_t _sock;  // socket ID for Wiz5100
-	uint16_t _port; // local port to listen on
+	uint16_t port; // local port to listen on
 	IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
 	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
 	uint16_t _offset; // offset into the packet being sent

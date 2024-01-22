@@ -56,7 +56,7 @@ public:
 
 	void begin(const IPAddress& aDNSServer)
 	{
-		iDNSServer = aDNSServer;
+		dns_server = aDNSServer;
 		iRequestId = 0;
 	}
 
@@ -121,7 +121,7 @@ public:
 		}
 
 		// Check we've got a valid DNS server to use
-		if (iDNSServer == INADDR_NONE)
+		if (dns_server == INADDR_NONE)
 			return INVALID_SERVER;
 
 		// Find a socket to use
@@ -132,7 +132,7 @@ public:
 			//        while ((retries < 3) && (ret <= 0))
 			{
 				// Send DNS request
-				ret = udp->beginPacket(iDNSServer, DNS_PORT);
+				ret = udp->beginPacket(dns_server, DNS_PORT);
 				if (ret != 0)
 				{
 					// Now output the request data
@@ -259,7 +259,7 @@ protected:
 		// Read the UDP header
 		uint8_t header[DNS_HEADER_SIZE]; // Enough space to reuse for the DNS header
 		// Check that it's a response from the right server and the right port
-		if ( (iDNSServer != udp->remoteIP()) || (udp->remotePort() != DNS_PORT) )
+		if ( (dns_server != udp->remoteIP()) || (udp->remotePort() != DNS_PORT) )
 			return INVALID_SERVER;  // It's not from who we expected
 
 		// Read through the rest of the response
@@ -397,7 +397,7 @@ protected:
 	}
 
 private:
-	IPAddress iDNSServer;
+	IPAddress dns_server;
 	uint16_t iRequestId;
 	EthernetUDP* udp;
 };

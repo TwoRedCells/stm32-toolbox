@@ -22,8 +22,8 @@
 #ifndef Stream_h
 #define Stream_h
 
-//#include <comms/ethernet/PrintOld.h>
 #include <stdint.h>
+#include <string.h>
 #include "utility/Timer.h"
 #include "utility/PrintLite.h"
 

@@ -10,7 +10,6 @@
 #ifndef	W5500_H_INCLUDED
 #define	W5500_H_INCLUDED
 
-#include "util.h"
 #include <stdint.h>
 #include "toolbox.h"
 #include "utility/Timer.h"
@@ -111,16 +110,16 @@ public:
 };
 
 
-class W5500
+class Ethernet
 {
 public:
 
-	W5500(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
+	Ethernet(SPI_HandleTypeDef & _spi, GPIO_TypeDef* cs_port, uint16_t cs_pin)
 	{
 		this->hspi = _spi;
 		this->cs_port = cs_port;
 		this->cs_pin = cs_pin;
-		writeMR(0x80); // software reset the W5500 chip
+		writeMR(0x81); // software reset the W5500 chip
 		Timer::Block(milliseconds(100));
 	}
 
@@ -138,7 +137,7 @@ public:
 	 * the data from Receive buffer. Here also take care of the condition while it exceed
 	 * the Rx memory uper-bound of socket.
 	 */
-	void read_data(SOCKET s, volatile uint16_t  src, volatile uint8_t * dst, uint16_t len)
+	void read_data(SOCKET s, volatile uint16_t  src, volatile void* dst, uint16_t len)
 	{
 		read((uint16_t)src, (0x18+(s<<5)), (uint8_t *)dst, len);
 	}
@@ -150,7 +149,7 @@ public:
 	 * This function read the Tx write pointer register and after copy the data in buffer update the Tx write pointer
 	 * register. User should read upper byte first and lower byte later to get proper value.
 	 */
-	void send_data_processing(SOCKET s, const uint8_t *data, uint16_t len)
+	void send_data_processing(SOCKET s, const void *data, uint16_t len)
 	{
 		send_data_processing_offset(s, 0, data, len);
 	}
@@ -166,7 +165,7 @@ public:
 	 *        in from TX_WR
 	 * @return New value for ptr, to be used in the next call
 	 */
-	void send_data_processing_offset(SOCKET s, uint16_t data_offset, const uint8_t *data, uint16_t len)
+	void send_data_processing_offset(SOCKET s, uint16_t data_offset, const void *data, uint16_t len)
 	{
 		uint16_t ptr = readSnTX_WR(s);
 		uint8_t cntl_byte = (0x14 + (s << 5));
@@ -184,10 +183,10 @@ public:
 	 * and after copy the data from receive buffer update the Rx write pointer register.
 	 * User should read upper byte first and lower byte later to get proper value.
 	 */
-	void recv_data_processing(SOCKET s, uint8_t *data, uint16_t len, uint8_t peek=0)
+	void recv_data_processing(SOCKET s, void *data, uint16_t len, uint8_t peek=0)
 	{
 		uint16_t ptr = readSnRX_RD(s);
-		read_data(s, ptr, data, len);
+		read_data(s, ptr, (uint8_t*)data, len);
 		if (!peek)
 		{
 			ptr += len;
@@ -195,17 +194,17 @@ public:
 		}
 	}
 
-	void set_gateway_ip(uint8_t* addr)  { writeGAR(addr); }
-	void get_gateway_ip(uint8_t* addr)  { readGAR(addr); }
+	void tcpip_set_gateway_ip(uint8_t* addr)  { writeGAR(addr); }
+	void tcpip_get_gateway_ip(uint8_t* addr)  { readGAR(addr); }
 
-	void set_subnet_mask(uint8_t* addr) { writeSUBR(addr); }
-	void get_subnet_mask(uint8_t* addr) { readSUBR(addr); }
+	void tcpip_set_subnet_mask(uint8_t* addr) { writeSUBR(addr); }
+	void tcpip_get_subnet_mask(uint8_t* addr) { readSUBR(addr); }
 
 	void set_mac_address(uint8_t* addr) { writeSHAR(addr); }
 	void get_mac_address(uint8_t* addr) { readSHAR(addr); }
 
-	void set_ip_address(uint8_t* addr)  { writeSIPR(addr); }
-	void get_ip_address(uint8_t* addr)  { readSIPR(addr); }
+	void tcpip_set_ip_address(uint8_t* addr)  { writeSIPR(addr); }
+	void tcpip_get_ip_address(uint8_t* addr)  { readSIPR(addr); }
 
 	void set_retransmission_time(uint16_t timeout) { writeRTR(timeout); }
 	void set_retransmission_count(uint8_t retry)  { writeRCR(retry); }
@@ -275,10 +274,10 @@ private:
 	 * @param spi SPI peripheral handle.
 	 * @param data The data to send.
 	 */
-	void spi_transmit_buf(SPI_HandleTypeDef spi, uint8_t *data, uint16_t len)
+	void spi_transmit_buf(SPI_HandleTypeDef spi, const void *data, uint16_t len)
 	{
 		for (int i = 0; i < len; i++)
-			HAL_SPI_Transmit(&spi, &data[i], 1, 100);
+			HAL_SPI_Transmit(&spi, &(((uint8_t*)data)[i]), 1, 100);
 	}
 
 
@@ -340,7 +339,7 @@ private:
 	}
 
 
-	void write(uint16_t _addr, uint8_t _cb, const uint8_t *_buf, uint16_t _len)
+	void write(uint16_t _addr, uint8_t _cb, const void *_buf, uint16_t _len)
 	{
 		select_ss();
 		spi_transmit16(hspi,_addr);
@@ -372,17 +371,17 @@ private:
 	}
 
 
-	uint16_t read(uint16_t _addr, uint8_t _cb, uint8_t *_buf, uint16_t _len)
+	uint16_t read(uint16_t _addr, uint8_t _cb, void* buf, uint16_t len)
 	{
 		select_ss();
 		spi_transmit16(hspi,_addr);
 		spi_transmit8(hspi, _cb);
-		spi_receive_buf(hspi, &*_buf , _len);
+		spi_receive_buf(hspi, (uint8_t*)buf , len);
 		deselect_ss();
-		return _len;
+		return len;
 	}
 
-	// W5500 Registers
+	// Ethernet Registers
 	// ---------------
 
 #define __GP_REGISTER8(name, address)          \
@@ -397,7 +396,7 @@ private:
 	void write##name(uint8_t *_buff) { write(address, 0x04, _buff, size); }  \
 	uint16_t read##name(uint8_t *_buff) { return read(address, 0x00, _buff, size); }
 
-public:
+private:
 	__GP_REGISTER8 (MR,      0x0000);    // Mode
 	__GP_REGISTER_N(GAR,     0x0001, 4); // Gateway IP address
 	__GP_REGISTER_N(SUBR,    0x0005, 4); // Subnet mask address
@@ -484,6 +483,6 @@ private:
 	}
 };
 
-extern W5500 w5500;
+extern Ethernet w5500;
 
 #endif

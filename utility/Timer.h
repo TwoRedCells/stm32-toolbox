@@ -14,12 +14,13 @@
 #define seconds(x) (x*1000000)
 #define millis() (Timer::now()/1000)
 
+#include "toolbox.h"
+
 // osDelay-compatible function for when FreeRTOS is not being used.
-#ifndef FREERTOS_CONFIG_H
+#ifndef USING_FREERTOS
 #define osDelay(x) Timer::Block(milliseconds(x))
 #endif
 
-#include "toolbox.h"
 
 /// <summary>
 /// A general purpose timer that can be used as a stopwatch or a means to coordinate asynchonous events.

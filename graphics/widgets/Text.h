@@ -11,6 +11,7 @@
 #define LIB_STM32_TOOLBOX_GRAPHICS_TEXT_H_
 
 #include <stdint.h>
+#include <string.h>
 #include <stdarg.h>
 #include "IWidget.h"
 #include "utility/PrintLite.h"

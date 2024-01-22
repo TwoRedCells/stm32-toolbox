@@ -1,18 +1,18 @@
 #ifndef ETHERNETSERVER_H
 #define ETHERNETSERVER_H
 
-#include "Server.h"
+#include "IServer.h"
 #include "Socket.h"
 #include "Ethernet.h"
-#include "EthernetClient.h"
+#include "TcpClient.h"
 
 
-class EthernetServer : public Server
+class TcpServer : public Server
 {
 public:
-	EthernetServer(Ethernet* ethernet, uint16_t port)
+	TcpServer(Socket* socket, uint16_t port)
 	{
-		this->ethernet = ethernet;
+		this->socket = socket;
 		_port = port;
 	}
 
@@ -21,24 +21,24 @@ public:
 	{
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
 		{
-			EthernetClient client(ethernet, sock);
+			TcpClient client(socket, sock);
 			if (client.status() == SnSR::CLOSED) {
-				ethernet->get_socket()->open(sock, SnMR::TCP, _port, 0);
-				ethernet->get_socket()->listen(sock);
-				ethernet->server_port[sock] = _port;
+				socket->open(sock, SnMR::TCP, _port, 0);
+				socket->listen(sock);
+//				ethernet->server_port[sock] = _port;
 				break;
 			}
 		}
 	}
 
 
-	EthernetClient available()
+	TcpClient available()
 	{
 		accept();
 
 		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
 		{
-			EthernetClient client(ethernet, sock);
+			TcpClient client(ethernet, sock);
 			if (ethernet->server_port[sock] == _port)
 			{
 				uint8_t s = client.status();
