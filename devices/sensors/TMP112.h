@@ -61,7 +61,7 @@ public:
 			val |= 0xF000;
 
 		// Convert to float temperature value (Celsius)
-		value = last = val * 0.0625;
+		value = last = (float)val * 0.0625;
 		return true;
 	}
 

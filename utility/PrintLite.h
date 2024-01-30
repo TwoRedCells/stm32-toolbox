@@ -142,7 +142,6 @@ public:
 					}
 					case '0':
 						zero_padding = true;
-						format++;
 						break;
 					case '1':
 					case '2':
@@ -156,7 +155,8 @@ public:
 						fixed_width = c - 0x30;
 						zero_padding = true;
 						break;
-					case '.':						// float
+					case '.':
+						c = *(format); // float
 						decimals = c - 0x30;  // Number of digits to the right of the decimal.
 						break;
 					case 'f':

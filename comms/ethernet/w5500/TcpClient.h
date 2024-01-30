@@ -3,6 +3,10 @@
 
 
 #include "Socket.h"
+#include <string.h>
+#if USING_FREERTOS
+#include "cmsis_os.h"
+#endif
 
 class TcpClient
 {
@@ -31,23 +35,33 @@ public:
 		return socket->recv(buf, size);
 	}
 
-	void flush()
+	void flush_write()
 	{
 		socket->flush();
 	}
 
-	virtual bool connect(IPAddress& ip, uint16_t port)
+	void flush_read()
+	{
+		while(available())
+			read();
+	}
+
+	virtual bool connect(IPAddress& ip, uint16_t port, uint32_t timeout=5000)
 	{
 		socket->open(SnMR::TCP, assign_local_port(), 0);
 		if (!socket->connect(ip.raw_address(), port))
 			return false;
 
-		Timer t;
-		t.block(milliseconds(1000));
+		Timer t(milliseconds(timeout));
+		t.start();
 
 		while (status() != SnSR::ESTABLISHED)
 		{
-			t.block(milliseconds(1));
+#if USING_FREERTOS
+			osDelay(1);
+#endif
+			if (t.is_elapsed())
+				return false;
 			if (status() == SnSR::CLOSED)
 				return false;
 		}
@@ -97,7 +111,7 @@ public:
 
 	virtual void stop()
 	{
-		flush();
+		flush_write();
 
 		// attempt to close the connection gracefully (send a FIN to other side)
 		socket->disconnect();

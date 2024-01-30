@@ -54,6 +54,18 @@ public:
 		}
 	}
 
+	/// <summary>
+	/// Constructs an instance of the Timer class.
+	/// </summary>
+	/// <param name="duration">The duration after which the timer is elapsed.</param>
+	/// <remarks>The timer is typically used in this mode when timing the duration of a process.</remarks>
+	/// <returns>True if the timer is running; otherwise false.</returns>
+	Timer(uint32_t duration)
+	{
+		this->duration = duration;
+		Timer();
+	}
+
 
 	/// <summary>
 	/// Starts a timer without a predetermined interval.
@@ -63,6 +75,7 @@ public:
 	void start(void)
 	{
 		started = now();
+		alarm = started + duration;
 	}
 
 
@@ -73,8 +86,7 @@ public:
 	void start(uint32_t duration)
 	{
 		this->duration = duration;
-		started = now();
-		alarm = started + duration;
+		start();
 	}
 
 

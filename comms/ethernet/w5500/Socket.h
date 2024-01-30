@@ -4,6 +4,7 @@
 #include "Ethernet.h"
 #include "TcpIp.h"
 #include "comms/tcpip/IPAddress.h"
+#include <memory.h>
 
 #ifndef word
 #define word(a, b) ( (uint16_t)((a)<<8) | (b) )
@@ -439,6 +440,11 @@ public:
 		uint8_t s = status();
 		return !(s == SnSR::LISTEN || s == SnSR::CLOSED || s == SnSR::FIN_WAIT ||
 				(s == SnSR::CLOSE_WAIT && !available()));
+	}
+
+	void set_socket_no(uint8_t socket_no)
+	{
+		this->socket_no = socket_no;
 	}
 
 

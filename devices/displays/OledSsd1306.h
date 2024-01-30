@@ -14,6 +14,7 @@
 #include <graphics/Font6x8.h>
 #include "i2c.h"
 #include <stdint.h>
+#include <stdarg.h>
 #include "toolbox.h"
 
 enum OledColour { Black, White, Inverse };
@@ -173,9 +174,15 @@ public:
 
 	}
 
-	void string(const char* str)
+	void string(const char* format, ...)
 	{
-		string(x, y, str);
+		char buffer[30];
+		va_list p;
+		va_start(p, format);
+		PrintLite::vsprintf(buffer, format, p);
+		va_end(p);
+
+		string(x, y, buffer);
 	}
 
 	void set_colour(OledColour colour)

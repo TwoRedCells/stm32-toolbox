@@ -56,6 +56,8 @@ protected:
 	static const constexpr uint8_t ConnectFlagReserved = 0x01;
 
 	static const constexpr uint8_t PropertySessionExpiryInterval = 0x11;
+	static const constexpr uint8_t PropertyPayloadFormatIndicator = 0x01;
+	static const constexpr uint8_t PropertyMessageExpiryInterval = 0x01;
 
 public:
 	MqttClient(Socket* socket, IPAddress broker, const char* client_id, uint16_t keep_alive=60, uint16_t port=1883) : TcpClient(socket)
@@ -77,17 +79,24 @@ public:
 		const uint8_t client_id_length = strlen(client_id);
 		uint16_t protocol_name_length = 4;
 		uint8_t control_header = Connect | FlagsConnect;
-		const uint8_t packet_length = 1 + 1 + 2 + protocol_name_length + 1 + 1 + 2 + properties_length + 1 + client_id_length;
+		uint8_t packet_length = 1 + 1 + 2 + protocol_name_length + 1 + 1 + 2 + properties_length + 1 + client_id_length;
 		const char* protocol_name = "MQTT";
 		const uint8_t protocol_version = 5;
 		const uint8_t connect_flags = ConnectFlagCleanStart;
 		const uint8_t property = PropertySessionExpiryInterval;
 		const uint32_t property_value = 0x00000020;
+
+		// Flush read buffer.
+		flush_read();
+
+		// Fixed header
 		write(control_header);
 		write(packet_length);
 		write16(protocol_name_length);
 		write(protocol_name, protocol_name_length);
 		write(protocol_version);
+
+		// Variable header
 		write(connect_flags);
 		write16(keep_alive);
 		write(properties_length);
@@ -95,13 +104,17 @@ public:
 		write32(property_value);
 		write16(client_id_length);
 		write(client_id, client_id_length);
-		stop();
-		return true;
-	}
+		flush_write();
 
-	void write_header(uint8_t properties_length)
-	{
+		// Get ACK response.
+		osDelay(100);
+		control_header = read();
+		packet_length = read();
+		while (available())
+			read();
 
+		connected = control_header == ConnectAck;
+		return connected;
 	}
 
 	void write16(uint16_t value)
@@ -118,39 +131,44 @@ public:
 		write(value & 0xff);
 	}
 
-
 	bool publish(const char* topic, uint8_t* data, uint16_t length)
 	{
 		bool ret = TcpClient::connect(broker, port);
 		if (!ret)
 			return false;
 
-		uint16_t protocol_name_length = 4;
-		const char* protocol_name = "MQTT";
-		const uint8_t protocol_version = 5;
+		flush_read();
 		const uint16_t topic_length = strlen(topic);
-		const uint8_t packet_length = 1 + 1 + 2 + protocol_name_length + 1 + 1 + 2 + 1 + length;
-		const uint8_t control_header = Publish | FlagsPublish;
-		const uint8_t properties = 0;
-		write(control_header);
-		write(packet_length);
-		write16(protocol_name_length);
-		write(protocol_name, protocol_name_length);
-		write(protocol_version);
-		write16(topic_length);
-		write(topic, topic_length);
-		write(properties);
+
+		// Fixed header
+		write(Publish | FlagsPublish);  // Control header
+		write(2 + topic_length + 1 + length);  // Remaining packet length
+
+		// Variable header
+		write16(topic_length);  // Length of topic name.
+		write(topic, topic_length);  // Topic name.
+		write((uint8_t)0); // Properties length.
+
+		// Data
 		write(data, length);
-		stop();
+		flush_write();
+		osDelay(100);
+
+		flush_read();
 		return true;
 	}
 
+	bool is_connected(void)
+	{
+		return connected;
+	}
 
 private:
 	IPAddress broker;
 	uint16_t port;
 	const char* client_id;
 	uint16_t keep_alive;
+	bool connected;
 };
 
 #endif /* LIB_STM32_TOOLBOX_COMMS_ETHERNET_MQTTCLIENT_H_ */

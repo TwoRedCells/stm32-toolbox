@@ -61,16 +61,18 @@ public:
 		udp.write((uint8_t*)&packet, sizeof(NtpPacket));
 		udp.endPacket();
 		int len = udp.parsePacket();
-		if (len != sizeof(NtpPacket))
+		if (len != sizeof(NtpPacket) || udp.read((uint8_t*)&packet, sizeof(NtpPacket)) != sizeof(NtpPacket))
+		{
+			udp.stop();
 			return false;
-
-		if (udp.read((uint8_t*)&packet, sizeof(NtpPacket)) != sizeof(NtpPacket))
-			return false;
+		}
 
 		// Reverse byte order.
 		timestamp = 0;
 		for (int i=0; i<8; i++)
 			timestamp |= (packet.transmit_timestamp >> (8*i) & 0xff) << (8*(7-i));
+
+		udp.stop();
 		return true;
 	}
 

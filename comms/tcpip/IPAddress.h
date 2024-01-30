@@ -21,7 +21,9 @@
 #define IPAddress_h
 
 #include <stdint.h>
-#include <string.h>
+#include <memory.h>
+//#include <string.h>
+#include "utility/PrintLite.h"
 
 // A class to make it easier to handle and pass around IP addresses
 
@@ -127,12 +129,19 @@ public:
 	// stored.
 	uint8_t* raw_address() { return _address.bytes; };
 
+	char* to_string(void)
+	{
+		PrintLite::vsprintf(string_value, "%d.%d.%d.%d", _address.bytes[0], _address.bytes[1], _address.bytes[2], _address.bytes[3]);
+		return string_value;
+	}
+
 private:
 	union {
 		uint8_t bytes[4];  // IPv4 address
 		uint32_t dword;
 	} _address;
 
+	char string_value[16];
 
 };
 

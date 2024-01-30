@@ -30,6 +30,19 @@ public:
         length = 0;
     }
 
+
+    /**
+     * Sets the internal buffer to the specified pointer.
+     * @param buffer Pointer to the buffer.
+     * @param length The length of the allocated buffer.
+     */
+    Queue(T* buffer, uint32_t length)
+    {
+    	Queue();
+    	set_buffer(buffer, length);
+    }
+
+
     /**
      * Sets the internal buffer to the specified pointer.
      * @param buffer Pointer to the buffer.

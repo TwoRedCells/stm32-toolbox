@@ -42,6 +42,15 @@ public:
         #ifdef DEBUG
     	serial = port;
         minimum_level = LOGLEVEL_INFO;
+#ifdef FREERTOS_CONFIG_H
+		const osMutexAttr_t mutex_attr = {
+			"SerialMutex",
+			osMutexPrioInherit,
+			NULL, 0
+		};
+		mutex = osMutexNew(&mutex_attr);
+#endif
+
         #endif
     }
 
@@ -66,78 +75,109 @@ public:
         if (level < minimum_level)
             return;
 
-        serial->printf("\r\n# %s: ", level_names[level]);
+        get_mutex();
+        serial->printf("# %s: ", level_names[level]);
         serial->printf(format, args...);
+        serial->printf("\r\n");
         last_level = level;
+        release_mutex();
         #endif
     }
 
 
-    /**
-     * Outputs supplementary information to the last call to log().
-     * @param message A string to output.
-     */
-    template<typename... Args>
-    void then(const char* format, Args... args)
+//    /**
+//     * Outputs supplementary information to the last call to log().
+//     * @param message A string to output.
+//     */
+//    template<typename... Args>
+//    void then(const char* format, Args... args)
+//    {
+//        #ifdef DEBUG
+//        if (last_level < minimum_level)
+//            return;
+//
+//        get_mutex();
+//        serial->printf(format, args...);
+//        serial->print(" ");
+//        release_mutex();
+//        #endif
+//    }
+//
+//    /**
+//     * Outputs supplementary information to the last call to log().
+//     * @param message Numeric data to output.
+//     * @param base The base of the value for how it should be represented (defaults to hex).
+//     */
+//    void then(uint32_t message, uint8_t base=HEX)
+//    {
+//        #ifdef DEBUG
+//        if (last_level < minimum_level)
+//            return;
+//
+//        get_mutex();
+//        serial->print(message, base);
+//        serial->print(" ");
+//        release_mutex();
+//        #endif
+//    }
+//
+//    /**
+//     * Outputs supplementary information to the last call to log().
+//     * @param message A string to output.
+//     */
+//    void finally(const char* message)
+//    {
+//        #ifdef DEBUG
+//        then(message);
+//        done();
+//        #endif
+//    }
+//
+//    /**
+//     * Outputs supplementary information to the last call to log().
+//     * @param message Numeric data to output.
+//     * @param base The base of the value for how it should be represented (defaults to hex).
+//     */
+//    void finally(uint32_t message, uint8_t base=HEX)
+//    {
+//        #ifdef DEBUG
+//        then(message, base);
+//        done();
+//        #endif
+//    }
+//
+//    /**
+//     * Prevents future next() calls from publishing without a prior log() call.
+//     */
+//    void done(void)
+//    {
+//        last_level = LOGLEVEL_DEBUG;
+//    }
+
+
+    void get_mutex(void)
     {
-        #ifdef DEBUG
-        if (last_level < minimum_level)
-            return;
-        serial->printf(format, args...);
-        serial->print(" ");
-        #endif
+#ifdef USING_FREERTOS
+	if (osThreadGetId() != nullptr)
+		osMutexAcquire(mutex, osWaitForever);
+#endif
     }
 
-    /**
-     * Outputs supplementary information to the last call to log().
-     * @param message Numeric data to output.
-     * @param base The base of the value for how it should be represented (defaults to hex).
-     */
-    void then(uint32_t message, uint8_t base=HEX)
+    void release_mutex(void)
     {
-        #ifdef DEBUG
-        if (last_level < minimum_level)
-            return;
-        serial->print(message, base);
-        serial->print(" ");
-        #endif    
-    }
-
-    /**
-     * Outputs supplementary information to the last call to log().
-     * @param message A string to output.
-     */
-    void finally(const char* message)
-    {
-        #ifdef DEBUG
-        then(message);
-        done();
-        #endif
-    }
-
-    /**
-     * Outputs supplementary information to the last call to log().
-     * @param message Numeric data to output.
-     * @param base The base of the value for how it should be represented (defaults to hex).
-     */
-    void finally(uint32_t message, uint8_t base=HEX)
-    {
-        #ifdef DEBUG
-        then(message, base);
-        done();
-        #endif
-    }
-
-    /**
-     * Prevents future next() calls from publishing without a prior log() call.
-     */
-    void done(void)
-    {
-        last_level = LOGLEVEL_DEBUG;
+#ifdef FREERTOS_CONFIG_H
+	if (osThreadGetId() != nullptr)
+		osMutexRelease(mutex);
+#endif
     }
 
 private:
     LogLevels last_level;
     LogLevels minimum_level;
+
+#ifdef FREERTOS_CONFIG_H
+    osMutexId_t mutex;
+#endif
+
 };
 #endif
