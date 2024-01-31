@@ -311,6 +311,7 @@ public:
 						zero_padding = true;
 						break;
 					case '.':						// float
+						c = *format++;
 						decimals = c - 0x30;  // Number of digits to the right of the decimal.
 						break;
 					case 'f':
