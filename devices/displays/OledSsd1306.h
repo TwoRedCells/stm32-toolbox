@@ -203,6 +203,10 @@ public:
 		{
 			x = 0;
 		}
+		else if (ch == '\t')
+		{
+			x += font6x8.width/2;
+		}
 		else if (ch == '\n')
 		{
 			y += font6x8.height;
