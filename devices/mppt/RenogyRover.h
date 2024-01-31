@@ -12,6 +12,7 @@
 #include <functional>
 #include "comms/Serial.h"
 #include "utility/PrintLite.h"
+#include "utility/Crc.h"
 
 
 class RenogyRover
@@ -234,36 +235,48 @@ private:
 		static uint8_t buf[20];
 		uint8_t* p = buf;
 
+#ifdef DEBUG_MPPT
 		const char* error = "Malformed response from MPPT";
+#endif
 
 		// The address of the MPPT is always 1.
-		if ((*p++ = G.mppt.read()) != 0x01)
+		if ((*p++ = mppt->read()) != 0x01)
 		{
+#ifdef DEBUG_MPPT
 			G.log.log(LOGLEVEL_ERROR, error);
+#endif
 			return nullptr;
 		}
 
 		// 0x03 is the response to a request to read a register.
-		if ((*p++ = G.mppt.read()) != 0x03)
+		if ((*p++ = mppt->read()) != 0x03)
 		{
+#ifdef DEBUG_MPPT
 			G.log.log(LOGLEVEL_ERROR, error);
+#endif
 			return nullptr;
 		}
 
 		// The byte is the length.
-		uint8_t size = *p++ = G.mppt.read();
+		uint8_t size = *p++ = mppt->read();
+#ifdef DEBUG_MPPT
 		G.log.log(LOGLEVEL_DEBUG, "Received %d bytes.", size);
+#endif
 
 		for (int i=0; i < size; i++)
 		{
-			uint8_t b = G.mppt.read();
+			uint8_t b = mppt->read();
 			*p++ = b;
+#ifdef DEBUG_MPPT
 			G.log.log(LOGLEVEL_DEBUG, "%y", b);
+#endif
 		}
 
-		uint16_t crc16a = G.mppt.read() | G.mppt.read() << 8;
+		uint16_t crc16a = mppt->read() | mppt->read() << 8;
 		uint16_t crc16b = Crc::crc16_modbus(buf, 3+size);
+#ifdef DEBUG_MPPT
 		G.log.log(LOGLEVEL_DEBUG, "CRC16: %x %x", crc16a, crc16b);
+#endif
 		if (crc16a != crc16b)
 			return nullptr;
 
@@ -294,7 +307,7 @@ private:
 		osDelay(100);
 
 		// Parse the response.
-		if (mppt->available() != parameter.Length*2 + 5)
+		if (mppt->available() != parameter.Length*2U + 5U)
 		{
 			mppt->flush_read();
 			return false;
