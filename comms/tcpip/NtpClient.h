@@ -36,7 +36,7 @@ public:
 	} NtpPacket;
 
 
-	NtpClient(Socket* socket, const uint8_t* ip)
+	NtpClient(Socket* socket, IPAddress ip)
 	{
 		this->ip = ip;
 		this->socket = socket;
@@ -52,7 +52,6 @@ public:
 		NtpPacket packet = {0};
 		packet.li_vn_mode |= 0b00100011; // SNTPv4, unicast client.
 		Udp udp(socket);
-		IPAddress ip(this->ip);
 
 		udp.begin(ntp_port);
 		if (!udp.beginPacket(ip, ntp_port))
@@ -60,6 +59,7 @@ public:
 
 		udp.write((uint8_t*)&packet, sizeof(NtpPacket));
 		udp.endPacket();
+		osDelay(100);
 		int len = udp.parsePacket();
 		if (len != sizeof(NtpPacket) || udp.read((uint8_t*)&packet, sizeof(NtpPacket)) != sizeof(NtpPacket))
 		{
@@ -92,7 +92,7 @@ public:
 	}
 
 private:
-	const uint8_t* ip;
+	IPAddress ip;
 	Socket* socket;
 };
 

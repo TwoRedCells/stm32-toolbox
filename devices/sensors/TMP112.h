@@ -33,7 +33,7 @@ public:
      * @param A reference to the value to populate.
      * @return True on success; otherwise false.
      */
-	bool read(float &value)
+	bool read(double &value)
 	{
 		HAL_StatusTypeDef ret;
 
@@ -61,7 +61,7 @@ public:
 			val |= 0xF000;
 
 		// Convert to float temperature value (Celsius)
-		value = last = (float)val * 0.0625;
+		value = last = (double)val * 0.0625;
 		return true;
 	}
 
@@ -77,7 +77,7 @@ public:
 	}
 
 private:
-	float last;
+	double last;
 	I2C_HandleTypeDef *hi2c;
 	uint8_t address;
 };

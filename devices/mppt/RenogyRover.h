@@ -68,165 +68,242 @@ public:
 	static const constexpr Parameter RegisterCumulativePowerConsumption { 0x011e, 2 };
 	static const constexpr Parameter RegisterFaults { 0x0121, 2 };
 
-	float RatedVoltage;
-	float RatedChargingCurrent;
-	float RatedDischargingCurrent;
-	enum ProductTypes { Inverter, MPPT } ProductType;
-	char Model[17];
-	char FirmwareVersion[10];
-	uint16_t HardwareVersion;
-	char SerialNumber[10];
-	uint16_t DeviceAddress;
-	uint16_t SoC;
-	float BatteryVoltage;
-	float ChargingCurrent;
-	int16_t ControllerTemperature;
-	int16_t BatteryTemperature;
-	float LoadVoltage;
-	float LoadCurrent;
-	uint16_t LoadPower;
-	float PhotovoltaicVoltage;
-	float PhotovoltaicCurrent;
-	uint16_t PhotovoltaicPower;
-	float MinimumBatteryVoltageToday;
-	float MaximumBatteryVoltageToday;
-	float MaximumChargingCurrentToday;
-	float MaximumDischargingCurrentToday;
-	uint16_t MaximumChargingPowerToday;
-	uint16_t MaximumDischargingPowerToday;
-	uint16_t ChargingToday;
-	uint16_t DischargingToday;
-	uint16_t PowerGenerationToday;
-	uint16_t PowerConsumptionToday;
-	uint16_t OperatingDays;
-	uint16_t NumberOfBatteryOverDischarges;
-	uint16_t NumberOfBatteryFullCharges;
-	uint32_t CumulativeCharging;
-	uint32_t CumulativeDischarging;
-	uint32_t CumulativePowerGeneration;
-	uint32_t CumulativePowerConsumption;
-	uint32_t Faults;
+	struct RenogyRoverState
+	{
+		float RatedVoltage;
+		float RatedChargingCurrent;
+		float RatedDischargingCurrent;
+		enum ProductTypes { Inverter, MPPT } ProductType;
+		char Model[17];
+		char FirmwareVersion[10];
+		uint16_t HardwareVersion;
+		char SerialNumber[10];
+		uint16_t DeviceAddress;
+		uint16_t SoC;
+		float BatteryVoltage;
+		float ChargingCurrent;
+		int16_t ControllerTemperature;
+		int16_t BatteryTemperature;
+		float LoadVoltage;
+		float LoadCurrent;
+		uint16_t LoadPower;
+		float PhotovoltaicVoltage;
+		float PhotovoltaicCurrent;
+		uint16_t PhotovoltaicPower;
+		float MinimumBatteryVoltageToday;
+		float MaximumBatteryVoltageToday;
+		float MaximumChargingCurrentToday;
+		float MaximumDischargingCurrentToday;
+		uint16_t MaximumChargingPowerToday;
+		uint16_t MaximumDischargingPowerToday;
+		uint16_t ChargingToday;
+		uint16_t DischargingToday;
+		uint16_t PowerGenerationToday;
+		uint16_t PowerConsumptionToday;
+		uint16_t OperatingDays;
+		uint16_t NumberOfBatteryOverDischarges;
+		uint16_t NumberOfBatteryFullCharges;
+		uint32_t CumulativeCharging;
+		uint32_t CumulativeDischarging;
+		uint32_t CumulativePowerGeneration;
+		uint32_t CumulativePowerConsumption;
+		uint32_t Faults;
+	};
 
-	void poll(void)
+	RenogyRoverState get_state(void)
+	{
+		return state;
+	}
+
+	bool poll(void)
 	{
 		uint8_t buffer[20];
+		uint8_t errors = 0;
 
 		// These two share a register.
 		if (query_parameter(RegisterRatedVoltage, buffer))
 		{
 			uint16_t value = (uint16_t) *(uint16_t*) buffer;
-			RatedVoltage = value >> 8;
-			RatedChargingCurrent = value & 0xff;
+			state.RatedVoltage = value >> 8;
+			state.RatedChargingCurrent = value & 0xff;
 		}
+		else
+			errors++;
 
 		if (query_parameter(RegisterRatedDischargingCurrent, buffer))
 		{
 			uint16_t value = (uint16_t) *(uint16_t*) buffer;
-			RatedDischargingCurrent = value >> 8;
-			ProductType = (ProductTypes)(value & 0xff);
+			state.RatedDischargingCurrent = value >> 8;
+			state.ProductType = (RenogyRoverState::ProductTypes)(value & 0xff);
 		}
+		else
+			errors++;
 
 		if (query_parameter(RegisterModel, buffer))
 		{
-			memcpy(Model, buffer, 16);
-			Model[16] = 0; // NUL terminator.
+			memcpy(state.Model, buffer, 16);
+			state.Model[16] = 0; // NUL terminator.
 		}
+		else
+			errors++;
 
 		if (query_parameter(RegisterFirmwareVersion, buffer))
-			PrintLite::vsprintf(FirmwareVersion, "%d.%d.%d", buffer[1], buffer[2], buffer[3]);
+			PrintLite::vsprintf(state.FirmwareVersion, "%d.%d.%d", buffer[1], buffer[2], buffer[3]);
+		else
+			errors++;
 
 		if (query_parameter(RegisterHardwareVersion, buffer))
-			HardwareVersion = (uint16_t) *(uint16_t*) buffer;
+			state.HardwareVersion = (uint16_t) *(uint16_t*) buffer;
+		else
+			errors++;
 
 		if (query_parameter(RegisterSerialNumber, buffer))
-			PrintLite::vsprintf(FirmwareVersion, "%d.%d.%d", buffer[0], buffer[1], *(uint16_t*)buffer+2);
+			PrintLite::vsprintf(state.SerialNumber, "%d.%d.%d", buffer[0], buffer[1], *(uint16_t*)buffer+2);
+		else
+			errors++;
 
 		if (query_parameter(RegisterDeviceAddress, buffer))
-			DeviceAddress = ptr_to_16(buffer);
+			state.DeviceAddress = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterSoC, buffer))
-			SoC = ptr_to_16(buffer);
+			state.SoC = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterBatteryVoltage, buffer))
-			BatteryVoltage = ptr_to_float(buffer) / 10;
+			state.BatteryVoltage = ptr_to_float(buffer) / 10;
+		else
+			errors++;
 
 		if (query_parameter(RegisterChargingCurrent, buffer))
-			ChargingCurrent = ptr_to_float(buffer) / 100;
+			state.ChargingCurrent = ptr_to_float(buffer) / 100;
 
 		if (query_parameter(RegisterControllerTemperature, buffer))
 		{
-			ControllerTemperature = buffer[0];
-			BatteryTemperature = buffer[1];
+			state.ControllerTemperature = buffer[0];
+			state.BatteryTemperature = buffer[1];
 		}
+		else
+			errors++;
 
 		if (query_parameter(RegisterLoadVoltage, buffer))
-			LoadVoltage = ptr_to_float(buffer) / 10;
+			state.LoadVoltage = ptr_to_float(buffer) / 10;
+		else
+			errors++;
 
 		if (query_parameter(RegisterLoadCurrent, buffer))
-			LoadCurrent = ptr_to_float(buffer) / 100;
+			state.LoadCurrent = ptr_to_float(buffer) / 100;
+		else
+			errors++;
 
 		if (query_parameter(RegisterLoadPower, buffer))
-			LoadPower = ptr_to_16(buffer);
+			state.LoadPower = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterPhotovoltaicVoltage, buffer))
-			PhotovoltaicVoltage = ptr_to_float(buffer) / 10;
+			state.PhotovoltaicVoltage = ptr_to_float(buffer) / 10;
+		else
+			errors++;
 
 		if (query_parameter(RegisterPhotovoltaicCurrent, buffer))
-			PhotovoltaicCurrent = ptr_to_float(buffer) / 100;
+			state.PhotovoltaicCurrent = ptr_to_float(buffer) / 100;
+		else
+			errors++;
 
 		if (query_parameter(RegisterPhotovoltaicPower, buffer))
-			PhotovoltaicPower = ptr_to_16(buffer);
+			state.PhotovoltaicPower = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterMinimumBatteryVoltageToday, buffer))
-			MinimumBatteryVoltageToday = ptr_to_float(buffer) / 10;
+			state.MinimumBatteryVoltageToday = ptr_to_float(buffer) / 10;
+		else
+			errors++;
 
 		if (query_parameter(RegisterMaximumChargingCurrentToday, buffer))
-			MaximumChargingCurrentToday = ptr_to_float(buffer) / 100;
+			state.MaximumChargingCurrentToday = ptr_to_float(buffer) / 100;
+		else
+			errors++;
 
 		if (query_parameter(RegisterMaximumDischargingCurrentToday, buffer))
-			MaximumDischargingCurrentToday = ptr_to_float(buffer) / 100;
+			state.MaximumDischargingCurrentToday = ptr_to_float(buffer) / 100;
+		else
+			errors++;
 
 		if (query_parameter(RegisterMaximumChargingPowerToday, buffer))
-			MaximumChargingPowerToday = ptr_to_16(buffer);
+			state.MaximumChargingPowerToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterMaximumDischargingPowerToday, buffer))
-			MaximumDischargingPowerToday = ptr_to_16(buffer);
+			state.MaximumDischargingPowerToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterChargingToday, buffer))
-			ChargingToday = ptr_to_16(buffer);
+			state.ChargingToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterDischargingToday, buffer))
-			DischargingToday = ptr_to_16(buffer);
+			state.DischargingToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterPowerGenerationToday, buffer))
-			PowerGenerationToday = ptr_to_16(buffer);
+			state.PowerGenerationToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterPowerConsumptionToday, buffer))
-			PowerConsumptionToday = ptr_to_16(buffer);
+			state.PowerConsumptionToday = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterOperatingDays, buffer))
-			OperatingDays = ptr_to_16(buffer);
+			state.OperatingDays = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterNumberOfBatteryOverDischarges, buffer))
-			NumberOfBatteryOverDischarges = ptr_to_16(buffer);
+			state.NumberOfBatteryOverDischarges = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterNumberOfBatteryFullCharges, buffer))
-			NumberOfBatteryFullCharges = ptr_to_16(buffer);
+			state.NumberOfBatteryFullCharges = ptr_to_16(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterCumulativeCharging, buffer))
-			CumulativeCharging = ptr_to_32(buffer);
+			state.CumulativeCharging = ptr_to_32(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterCumulativeDischarging, buffer))
-			CumulativeDischarging = ptr_to_32(buffer);
+			state.CumulativeDischarging = ptr_to_32(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterCumulativePowerGeneration, buffer))
-			CumulativePowerGeneration = ptr_to_32(buffer);
+			state.CumulativePowerGeneration = ptr_to_32(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterCumulativePowerConsumption, buffer))
-			CumulativePowerConsumption =  ptr_to_32(buffer);
+			state.CumulativePowerConsumption =  ptr_to_32(buffer);
+		else
+			errors++;
 
 		if (query_parameter(RegisterFaults, buffer))
-			Faults = ptr_to_32(buffer);
+			state.Faults = ptr_to_32(buffer);
+		else
+			errors++;
+
+		return errors == 0;
 	}
 
 private:
@@ -242,41 +319,26 @@ private:
 		// The address of the MPPT is always 1.
 		if ((*p++ = mppt->read()) != 0x01)
 		{
-#ifdef DEBUG_MPPT
-			G.log.log(LOGLEVEL_ERROR, error);
-#endif
 			return nullptr;
 		}
 
 		// 0x03 is the response to a request to read a register.
 		if ((*p++ = mppt->read()) != 0x03)
 		{
-#ifdef DEBUG_MPPT
-			G.log.log(LOGLEVEL_ERROR, error);
-#endif
 			return nullptr;
 		}
 
 		// The byte is the length.
 		uint8_t size = *p++ = mppt->read();
-#ifdef DEBUG_MPPT
-		G.log.log(LOGLEVEL_DEBUG, "Received %d bytes.", size);
-#endif
 
 		for (int i=0; i < size; i++)
 		{
 			uint8_t b = mppt->read();
 			*p++ = b;
-#ifdef DEBUG_MPPT
-			G.log.log(LOGLEVEL_DEBUG, "%y", b);
-#endif
 		}
 
 		uint16_t crc16a = mppt->read() | mppt->read() << 8;
 		uint16_t crc16b = Crc::crc16_modbus(buf, 3+size);
-#ifdef DEBUG_MPPT
-		G.log.log(LOGLEVEL_DEBUG, "CRC16: %x %x", crc16a, crc16b);
-#endif
 		if (crc16a != crc16b)
 			return nullptr;
 
@@ -335,6 +397,7 @@ private:
 	}
 
 	Serial* mppt;
+	RenogyRoverState state;
 };
 
 #endif /* LIB_STM32_TOOLBOX_DEVICES_MPPT_RENOGYROVER_H_ */

@@ -22,6 +22,8 @@ public:
 	uint8_t minute;
 	uint8_t second;
 
+	enum DaysOfWeek { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday };
+
 	/**
 	 * @brief	Instantiates a DateTime instance using a UNIX timestamp.
 	 * @param timestamp The timestamp.
@@ -42,7 +44,7 @@ public:
 		for (month = 0; remaining > months[month]; month++)
 			remaining -= months[month];
 
-		day = remaining;
+		day = remaining-1;
 	}
 
 
@@ -149,9 +151,10 @@ public:
 		return buf;
 	}
 
-private:
-	static const constexpr uint8_t months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-	char buf[21];
+	DaysOfWeek GetDayOfWeek(void)
+	{
+		return (DaysOfWeek)((ToTimestamp() / 86400 + 4) % 7);
+	}
 
 	/**
 	 * Determines whether the sepcified year is a leap year.
@@ -169,6 +172,10 @@ private:
 		else
 			return true;
 	}
+
+private:
+	static const constexpr uint8_t months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	char buf[21];
 };
 
 

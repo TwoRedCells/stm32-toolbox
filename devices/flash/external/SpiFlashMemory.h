@@ -286,7 +286,14 @@ public:
 		while (!is_idle());  // Wait for write.
 		uint8_t verify[0x100];
 		read(address, verify, length);
-		error e = !memcmp(data, verify, length) ? ErrorNone : ErrorVerifyFailed;
+
+		uint32_t differences = 0;
+		for (uint32_t i=0; i < length; i++)
+			if (((uint8_t*)data)[i] != verify[i])
+				differences++;
+
+		error e = differences ? ErrorVerifyFailed : ErrorNone;
+		//error e = !memcmp(data, verify, length) ? ErrorNone : ErrorVerifyFailed;
 		return e;
 	}
 

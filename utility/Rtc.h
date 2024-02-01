@@ -62,15 +62,16 @@ public:
 
 	void set_time(DateTime time)
 	{
-		RTC_TimeTypeDef rtc_time {
+		RTC_TimeTypeDef rtc_time = {
 			.Hours = time.hour,
 					.Minutes = time.minute,
 					.Seconds = time.second
 		};
-		RTC_DateTypeDef rtc_date {
-					.Month = time.month + 1,
-					.Date = time.day + 1,
-					.Year = time.year - 2000,
+		RTC_DateTypeDef rtc_date = {
+					.WeekDay = time.GetDayOfWeek(),
+					.Month = (uint8_t) (time.month + 1),
+					.Date = (uint8_t) (time.day + 1),
+					.Year = (uint8_t) (time.year - 2000)
 		};
 		HAL_RTC_SetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
 		HAL_RTC_SetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
