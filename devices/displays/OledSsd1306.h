@@ -28,6 +28,7 @@ public:
 	static constexpr uint8_t PageAddr = 0x22;
 	static constexpr uint8_t SetContrast = 0x81;
 	static constexpr uint8_t ChargePump = 0x8d;
+	static constexpr uint8_t EnableChargePump = 0x14;
 	static constexpr uint8_t SegRemap = 0xa0;
 	static constexpr uint8_t DisplayAllOnResume = 0xa4;
 	static constexpr uint8_t DisplayAllOn = 0xa5;
@@ -159,6 +160,23 @@ public:
 		command(PageAddr, 0, 7);
 		command(ColumnAddr, 0, width-1);
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x40, 1, pixels, width/8 * height, timeout);
+	}
+
+	void set_contrast(uint8_t value)
+	{
+		command(SetContrast, value);
+	}
+
+	void set_precharge(uint8_t value)
+	{
+		command(SetPreCharge, value);
+	}
+
+	void set_charge_pump(uint8_t value)
+	{
+		command(ChargePump, value);
+		command(EnableChargePump);
+		command(DisplayOn);
 	}
 
 	void string(uint8_t x, uint8_t y, const char* str)

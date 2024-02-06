@@ -70,30 +70,14 @@ public:
 
 	struct RenogyRoverState
 	{
-		float RatedVoltage;
-		float RatedChargingCurrent;
-		float RatedDischargingCurrent;
-		enum ProductTypes { Inverter, MPPT } ProductType;
-		char Model[17];
-		char FirmwareVersion[10];
-		uint16_t HardwareVersion;
-		char SerialNumber[10];
-		uint16_t DeviceAddress;
-		uint16_t SoC;
-		float BatteryVoltage;
-		float ChargingCurrent;
 		int16_t ControllerTemperature;
 		int16_t BatteryTemperature;
-		float LoadVoltage;
-		float LoadCurrent;
+
+		uint16_t HardwareVersion;
+		uint16_t DeviceAddress;
+		uint16_t SoC;
 		uint16_t LoadPower;
-		float PhotovoltaicVoltage;
-		float PhotovoltaicCurrent;
 		uint16_t PhotovoltaicPower;
-		float MinimumBatteryVoltageToday;
-		float MaximumBatteryVoltageToday;
-		float MaximumChargingCurrentToday;
-		float MaximumDischargingCurrentToday;
 		uint16_t MaximumChargingPowerToday;
 		uint16_t MaximumDischargingPowerToday;
 		uint16_t ChargingToday;
@@ -103,11 +87,32 @@ public:
 		uint16_t OperatingDays;
 		uint16_t NumberOfBatteryOverDischarges;
 		uint16_t NumberOfBatteryFullCharges;
+
 		uint32_t CumulativeCharging;
 		uint32_t CumulativeDischarging;
 		uint32_t CumulativePowerGeneration;
 		uint32_t CumulativePowerConsumption;
 		uint32_t Faults;
+
+		float RatedVoltage;
+		float RatedChargingCurrent;
+		float RatedDischargingCurrent;
+		float BatteryVoltage;
+		float ChargingCurrent;
+		float LoadVoltage;
+		float LoadCurrent;
+		float PhotovoltaicVoltage;
+		float PhotovoltaicCurrent;
+		float MinimumBatteryVoltageToday;
+		float MaximumBatteryVoltageToday;
+		float MaximumChargingCurrentToday;
+		float MaximumDischargingCurrentToday;
+
+		enum ProductTypes { Inverter, MPPT } ProductType;
+		char Model[17];
+		char FirmwareVersion[10];
+		char SerialNumber[10];
+		bool IsOnline;  // Whether or not this record's data should be used.
 	};
 
 	RenogyRoverState get_state(void)
@@ -303,6 +308,7 @@ public:
 		else
 			errors++;
 
+		state.IsOnline = errors == 0;
 		return errors == 0;
 	}
 
