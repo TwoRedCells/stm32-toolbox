@@ -42,19 +42,8 @@ public:
 		if (ret != HAL_OK)
 			return false;
 
-//		// Tell TMP102 that we want to read from the temperature register
-//		uint8_t buf[12] = { 0 };
-//		ret = HAL_I2C_Master_Transmit(handle, TMP101_ADDR, buf, 1, HAL_MAX_DELAY);
-//		if (ret != HAL_OK)
-//			return false;
-//
-//		// Read 2 bytes from the temperature register
-//		ret = HAL_I2C_Master_Receive(handle, TMP101_ADDR, buf, 2, HAL_MAX_DELAY);
-//		if ( ret != HAL_OK )
-//			return false;
-
 		//Combine the bytes
-		int val = ((int16_t)buf[0] << 4) | (buf[1] >> 4);
+		int val = ((int16_t)buf[0]) << 4 | buf[1] >> 4;
 
 		// Convert to 2's complement, since temperature can be negative
 		if (val > 0x7FF )

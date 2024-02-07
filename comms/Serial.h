@@ -128,11 +128,18 @@ public:
 	{
 		queue.enqueue(in);
 		HAL_UART_Receive_IT(handle, &in, 1);
+		if (in == '\r' && eol_callback != nullptr)
+			eol_callback();
 	}
 
 	void flush_read(void)
 	{
 		queue.clear();
+	}
+
+	void set_eol_callback(void (*callback)(void))
+	{
+		eol_callback = callback;
 	}
 
 private:
@@ -141,6 +148,7 @@ private:
 	uint8_t* buffer;
 	uint32_t length;
 	Queue<uint8_t> queue;
+	void (*eol_callback)(void) = nullptr;
 };
 
 #endif /* INC_COMMS_SERIAL_HPP_ */
