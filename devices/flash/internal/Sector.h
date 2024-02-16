@@ -1,6 +1,7 @@
 ///	@file       devices/flash/Sector.h
 ///	@class      Sector
 ///	@brief      A sector is the smallest unit of non-volatile memory that can be erased at once. It can hold multiple files.
+/// @note		An MCU will support Page or Sector flash, but not both. Check your datasheet.
 ///
 /// @note       This code is part of the `stm32-toolbox` project that provides easy-to-use building blocks to create
 ///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
@@ -10,7 +11,6 @@
 #ifndef INC_STM32_TOOLBOX_DEVICES_FLASH_SECTOR_H_
 #define INC_STM32_TOOLBOX_DEVICES_FLASH_SECTOR_H_
 
-#include "Directory.h"
 #include "FlashMemory.h"
 
 
@@ -31,37 +31,21 @@ public:
 		this->index = index;
 		this->start = start;
 		this->length = length;
-		directory = (Directory*) start;
 	}
 
 
 	/**
-	 * @brief Initializes this sector by writing its directory header.
-	 */
-	bool initialize(void) override
-	{
-		Directory local;
-		local.header.magic_number = Directory::FLASH_DIRECTORY_MAGIC_NUMBER;
-
-		if (!erase())
-			return false;
-
-		return write((uint32_t*) &local, (uint32_t*) directory, sizeof(DirectoryHeader));
-	}
-
-
-	/**
-	 * @brief Erases one or more sectors of memory.
+	 * @brief Erases the entire sector of FLASH memory.
 	 * @returns True on success; false on failure.
 	 * @note Any FLASH that has not been written to after an erase operation can be written to.
 	 */
-	bool erase(uint8_t count)
+	bool erase(void) override
 	{
 		bool result = true;
 		FLASH_EraseInitTypeDef erase_struct = {
 				.TypeErase   = FLASH_TYPEERASE_SECTORS,
 				.Sector = index,
-				.NbSectors = count,
+				.NbSectors = 1,
 				.VoltageRange = FLASH_VOLTAGE_RANGE_3
 		};
 
@@ -75,17 +59,6 @@ public:
 		}
 		lock();
 		return result;
-	}
-
-
-	/**
-	 * @brief Erases the entire sector of FLASH memory.
-	 * @returns True on success; false on failure.
-	 * @note Any FLASH that has not been written to after an erase operation can be written to.
-	 */
-	bool erase(void) override
-	{
-		return erase(1);
 	}
 
 
@@ -114,75 +87,6 @@ public:
 		}
 		lock();
 		return result;
-	}
-
-
-	/**
-	 * Adds a file to the filesystem.
-	 * @param filename The name of the file.
-	 * @param data A pointer to the file data.
-	 * @param length The length of the file.
-	 */
-	bool add(const char *filename, uint8_t* data, uint32_t length) override
-	{
-		// Prepare directory entry.
-		DirectoryEntry entry = {
-				.magic_number = DirectoryEntry::FLASH_FILE_MAGIC_NUMBER,
-				.sector_index = index,
-				.length = length,
-				.location = get_next_file_address(),
-				.not_deleted = DirectoryEntry::FILE_NOT_DELETED,
-		};
-		strcpy(entry.filename, filename);
-		tiny_md5(data, length, entry.md5);
-
-		unlock();
-		uint16_t count = get_file_count();
-
-		// Write the file.
-		if (!write((uint32_t*)data, (uint32_t*)entry.location, entry.length))
-			goto fail;
-
-		// Write the directory entry.
-		if (!write_directory_entry(&entry))
-			goto fail;
-
-		return verify((uint32_t*)data, (uint32_t*)entry.location, entry.length) &&
-				verify((uint32_t*)&entry, (uint32_t*)&directory->entries[count], sizeof(DirectoryEntry));
-
-		fail:
-		lock();
-		return false;
-	}
-
-
-	/**
-	 * @brief	Flags are files in this memory with the specified filename as deleted.
-	 * @param	entry The file to unlink
-	 * @returns True on success; false on error, or if the file does not exist.
-	 * @note	This may not necessarily delete the file, but will flag it as deleted.
-	 */
-	bool unlink(DirectoryEntry* entry) override
-	{
-		if (entry == nullptr)
-			return false;
-
-		DirectoryEntry copy = *entry;
-		copy.not_deleted = DirectoryEntry::FILE_DELETED;
-		if (!write_directory_entry(entry, &copy))
-			return false;
-
-		return true;
-	}
-
-
-	/**
-	 * @brief	Gets the usable capacity of this sector.
-	 * @returns	The usable capacity in bytes.
-	 */
-	uint32_t get_capacity(void)
-	{
-		return length - sizeof(Directory);
 	}
 
 

@@ -3,12 +3,12 @@
 
 
 #include "Socket.h"
+#include "utility/IWrite.h"
 #include <string.h>
-#if USING_FREERTOS
-#include "cmsis_os.h"
-#endif
+#include "toolbox.h"
 
-class TcpClient
+
+class TcpClient : public IWrite
 {
 public:
 
@@ -25,12 +25,12 @@ public:
 //	inline uint8_t get_socket_number() { return _sock; }
 //	inline void getRemoteIP(uint8_t * remoteIP) { socket->getRemoteIP(_sock, remoteIP); }
 
-	TcpClient(Socket* socket, uint8_t sock=MAX_SOCK_NUM)
+	TcpClient(Socket* socket)
 	{
 		this->socket = socket;
 	}
 
-	virtual int read(void *buf, size_t size)
+	virtual size_t read(void *buf, size_t size)
 	{
 		return socket->recv(buf, size);
 	}
@@ -57,9 +57,6 @@ public:
 
 		while (status() != SnSR::ESTABLISHED)
 		{
-#if USING_FREERTOS
-			osDelay(1);
-#endif
 			if (t.is_elapsed())
 				return false;
 			if (status() == SnSR::CLOSED)
@@ -85,50 +82,44 @@ public:
 		return write(&b, 1);
 	}
 
-	virtual int available()
+	virtual size_t available()
 	{
 		return socket->available();
 	}
 
-	virtual int read()
+	virtual uint8_t read()
 	{
 		uint8_t b;
-		if (socket->recv(&b, 1) > 0)
-			return b;
-		else
-			return -1;
+		socket->recv(&b, 1);
+		return b;
 	}
 
 	virtual int peek()
 	{
 		uint8_t b;
-		// Unlike recv, peek doesn't check to see if there's any data available, so we must
-		if (!available())
-			return -1;
 		socket->peek(&b);
 		return b;
 	}
 
-	virtual void stop()
+	virtual void stop(uint32_t timeout=1000)
 	{
+		Timer t(milliseconds(1000));
+		t.start();
 		flush_write();
 
 		// attempt to close the connection gracefully (send a FIN to other side)
 		socket->disconnect();
-		unsigned long start = millis();
 
 		// wait up to a second for the connection to close
-		uint8_t s;
-		do {
+		for (uint8_t s; s != SnSR::CLOSED; )
+		{
 			s = status();
-			if (s == SnSR::CLOSED)
-				break; // exit the loop
-			Timer::Block(milliseconds(1));
-		} while (millis() - start < 1000);
-
-		// if it hasn't closed, close it forcefully
-		if (s != SnSR::CLOSED)
-			socket->close();
+			if (t.is_elapsed())
+			{
+				socket->close();
+				break;
+			}
+		}
 	}
 
 	virtual uint8_t connected()
@@ -148,7 +139,8 @@ public:
 	static uint16_t assign_local_port(void)
 	{
 		static uint16_t port = 49152; //Use IANA recommended ephemeral port range 49152-65535
-		if (port == 0) port = 49152;
+		if (port == 0)
+			port = 49152;
 		return port++;
 	}
 

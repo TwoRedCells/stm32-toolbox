@@ -18,6 +18,7 @@
 #include "utility/PrintLite.h"
 #include "toolbox.h"
 #include "generics/Queue.h"
+#include "utility/IWrite.h"
 
 
 /**

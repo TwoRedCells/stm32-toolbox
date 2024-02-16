@@ -22,7 +22,7 @@
 
 #include <stdint.h>
 #include <memory.h>
-//#include <string.h>
+#include "utility/ImmutableString.h"
 #include "utility/PrintLite.h"
 
 // A class to make it easier to handle and pass around IP addresses
@@ -53,27 +53,32 @@ public:
 		memcpy(_address.bytes, address, sizeof(_address.bytes));
 	}
 
-	bool fromString(const char *address)
+	IPAddress(ImmutableString address)
 	{
 		uint16_t acc = 0; // Accumulator
 		uint8_t dots = 0;
 
-		while (*address)
+		const char*s = address.raw();
+		while (*s)
 		{
-			char c = *address++;
+			char c = *s++;
 			if (c >= '0' && c <= '9')
 			{
 				acc = acc * 10 + (c - '0');
-				if (acc > 255) {
+				if (acc > 255)
+				{
 					// Value out of [0..255] range
-					return false;
+					is_valid = false;
+					return;
 				}
 			}
 			else if (c == '.')
 			{
-				if (dots == 3) {
+				if (dots == 3)
+				{
 					// Too much dots (there must be 3 dots)
-					return false;
+					is_valid = false;
+					return;
 				}
 				_address.bytes[dots++] = acc;
 				acc = 0;
@@ -81,16 +86,19 @@ public:
 			else
 			{
 				// Invalid char
-				return false;
+				is_valid = false;
+				return;
 			}
 		}
 
-		if (dots != 3) {
+		if (dots != 3)
+		{
 			// Too few dots (there must be 3 dots)
-			return false;
+			is_valid = false;
+			return;
 		}
 		_address.bytes[3] = acc;
-		return true;
+		is_valid = true;
 	}
 
 	// Overloaded copy operators to allow initialisation of IPAddress objects from other types
@@ -142,7 +150,7 @@ private:
 	} _address;
 
 	char string_value[16];
-
+	bool is_valid = true;
 };
 
 const IPAddress INADDR_NONE(0,0,0,0);

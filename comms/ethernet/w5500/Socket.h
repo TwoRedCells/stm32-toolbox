@@ -18,37 +18,9 @@ public:
 		this->w5500 = w5500;
 	}
 
-//	void set_server_port(uint16_t port)
-//	{
-//		server_port[socket_no] = port;
-//	}
-
-	//int EthernetClass::maintain(){
-	//	int rc = DHCP_CHECK_NONE;
-	//	//we have a pointer to dhcp, use it
-	//	rc = _dhcp.checkLease();
-	//	switch ( rc ){
-	//	case DHCP_CHECK_NONE:
-	//		//nothing done
-	//		break;
-	//	case DHCP_CHECK_RENEW_OK:
-	//	case DHCP_CHECK_REBIND_OK:
-	//		//we might have got a new IP.
-	//		socket->setIPAddress(_dhcp.getLocalIp().raw_address());
-	//		socket->setGatewayIp(_dhcp.getGatewayIp().raw_address());
-	//		socket->setSubnetMask(_dhcp.getSubnetMask().raw_address());
-	//		_dnsServerAddress = _dhcp.getDnsServerIp();
-	//		break;
-	//	default:
-	//		//this is actually a error, it will retry though
-	//		break;
-	//	}
-	//	return rc;
-	//}
-
 
 	/**
-	 * @brief	This Socket function initialize the channel in perticular mode, and set the port and wait for w5500 done it.
+	 * @brief	This Socket function initialize the channel in particular mode, and set the port and wait for w5500 done it.
 	 * @return 	1 for success else 0.
 	 */
 	bool open(uint8_t protocol, uint16_t port, uint8_t flag)

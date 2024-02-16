@@ -1,108 +1,59 @@
 #ifndef ETHERNETSERVER_H
 #define ETHERNETSERVER_H
 
-#include "IServer.h"
 #include "Socket.h"
 #include "Ethernet.h"
 #include "TcpClient.h"
 
-
-class TcpServer : public Server
+class TcpServer : public TcpClient
 {
 public:
-	TcpServer(Socket* socket, uint16_t port)
+	TcpServer(Socket* socket, uint16_t port) : TcpClient(socket)
 	{
 		this->socket = socket;
-		_port = port;
+		this->port = port;
 	}
 
-
-	void begin()
+	bool open(void)
 	{
-		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
-		{
-			TcpClient client(socket, sock);
-			if (client.status() == SnSR::CLOSED) {
-				socket->open(sock, SnMR::TCP, _port, 0);
-				socket->listen(sock);
-//				ethernet->server_port[sock] = _port;
-				break;
-			}
-		}
+		return socket->open(SnMR::TCP, port, 0);
 	}
 
 
-	TcpClient available()
+	bool listen(void)
 	{
-		accept();
-
-		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
-		{
-			TcpClient client(ethernet, sock);
-			if (ethernet->server_port[sock] == _port)
-			{
-				uint8_t s = client.status();
-				if (s == SnSR::ESTABLISHED || s == SnSR::CLOSE_WAIT)
-				{
-					if (client.available())
-					{
-						// XXX: don't always pick the lowest numbered socket->
-						return client;
-					}
-				}
-			}
-		}
-
-		return EthernetClient(ethernet, MAX_SOCK_NUM);
+		return socket->listen();
 	}
 
-	virtual size_t write(uint8_t c)
+	size_t available() override
 	{
-		return write(&c, 1);
+		return (status() == SnSR::ESTABLISHED || status() == SnSR::CLOSE_WAIT) && TcpClient::available();
 	}
 
-
-	size_t write(const uint8_t *buffer, size_t size)
-	{
-		size_t n = 0;
-		accept();
-
-		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
-		{
-			EthernetClient client(ethernet, sock);
-			if (ethernet->server_port[sock] == _port && client.status() == SnSR::ESTABLISHED)
-				n += client.write(buffer, size);
-		}
-
-		return n;
-	}
-	using PrintLite::write;
+	using TcpClient::read;
 
 
 private:
-	void accept()
-	{
-		int listening = 0;
+//	TcpClient accept(void)
+//	{
+//		TcpClient client (socket);
+//		uint8_t status = client.status();
+//		if (status == SnSR::LISTEN)
+//		{
+//			return client;
+//		}
+//
+//		if (status == SnSR::CLOSE_WAIT && !client.available())
+//		{
+//			socket->close();
+//			open();
+//		}
+//
+//		return client;
+//	}
 
-		for (int sock = 0; sock < MAX_SOCK_NUM; sock++)
-		{
-			EthernetClient client(ethernet, sock);
-
-			if (ethernet->server_port[sock] == _port)
-			{
-				if (client.status() == SnSR::LISTEN)
-					listening = 1;
-				else if (client.status() == SnSR::CLOSE_WAIT && !client.available())
-					client.stop();
-			}
-		}
-
-		if (!listening)
-			begin();
-	}
-
-	uint16_t _port;
-	Ethernet* ethernet;
+	uint16_t port;
+	Socket *socket;
 };
 
 #endif

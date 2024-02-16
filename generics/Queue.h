@@ -36,9 +36,8 @@ public:
      * @param buffer Pointer to the buffer.
      * @param length The length of the allocated buffer.
      */
-    Queue(T* buffer, uint32_t length)
+    Queue(T* buffer, uint32_t length) : Queue()
     {
-    	Queue();
     	set_buffer(buffer, length);
     }
 

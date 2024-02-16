@@ -13,6 +13,8 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+#include "IWrite.h"
+#include "utility/ImmutableString.h"
 
 #define DEC 10
 #define HEX 16
@@ -47,10 +49,9 @@
  *			%04d - An integer padded with preceding zeros to a width of 4 characters.
  *
  */
-class PrintLite
+class PrintLite : public IWrite
 {
 public:
-
 	/**
 	 * @brief	Outputs a formatted string.
 	 * @param 	format A string that may include format specifiers.
@@ -65,6 +66,7 @@ public:
 
 		// Internal state.
 		bool zero_padding = false;
+		bool capitalize = false;
 		uint8_t decimals = 0;
 		int8_t fixed_width = Auto;
 
@@ -81,19 +83,18 @@ public:
 						write(va_arg(a, char*));
 						formatting = false;
 						break;
+					case 'S':                       // ImmutableString
+						write(va_arg(a, ImmutableString));
+						formatting = false;
+						break;
 					case 'c':                       // Char
 						write(va_arg(a, int));
 						count++;
 						formatting = false;
 						break;
-					case 'i':                       // 16 bit signed integer
-					case 'u':                       // 16 bit unsigned integer
-						//						n = va_arg(a, int32_t);
-						//						if(c == 'i' && n < 0) n = -n, write('-');
-						//						count += xtoa((uint16_t)n);
-						//						fixed_width = 0;
-						//						break;
-					case 'd':
+					case 'i':                       // signed integer
+					case 'u':                       // unsigned integer
+					case 'd':						// signed integer
 					case 'l':                       // 32 bit long signed integer
 					case 'n':                       // 32 bit long unsigned integer
 					{
@@ -105,41 +106,37 @@ public:
 						formatting = false;
 						break;
 					}
+					case 'X':
+						capitalize = true;
 					case 'x':                       // 16 bit heXadecimal
 					{
 						uint32_t u = va_arg(a, uint32_t);
-						puth(u >> 12);
-						puth(u >> 8);
-						puth(u >> 4);
-						puth(u);
-						count += 4;
-						formatting = false;
-						break;
-					}
-					case 'y':                       // 8 bit heXadecimal
-					{
-						uint32_t u = va_arg(a, uint32_t);
-						puth(u >> 4);
-						puth(u);
+						if (fixed_width == 8 || fixed_width == Auto)
+						{
+							puth(u >> 28 & 0xf, capitalize);
+							puth(u >> 24 & 0xf, capitalize);
+							puth(u >> 20 & 0xf, capitalize);
+							puth(u >> 16 & 0xf, capitalize);
+							count += 4;
+						}
+						if (fixed_width == 4 || fixed_width == 8 || fixed_width == Auto)
+						{
+							puth(u >> 12, capitalize);
+							puth(u >> 8, capitalize);
+							count += 2;
+						}
+
+						puth(u >> 4, capitalize);
+						puth(u, capitalize);
 						count += 2;
+
+						fixed_width = Auto;
+						zero_padding = false;
 						formatting = false;
+						capitalize = false;
 						break;
 					}
-					case 'z':                       // 32 bit heXadecimal
-					{
-						uint32_t u = va_arg(a, uint32_t);
-						puth(u >> 28 & 0xf);
-						puth(u >> 24 & 0xf);
-						puth(u >> 20 & 0xf);
-						puth(u >> 16 & 0xf);
-						puth(u >> 12 & 0xf);
-						puth(u >> 8 & 0xf);
-						puth(u >> 4 & 0xf);
-						puth(u & 0xf);
-						count += 8;
-						formatting = false;
-						break;
-					}
+
 					case '0':
 						zero_padding = true;
 						break;
@@ -153,7 +150,6 @@ public:
 					case '8':
 					case '9':
 						fixed_width = c - 0x30;
-						zero_padding = true;
 						break;
 					case '.':
 						c = *(format); // float
@@ -163,11 +159,13 @@ public:
 					{
 						double f = va_arg(a, double);
 						if (f < 0) f = -f, write('-'), count++;  // Negative.
+
+						// Output the whole part of the number. If the number is zero, optionally output 0 depending on formatting specified.
 						uint32_t whole = (uint32_t)f;
 						if (whole == 0 && zero_padding)
 							write('0'), count++;
 						else
-							count += xtoa(f);
+							count += xtoa(f, Auto, false);
 						if (decimals > 0)
 						{
 							write('.'), count++;
@@ -199,157 +197,13 @@ public:
 	 * @param	... Value(s) to format.
 	 * @returns The number of characters printed.
 	 */
-	static uint16_t vsprintf(char* buffer, const char *format, ...)
+    template<typename... Args>
+	static uint16_t vsprintf(char* buffer, const char *format, Args... args)
 	{
-		va_list args;
-		va_start(args, format);
-		uint16_t ret = vsprintf(buffer, format, args);
-		va_end(args);
+		PrintLite lite(buffer);
+		uint16_t ret = lite.printf(format, args...);
 		return ret;
 	}
-
-	/**
-	 * @brief	Outputs a formatted string.
-	 * @param 	format A string that may include format specifiers.
-	 * @param	... Value(s) to format.
-	 * @returns The number of characters printed.
-	 */
-	static uint16_t vsprintf(char* buffer, const char *format, va_list a)
-	{
-		char* p = buffer;  // Pointer to current character.
-
-		// Internal state.
-		bool zero_padding = false;
-		uint8_t decimals = 0;
-		int8_t fixed_width = Auto;
-
-		while(char c = *format++)
-		{
-			if(c == '%')
-			{
-				for (bool formatting=true; formatting;)
-				{
-					switch(c = *format++)
-					{
-					case 's':                       // String
-					{
-						char* str = va_arg(a, char*);
-						while (*str != '\0')
-							*p++ = *str++;
-						formatting = false;
-						break;
-					}
-					case 'c':                       // Char
-						*p++ = va_arg(a, int);
-						formatting = false;
-						break;
-					case 'd':
-					case 'i':                       // 16 bit signed integer
-					case 'u':                       // 16 bit unsigned integer
-						//				{
-						//					int32_t n = va_arg(a, int32_t);
-						//					if(c == 'i' && n < 0) n = -n, *p++ = '-';
-						//					p += xtoa((uint16_t)n, p);
-						//					break;
-						//				}
-					case 'l':                       // 32 bit long signed integer
-					case 'n':                       // 32 bit long unsigned integer
-					{
-						int32_t n = va_arg(a, int32_t);
-						if(c == 'l' && n < 0) n = -n, *p++ = '-';
-						p += xtoa((uint32_t)n, p, fixed_width);
-						fixed_width = Auto;
-						zero_padding = false;
-						formatting = false;
-						break;
-					}
-					case 'x':                       // 16 bit heXadecimal
-					{
-						uint32_t u = va_arg(a, uint32_t);
-						*p++ = hex[u >> 12 & 0xf];
-						*p++ = hex[u >> 8 & 0xf];
-						*p++ = hex[u >> 4 & 0xf];
-						*p++ = hex[u & 0xf];
-						formatting = false;
-						break;
-					}
-					case 'y':                       // 8 bit heXadecimal
-					{
-						uint32_t u = va_arg(a, uint32_t);
-						*p++ = hex[u >> 4 & 0xf];
-						*p++ = hex[u & 0xf];
-						formatting = false;
-						break;
-					}
-					case 'z':                       // 32 bit heXadecimal
-					{
-						uint32_t u = va_arg(a, uint32_t);
-						*p++ = hex[u >> 28 & 0xf];
-						*p++ = hex[u >> 24 & 0xf];
-						*p++ = hex[u >> 20 & 0xf];
-						*p++ = hex[u >> 16 & 0xf];
-						*p++ = hex[u >> 12 & 0xf];
-						*p++ = hex[u >> 8 & 0xf];
-						*p++ = hex[u >> 4 & 0xf];
-						*p++ = hex[u & 0xf];
-						formatting = false;
-						break;
-					}
-					case '0':
-						zero_padding = true;
-						break;
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						fixed_width = c - 0x30;
-						zero_padding = true;
-						break;
-					case '.':						// float
-						c = *format++;
-						decimals = c - 0x30;  // Number of digits to the right of the decimal.
-						break;
-					case 'f':
-					{
-						double f = va_arg(a, double);
-						if (f < 0) f = -f, *p++ = '-';  // Negative.
-						uint32_t whole = (uint32_t)f;
-						if (count_digits(whole) == 0 && zero_padding)
-							*p++ = '0';
-						else
-							p += xtoa(f, p);
-						if (decimals > 0)
-						{
-							*p++ = '.';
-							p += xtoa((f - (int16_t)f) * pow(10, decimals), p, decimals);
-						}
-						zero_padding = false;
-						formatting = false;
-						break;
-					}
-					case 0:
-						return p - buffer;
-					default:
-						goto bad_fmt;
-					}
-				}
-			}
-			else
-			{
-				bad_fmt:
-				*p++ = c;  // Add the character verbatim.
-			}
-		}
-		va_end(a);
-		*p = '\0';  // Terminate with NUL.
-		return p - buffer;
-	}
-
 
 	/**
 	 * @brief	Prints the specified string.
@@ -393,7 +247,11 @@ public:
 	 * @brief	Writes the specified byte to the underlying resource.
 	 * @param	c The byte value
 	 */
-	virtual size_t write(uint8_t b) = 0;
+	virtual size_t write(uint8_t b)
+	{
+		*p++ = b;
+		return 1;
+	}
 
 
 	/**
@@ -409,6 +267,17 @@ public:
 		return size;
 	}
 
+	/**
+	 * @brief	Writes a NUL-terminated string.
+	 * @param	string String to write.
+	 */
+	uint16_t write(ImmutableString string)
+	{
+		write(string.raw());
+	}
+
+
+
 
 	/**
 	 * @brief	Writes a NUL-terminated string.
@@ -417,25 +286,34 @@ public:
 	uint16_t write(const char *string)
 	{
 		uint16_t count = 0;
-		const char *p = string;
-		while(*p)
+		const char *pp = string;
+		while(*pp)
 		{
-			write((uint8_t)(*p));
-			p++;
+			write((uint8_t)(*pp));
+			pp++;
 			count++;
 		}
+		if (p != nullptr)  // NUL terminate when using vsprintf.
+			write((uint8_t)0);
 		return count;
 	}
 
 
 protected:
+	PrintLite(void)
+	{
+	}
+
 	/**
 	 * Converts an integer to a string.
 	 * @param value The integer to convert.
 	 * @param string Pointer to place the string.
 	 */
-	uint16_t xtoa(uint32_t value, int8_t digits=Auto)
+	uint16_t xtoa(uint32_t value, int8_t digits=Auto, bool zero=true)
 	{
+		if (!zero && value == 0)
+			return 0;
+
 		if (digits == -1)
 			digits = count_digits(value);
 		uint32_t v = value;
@@ -493,13 +371,24 @@ protected:
 	 * Prints the hex value (zero to A) corresponding to the specified value.
 	 * @param value The value.
 	 */
-	void puth(uint8_t value)
+	void puth(uint8_t value, bool capitalize=false)
 	{
-		write(hex[value & 15]);
+		if (capitalize)
+			write(hex_upper[value & 15]);
+		else
+			write(hex_lower[value & 15]);
 	}
 
 private:
-	static constexpr char hex[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	// This constructor and variables are used when this class is not subclassed.
+	// This is only used for vsprintf, which needs slightly different handling.
+	PrintLite(char* p)
+	{
+		this->p = p;
+	}
+	char* p = nullptr;
+	static constexpr char hex_lower[16] = { '0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
+	static constexpr char hex_upper[16] = { '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	static constexpr const int8_t Auto = -1;
 };
 

@@ -24,12 +24,24 @@ public:
 	 */
 	int32_t get_time()
 	{
+		DateTime now = get_datetime();
+		return now.ToTimestamp();
+	}
+
+
+	/**
+	 * Gets the RTC value as a UNIX timestamp.
+	 * @returns	The RTC value.
+	 */
+	DateTime get_datetime()
+	{
 		RTC_TimeTypeDef rtc_time;
 		RTC_DateTypeDef rtc_date;
 		HAL_RTC_GetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
 		HAL_RTC_GetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
-		DateTime now(rtc_date.Year+2000, rtc_date.Month-1, rtc_date.Date-1, rtc_time.Hours, rtc_time.Minutes, rtc_time.Seconds);
-		return now.ToTimestamp();
+		double partial = ((double)(rtc_time.SecondFraction - rtc_time.SubSeconds)) / ((double)(rtc_time.SecondFraction+1));
+		DateTime now(rtc_date.Year+2000, rtc_date.Month-1, rtc_date.Date-1, rtc_time.Hours, rtc_time.Minutes, rtc_time.Seconds, partial);
+		return now;
 	}
 
 

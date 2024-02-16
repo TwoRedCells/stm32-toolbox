@@ -21,6 +21,7 @@ public:
 	uint8_t hour;
 	uint8_t minute;
 	uint8_t second;
+	double partial;
 
 	enum DaysOfWeek { Sunday, Monday, Tuesday, Wednesday, Thursday, Friday };
 
@@ -48,7 +49,7 @@ public:
 	}
 
 
-	DateTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour=0, uint8_t minute=0, uint8_t second=0)
+	DateTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour=0, uint8_t minute=0, uint8_t second=0, double partial=0)
 	{
 		this->year = year;
 		this->month = month;
@@ -56,6 +57,7 @@ public:
 		this->hour = hour;
 		this->minute = minute;
 		this->second = second;
+		this->partial = partial;
 	}
 
 	/**
@@ -145,9 +147,15 @@ public:
 		return buf;
 	}
 
-	const char* ToISOString(void)
+	const char* ToISOString(bool zulu=false)
 	{
-		PrintLite::vsprintf(buf, "%u-%02u-%02uT%02u:%02u:%02uZ", year, month+1, day+1, hour, minute, second);
+		PrintLite::vsprintf(buf, "%u-%02u-%02uT%02u:%02u:%02u%s", year, month+1, day+1, hour, minute, second, zulu?"Z":"");
+		return buf;
+	}
+
+	const char* ToRawISOString(bool zulu=false)
+	{
+		PrintLite::vsprintf(buf, "%u%02u%02uT%02u%02u%02u%s", year, month+1, day+1, hour, minute, second, zulu?"Z":"");
 		return buf;
 	}
 
@@ -175,7 +183,7 @@ public:
 
 private:
 	static const constexpr uint8_t months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-	char buf[21];
+	char buf[25];
 };
 
 

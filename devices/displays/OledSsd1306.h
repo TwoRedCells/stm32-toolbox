@@ -179,29 +179,26 @@ public:
 		command(DisplayOn);
 	}
 
-	void string(uint8_t x, uint8_t y, const char* str)
-	{
-		this->x = x;
-		this->y = y;
-
-		for (const char* s=str; *s != 0; s++)
-		{
-			uint8_t c = *s;
-			write(c);
-		}
-
-	}
-
-	void string(const char* format, ...)
-	{
-		char buffer[30];
-		va_list p;
-		va_start(p, format);
-		PrintLite::vsprintf(buffer, format, p);
-		va_end(p);
-
-		string(x, y, buffer);
-	}
+//	void string(uint8_t x, uint8_t y, const char* str)
+//	{
+//		this->x = x;
+//		this->y = y;
+//
+//		for (const char* s=str; *s != 0; s++)
+//		{
+//			uint8_t c = *s;
+//			write(c);
+//		}
+//
+//	}
+//
+//    template<typename... Args>
+//	void string(const char* format, Args... args)
+//	{
+//		char buffer[30];
+//		PrintLite::vsprintf(buffer, format, args...);
+//		string(x, y, buffer);
+//	}
 
 	void set_colour(OledColour colour)
 	{
