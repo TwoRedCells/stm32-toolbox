@@ -183,8 +183,11 @@ public:
 				}
 			}
 			else
+			{
 				bad_fmt:
+				count++;
 				write(c);
+			}
 		}
 		va_end(a);
 		return count;
@@ -202,6 +205,7 @@ public:
 	{
 		PrintLite lite(buffer);
 		uint16_t ret = lite.printf(format, args...);
+		buffer[ret] = 0; // NUL-termination.
 		return ret;
 	}
 
@@ -274,9 +278,8 @@ public:
 	uint16_t write(ImmutableString string)
 	{
 		write(string.raw());
+		return string.length();
 	}
-
-
 
 
 	/**
