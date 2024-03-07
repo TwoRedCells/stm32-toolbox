@@ -8,7 +8,7 @@
 #ifndef LIB_STM32_TOOLBOX_COMMS_ETHERNET_W5500_TCPIP_H_
 #define LIB_STM32_TOOLBOX_COMMS_ETHERNET_W5500_TCPIP_H_
 
-#include "comms/tcpip/IPAddress.h"
+#include <comms/tcpip/IPv4Address.h>
 #include "Ethernet.h"
 
 
@@ -36,31 +36,31 @@ public:
 
 
 
-	void begin(uint8_t *mac_address, IPAddress local_ip)
+	void begin(uint8_t *mac_address, IPv4Address local_ip)
 	{
 		// Assume the DNS server will be the machine on the same network as the local IP
 		// but with last octet being '1'
-		IPAddress dns_server = local_ip;
+		IPv4Address dns_server = local_ip;
 		dns_server[3] = 1;
 		begin(mac_address, local_ip, dns_server);
 	}
 
-	void begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server)
+	void begin(uint8_t *mac_address, IPv4Address local_ip, IPv4Address dns_server)
 	{
 		// Assume the gateway will be the machine on the same network as the local IP
 		// but with last octet being '1'
-		IPAddress gateway = local_ip;
+		IPv4Address gateway = local_ip;
 		gateway[3] = 1;
 		begin(mac_address, local_ip, dns_server, gateway);
 	}
 
-	void begin(uint8_t *mac_address, IPAddress local_ip, IPAddress dns_server, IPAddress gateway)
+	void begin(uint8_t *mac_address, IPv4Address local_ip, IPv4Address dns_server, IPv4Address gateway)
 	{
-		IPAddress subnet(255, 255, 255, 0);
+		IPv4Address subnet(255, 255, 255, 0);
 		begin(mac_address, local_ip, dns_server, gateway, subnet);
 	}
 
-	void begin(uint8_t *mac, IPAddress local_ip, IPAddress dns_server, IPAddress gateway, IPAddress subnet)
+	void begin(uint8_t *mac, IPv4Address local_ip, IPv4Address dns_server, IPv4Address gateway, IPv4Address subnet)
 	{
 		ethernet->set_mac_address(mac);
 		set_ip_address(local_ip.raw_address());

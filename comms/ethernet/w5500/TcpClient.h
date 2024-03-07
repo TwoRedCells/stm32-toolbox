@@ -46,22 +46,18 @@ public:
 			read();
 	}
 
-	virtual bool connect(IPAddress& ip, uint16_t port, uint32_t timeout=5000)
+	virtual bool connect(IPv4Address& ip, uint16_t port, uint32_t timeout=5000)
 	{
 		socket->open(SnMR::TCP, assign_local_port(), 0);
-		if (!socket->connect(ip.raw_address(), port))
-			return false;
+		socket->connect(ip.raw_address(), port);
 
 		Timer t(milliseconds(timeout));
 		t.start();
 
 		while (status() != SnSR::ESTABLISHED)
-		{
-			if (t.is_elapsed())
+			if (t.is_elapsed() || status() == SnSR::CLOSED)
 				return false;
-			if (status() == SnSR::CLOSED)
-				return false;
-		}
+
 		return true;
 	}
 
@@ -111,7 +107,7 @@ public:
 		socket->disconnect();
 
 		// wait up to a second for the connection to close
-		for (uint8_t s; s != SnSR::CLOSED; )
+		for (uint8_t s = status(); s != SnSR::CLOSED; )
 		{
 			s = status();
 			if (t.is_elapsed())

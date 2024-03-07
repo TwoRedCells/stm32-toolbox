@@ -38,9 +38,9 @@
 #define ETHERNETUDP_H
 
 
+#include <comms/tcpip/IPv4Address.h>
 #include "Socket.h"
 #include "comms/tcpip/IUdp.h"
-#include "comms/tcpip/IPAddress.h"
 
 #ifndef word
 #define word(a, b) ( (uint16_t)((a)<<8) | (b) )
@@ -55,12 +55,14 @@ public:
 		this->socket = socket;
 	}
 
-	virtual uint8_t begin(uint16_t port) override
+	virtual bool begin(IPv4Address& ip, uint16_t port) override
 	{
-		this->port = port;
 		_remaining = 0;
-		socket->open(SnMR::UDP, port, 0);
-		return 1;
+		this->ip = ip;
+		this->port = port;
+		if (!socket->open(SnMR::UDP, port, 0))
+			return false;
+		return true;
 	}
 
 	/* return number of bytes available in the current packet,
@@ -76,34 +78,19 @@ public:
 		socket->close();
 	}
 
-	//int EthernetUDP::beginPacket(const char *host, uint16_t port)
-	//{
-	//	// Look up the host first
-	//	int ret = 0;
-	//	DNSClient dns;
-	//	IPAddress remote_addr;
-	//
-	//	dns.begin(Ethernet.dnsServerIP());
-	//	ret = dns.getHostByName(host, remote_addr);
-	//	if (ret == 1) {
-	//		return beginPacket(remote_addr, port);
-	//	} else {
-	//		return ret;
-	//	}
-	//}
-
 	using PrintLite::write;
 
-	virtual int beginPacket(IPAddress ip, uint16_t port) override
+	virtual void beginPacket(void) override
 	{
 		_offset = 0;
-		return socket->start_udp(ip, port);
+		socket->start_udp(ip, port);
 	}
 
-	virtual int endPacket() override
+	virtual bool endPacket() override
 	{
 		return socket->send_udp();
 	}
+
 
 	virtual size_t write(uint8_t byte) override
 	{
@@ -164,7 +151,6 @@ public:
 
 		if (_remaining > 0)
 		{
-
 			int got;
 
 			if (_remaining <= len)
@@ -184,7 +170,6 @@ public:
 				_remaining -= got;
 				return got;
 			}
-
 		}
 
 		// If we get here, there's no data available or recv failed
@@ -237,14 +222,15 @@ public:
 
 
 	// Return the IP address of the host who sent the current incoming packet
-	virtual IPAddress remoteIP() { return _remoteIP; };
+	virtual IPv4Address remoteIP() { return _remoteIP; };
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() { return _remotePort; };
 
 private:
 private:
+	IPv4Address ip;
 	uint16_t port; // local port to listen on
-	IPAddress _remoteIP; // remote IP address for the incoming packet whilst it's being processed
+	IPv4Address _remoteIP; // remote IP address for the incoming packet whilst it's being processed
 	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
 	uint16_t _offset; // offset into the packet being sent
 	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed

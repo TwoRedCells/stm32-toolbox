@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 #include "comms/ethernet/w5500/TcpServer.h"
-#include "comms/tcpip/IpAddress.h"
+#include "comms/tcpip/IPv4Address.h"
 #include "generics/Queue.h"
 
 

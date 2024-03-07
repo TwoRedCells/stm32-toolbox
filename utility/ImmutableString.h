@@ -72,27 +72,27 @@ public:
 		return (uint8_t) atoi(s);
 	}
 
-	uint8_t ToUInt16(void)
+	uint16_t ToUInt16(void)
 	{
-		return (uint8_t) atoi(s);
+		return (uint16_t) atoi(s);
 	}
 
-	uint8_t ToUInt32(void)
+	uint32_t ToUInt32(void)
 	{
 		return (uint32_t) atoi(s);
 	}
 
-	uint8_t ToInt8(void)
+	int8_t ToInt8(void)
 	{
 		return (int8_t) atoi(s);
 	}
 
-	uint8_t ToInt16(void)
+	int16_t ToInt16(void)
 	{
-		return (int8_t) atoi(s);
+		return (int16_t) atoi(s);
 	}
 
-	uint8_t ToInt32(void)
+	int32_t ToInt32(void)
 	{
 		return (int32_t) atoi(s);
 	}

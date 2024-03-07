@@ -35,26 +35,26 @@
 #ifndef udp_h
 #define udp_h
 
+#include <comms/tcpip/IPv4Address.h>
 #include "Stream.h"
-#include "IPAddress.h"
 #include <stdint.h>
 
 class IUdp: public Stream
 {
 public:
 	virtual ~IUdp() {};
-	virtual uint8_t begin(uint16_t) =0;	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
+	virtual bool begin(IPv4Address&, uint16_t) =0;	// initialize, start listening on specified port. Returns 1 if successful, 0 if there are no sockets available to use
 	virtual void stop() =0;  // Finish with the UDP socket
 
 	// Sending UDP packets
 
 	// Start building up a packet to send to the remote host specific in ip and port
 	// Returns 1 if successful, 0 if there was a problem with the supplied IP address or port
-	virtual int beginPacket(IPAddress ip, uint16_t port) =0;
+	virtual void beginPacket() =0;
 
 	// Finish off this packet and send it
 	// Returns 1 if the packet was sent successfully, 0 if there was an error
-	virtual int endPacket() =0;
+	virtual bool endPacket() =0;
 
 	// Write a single byte into the packet
 	virtual size_t write(uint8_t) =0;
@@ -82,7 +82,7 @@ public:
 	virtual void flush() =0;	// Finish reading the current packet
 
 	// Return the IP address of the host who sent the current incoming packet
-	virtual IPAddress remoteIP() =0;
+	virtual IPv4Address remoteIP() =0;
 
 	// Return the port of the host who sent the current incoming packet
 	virtual uint16_t remotePort() =0;

@@ -9,7 +9,7 @@
 #define LIB_STM32_TOOLBOX_COMMS_ETHERNET_MQTTCLIENT_H_
 
 #include <comms/ethernet/w5500/TcpClient.h>
-#include <comms/tcpip/IPAddress.h>
+#include <comms/tcpip/IPv4Address.h>
 #include <string.h>
 
 class MqttClient : public TcpClient
@@ -60,7 +60,7 @@ protected:
 	static const constexpr uint8_t PropertyMessageExpiryInterval = 0x01;
 
 public:
-	MqttClient(Socket* socket, IPAddress broker, const char* client_id, uint16_t keep_alive=60, uint16_t port=1883) : TcpClient(socket)
+	MqttClient(Socket* socket, IPv4Address broker, const char* client_id, uint16_t keep_alive=60, uint16_t port=1883) : TcpClient(socket)
 	{
 		this->broker = broker;
 		this->port = port;
@@ -164,7 +164,7 @@ public:
 	}
 
 private:
-	IPAddress broker;
+	IPv4Address broker;
 	uint16_t port;
 	const char* client_id;
 	uint16_t keep_alive;

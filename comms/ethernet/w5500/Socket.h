@@ -1,9 +1,10 @@
 #ifndef	_SOCKET_H_
 #define	_SOCKET_H_
 
+#include <comms/tcpip/IPv4Address.h>
 #include "Ethernet.h"
 #include "TcpIp.h"
-#include "comms/tcpip/IPAddress.h"
+#include "utility/Timer.h"
 #include <memory.h>
 
 #ifndef word
@@ -25,21 +26,7 @@ public:
 	 */
 	bool open(uint8_t protocol, uint16_t port, uint8_t flag)
 	{
-		// Select a socket to use.
-		socket_no = MAX_SOCK_NUM;
-		for (int i = 0; i < MAX_SOCK_NUM; i++)
-		{
-			uint8_t s = status();
-			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
-			{
-				socket_no = i;
-				break;
-			}
-		}
-
-		if (socket_no == MAX_SOCK_NUM)
-			return false;
-
+		get_available_socket();
 		sock_is_sending &= ~(1<<socket_no);
 
 		if ((protocol == SnMR::TCP) || (protocol == SnMR::UDP) || (protocol == SnMR::IPRAW) || (protocol == SnMR::MACRAW) || (protocol == SnMR::PPPOE))
@@ -51,6 +38,25 @@ public:
 			return true;
 		}
 		return false;
+	}
+
+
+	/**
+	 * @brief Selects an available socket.
+	 * @returns True if a socket is available; otherwise false.
+	 */
+	void get_available_socket(void)
+	{
+		// MAX_SOCK_NUM is invalid, so if it is the result, we failed.
+		socket_no = MAX_SOCK_NUM;
+		for (int i = 0; i < MAX_SOCK_NUM; i++)
+		{
+			uint8_t s = status();
+			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
+				socket_no = i;
+		}
+
+		assert (socket_no != MAX_SOCK_NUM);
 	}
 
 
@@ -84,17 +90,15 @@ public:
 	 *
 	 * @return	1 for success else 0.
 	 */
-	bool connect(uint8_t* addr, uint16_t port)
+	void connect(uint8_t* addr, uint16_t port)
 	{
-		assert(IPAddress(addr) != IPAddress((uint32_t)0xFFFFFFFF));
-		assert(IPAddress(addr) != IPAddress((uint32_t)0));
+		assert(!IPv4Address(addr).is_broadcast());
+		assert(!IPv4Address(addr).is_empty());
 		assert(port != 0x00);
 
-		// set destination IP
 		w5500->writeSnDIPR(socket_no, addr);
 		w5500->writeSnDPORT(socket_no, port);
 		w5500->execute_command(socket_no, Sock_CONNECT);
-		return true;
 	}
 
 
@@ -211,7 +215,7 @@ public:
 	{
 		if (len > w5500->SSIZE) len = w5500->SSIZE; // check size not to exceed MAX size.
 
-		if (( IPAddress(addr) == IPAddress((uint32_t)0) ) || (port == 0x00) || (len == 0)) {
+		if (( IPv4Address(addr) == IPv4Address((uint32_t)0) ) || (port == 0x00) || (len == 0)) {
 			/* +2008.01 [bj] : added return value */
 			return 0;
 		}
@@ -342,18 +346,13 @@ public:
 	  or more calls to bufferData and then finally sent with sendUDP.
 	  @return 1 if the datagram was successfully set up, or 0 if there was an error
 	 */
-	bool start_udp(IPAddress addr, uint16_t port)
+	void start_udp(IPv4Address addr, uint16_t port)
 	{
-		if ( (IPAddress(addr) == IPAddress((uint32_t)0)) || (port == 0) )
-		{
-			return false;
-		}
-		else
-		{
-			w5500->writeSnDIPR(socket_no, addr.raw_address());
-			w5500->writeSnDPORT(socket_no, port);
-			return true;
-		}
+		assert (!addr.is_empty());
+		assert (port != 0);
+
+		w5500->writeSnDIPR(socket_no, addr.raw_address());
+		w5500->writeSnDPORT(socket_no, port);
 	}
 
 	/*
@@ -365,18 +364,15 @@ public:
 	{
 		w5500->execute_command(socket_no, Sock_SEND);
 
-		/* +2008.01 bj */
 		while (!(w5500->readSnIR(socket_no) & SnIR::SEND_OK))
 		{
 			if (w5500->readSnIR(socket_no) & SnIR::TIMEOUT)
 			{
-				/* +2008.01 [bj]: clear interrupt */
 				w5500->writeSnIR(socket_no, (SnIR::SEND_OK|SnIR::TIMEOUT));
 				return false;
 			}
 		}
 
-		/* +2008.01 bj */
 		w5500->writeSnIR(socket_no, SnIR::SEND_OK);
 		return true;
 	}
@@ -414,10 +410,10 @@ public:
 				(s == SnSR::CLOSE_WAIT && !available()));
 	}
 
-	void set_socket_no(uint8_t socket_no)
-	{
-		this->socket_no = socket_no;
-	}
+//	void set_socket_no(uint8_t socket_no)
+//	{
+//		this->socket_no = socket_no;
+//	}
 
 
 private:

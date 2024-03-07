@@ -23,7 +23,7 @@ public:
 
 	MacAddress(const uint8_t *address)
 	{
-		memcpy(this->mac, mac, 6);
+		memcpy(this->mac, address, 6);
 	}
 
 	MacAddress(ImmutableString address)
@@ -49,6 +49,11 @@ public:
 	{
 		PrintLite::vsprintf(string_value, "%2x:%2x:%2x:%2x:%2x:%2x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 		return string_value;
+	}
+
+	bool is_empty(void)
+	{
+		return !mac[0] && !mac[1] && !mac[2] && !mac[3] && !mac[4] && !mac[5];
 	}
 
 private:

@@ -13,7 +13,7 @@
 
 #include <stdint.h>
 #include "comms/ethernet/w5500/Udp.h"
-#include "comms/tcpip/IpAddress.h"
+#include "comms/tcpip/IPv4Address.h"
 
 class NtpClient
 {
@@ -36,7 +36,7 @@ public:
 	} NtpPacket;
 
 
-	NtpClient(Socket* socket, IPAddress ip)
+	NtpClient(Socket* socket, IPv4Address ip)
 	{
 		this->ip = ip;
 		this->socket = socket;
@@ -52,13 +52,16 @@ public:
 		NtpPacket packet = {0};
 		packet.li_vn_mode |= 0b00100011; // SNTPv4, unicast client.
 		Udp udp(socket);
+		udp.begin(ip, ntp_port);
 
-		udp.begin(ntp_port);
-		if (!udp.beginPacket(ip, ntp_port))
-			return false;
-
+		udp.beginPacket();
 		udp.write((uint8_t*)&packet, sizeof(NtpPacket));
-		udp.endPacket();
+		if (!udp.endPacket())
+		{
+			udp.stop();
+			return false;
+		}
+
 		osDelay(100);
 		int len = udp.parsePacket();
 		if (len != sizeof(NtpPacket) || udp.read((uint8_t*)&packet, sizeof(NtpPacket)) != sizeof(NtpPacket))
@@ -92,7 +95,7 @@ public:
 	}
 
 private:
-	IPAddress ip;
+	IPv4Address ip;
 	Socket* socket;
 };
 
