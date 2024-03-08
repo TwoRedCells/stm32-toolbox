@@ -55,50 +55,11 @@ public:
 
 	IPv4Address(ImmutableString address)
 	{
-		uint16_t acc = 0; // Accumulator
-		uint8_t dots = 0;
-
-		const char*s = address.raw();
-		while (*s)
+		for (int i=0; i<4; i++)
 		{
-			char c = *s++;
-			if (c >= '0' && c <= '9')
-			{
-				acc = acc * 10 + (c - '0');
-				if (acc > 255)
-				{
-					// Value out of [0..255] range
-					is_valid = false;
-					return;
-				}
-			}
-			else if (c == '.')
-			{
-				if (dots == 3)
-				{
-					// Too much dots (there must be 3 dots)
-					is_valid = false;
-					return;
-				}
-				_address.bytes[dots++] = acc;
-				acc = 0;
-			}
-			else
-			{
-				// Invalid char
-				is_valid = false;
-				return;
-			}
+			ImmutableString quad = i==0 ? address.Token(".") : address.Token();
+			_address.bytes[i] = quad.ToInt8();
 		}
-
-		if (dots != 3)
-		{
-			// Too few dots (there must be 3 dots)
-			is_valid = false;
-			return;
-		}
-		_address.bytes[3] = acc;
-		is_valid = true;
 	}
 
 	// Overloaded copy operators to allow initialisation of IPAddress objects from other types
@@ -118,7 +79,6 @@ public:
 	{
 		return memcmp(addr, _address.bytes, sizeof(_address.bytes)) == 0;
 	}
-
 
 
 	// Overloaded cast operator to allow IPAddress objects to be used where a pointer

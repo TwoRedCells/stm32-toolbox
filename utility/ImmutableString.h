@@ -30,6 +30,12 @@ public:
 		return *this;
 	}
 
+	const char* operator=(ImmutableString string)
+	{
+		return string.s;
+	}
+
+
 	bool operator==(ImmutableString o)
 	{
 		return !strcmp(s, o.s);
@@ -45,6 +51,10 @@ public:
 		if (l == 0 || p > l-1)
 			return 0;
 		return s[p];
+	}
+
+	explicit operator const char*() const {
+		return s;
 	}
 
 	size_t length(void)
@@ -99,11 +109,18 @@ public:
 
 	ImmutableString Token(const char* token)
 	{
+		this->token = token;
 		return strtok((char*)s, token);
+	}
+
+	ImmutableString Token(void)
+	{
+		return strtok(nullptr, token);
 	}
 
 private:
 	const char* s;
+	const char* token;
 	size_t l;
 };
 

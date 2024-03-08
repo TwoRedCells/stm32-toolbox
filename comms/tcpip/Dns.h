@@ -5,7 +5,9 @@
 #ifndef DNSCLIENT_H
 #define DNSCLIENT_H
 
-#include "EthernetUdp.h"
+#include "comms/ethernet/w5500/Udp.h"
+#include "IPv4Address.h"
+#include "utility/Timer.h"
 #include "util.h"
 
 #define SOCKET_NONE	255
@@ -48,58 +50,10 @@
 class DnsClient
 {
 public:
-	DnsClient(EthernetUDP* udp)
+	DnsClient(IUdp* udp, IPv4Address resolver)
 	{
 		this->udp = udp;
-	}
-
-
-	void begin(const IPAddress& aDNSServer)
-	{
-		dns_server = aDNSServer;
-		iRequestId = 0;
-	}
-
-
-	/** Convert a numeric IP address string into a four-byte IP address.
-        @param aIPAddrString IP address to convert
-        @param aResult IPAddress structure to store the returned IP address
-        @result 1 if aIPAddrString was successfully converted to an IP address,
-                else error code
-	 */
-	int inet_aton(const char* address, IPAddress& result)
-	{
-		uint16_t acc = 0; // Accumulator
-		uint8_t dots = 0;
-
-		while (*address)
-		{
-			char c = *address++;
-			if (c >= '0' && c <= '9')
-			{
-				acc = acc * 10 + (c - '0');
-				if (acc > 255)
-					return 0;  // Value out of [0..255] range
-			}
-			else if (c == '.')
-			{
-				if (dots == 3)
-					return 0;  // Too much dots (there must be 3 dots)
-				result[dots++] = acc;
-				acc = 0;
-			}
-			else
-			{
-				// Invalid char
-				return 0;
-			}
-		}
-
-		if (dots != 3)
-			return 0;  // Too few dots (there must be 3 dots)
-
-		result[3] = acc;
-		return 1;
+		this->resolver = resolver;
 	}
 
 
@@ -109,62 +63,24 @@ public:
         @result 1 if aIPAddrString was successfully converted to an IP address,
                 else error code
 	 */
-	int getHostByName(const char* aHostname, IPAddress& aResult)
+	int Get(const char* hostname, IPv4Address& ip)
 	{
-		int ret =0;
+		// See if it is already a dotted-quad string.
+//		ImmutableString test = hostname;
+//		IPv4Address hostip(test);
 
-		// See if it's a numeric IP address
-		if (inet_aton(aHostname, aResult))
-		{
-			// It is, our work here is done
-			return 1;
-		}
-
-		// Check we've got a valid DNS server to use
-		if (dns_server == INADDR_NONE)
-			return INVALID_SERVER;
-
-		// Find a socket to use
-		if (udp->begin(1024+(millis() & 0xF)) == 1)
-		{
-			// Try up to three times
-			int retries = 0;
-			//        while ((retries < 3) && (ret <= 0))
-			{
-				// Send DNS request
-				ret = udp->beginPacket(dns_server, DNS_PORT);
-				if (ret != 0)
-				{
-					// Now output the request data
-					ret = BuildRequest(aHostname);
-					if (ret != 0)
-					{
-						// And finally send the request
-						ret = udp->endPacket();
-						if (ret != 0)
-						{
-							// Now wait for a response
-							int wait_retries = 0;
-							ret = TIMED_OUT;
-							while ((wait_retries < 3) && (ret == TIMED_OUT))
-							{
-								ret = ProcessResponse(5000, aResult);
-								wait_retries++;
-							}
-						}
-					}
-				}
-				retries++;
-			}
-
-			// We're done with the socket now
-			udp->stop();
-		}
-		return ret;
+		// Send DNS request
+		udp->begin(resolver, DNS_PORT);
+		udp->beginPacket();
+		BuildRequest(hostname);
+		udp->endPacket();
+		int status = ProcessResponse(1000, ip);
+		udp->stop();
+		return status;
 	}
 
 protected:
-	uint16_t BuildRequest(const char* aName)
+	uint16_t BuildRequest(const char* hostname)
 	{
 		// Build header
 		//                                    1  1  1  1  1  1
@@ -206,8 +122,8 @@ protected:
 		udp->write((uint8_t*)&twoByteBuffer, sizeof(twoByteBuffer));
 
 		// Build question
-		const char* start =aName;
-		const char* end =start;
+		const char* start = hostname;
+		const char* end  =start;
 		uint8_t len;
 		// Run through the name being requested
 		while (*end)
@@ -243,14 +159,15 @@ protected:
 	}
 
 
-	uint16_t ProcessResponse(uint16_t aTimeout, IPAddress& aAddress)
+	uint16_t ProcessResponse(uint16_t aTimeout, IPv4Address& ip)
 	{
-		uint32_t startTime = millis();
+		Timer t;
+		t.start(milliseconds(aTimeout));
 
 		// Wait for a response packet
 		while(udp->parsePacket() <= 0)
 		{
-			if((millis() - startTime) > aTimeout)
+			if(t.is_elapsed())
 				return TIMED_OUT;
 			osDelay(50);
 		}
@@ -259,7 +176,7 @@ protected:
 		// Read the UDP header
 		uint8_t header[DNS_HEADER_SIZE]; // Enough space to reuse for the DNS header
 		// Check that it's a response from the right server and the right port
-		if ( (dns_server != udp->remoteIP()) || (udp->remotePort() != DNS_PORT) )
+		if ((resolver != udp->remoteIP()) || (udp->remotePort() != DNS_PORT) )
 			return INVALID_SERVER;  // It's not from who we expected
 
 		// Read through the rest of the response
@@ -378,7 +295,7 @@ protected:
 					udp->flush();
 					return -9;//INVALID_RESPONSE;
 				}
-				udp->read(aAddress.raw_address(), 4);
+				udp->read(ip.raw_address(), 4);
 				return SUCCESS;
 			}
 			else
@@ -397,9 +314,9 @@ protected:
 	}
 
 private:
-	IPAddress dns_server;
-	uint16_t iRequestId;
-	EthernetUDP* udp;
+	IPv4Address resolver;
+	uint16_t iRequestId = 0;
+	IUdp* udp;
 };
 
 #endif
