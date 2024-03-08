@@ -125,7 +125,9 @@ public:
 	/// <returns>True if the timer has elapsed; otherwise false.</returns>
 	bool is_elapsed(void)
 	{
-		return alarm != 0 && (now() >= alarm || now() < started);
+		return alarm != 0 &&
+				((alarm > started && now() >= alarm && now() > started)
+						|| (alarm < started && now() >= alarm && now() < started));
 	}
 
 
@@ -146,7 +148,7 @@ public:
 	/// <returns>True if the timer is running; otherwise false.</returns>
 	uint32_t elapsed(void)
 	{
-		return now() - started;
+		return now() > started ? now() - started : 0xffffffff - started + now();
 	}
 
 
