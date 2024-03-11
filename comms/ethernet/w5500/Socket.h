@@ -215,10 +215,9 @@ public:
 	{
 		if (len > w5500->SSIZE) len = w5500->SSIZE; // check size not to exceed MAX size.
 
-		if (( IPv4Address(addr) == IPv4Address((uint32_t)0) ) || (port == 0x00) || (len == 0)) {
-			/* +2008.01 [bj] : added return value */
-			return 0;
-		}
+		assert(*((uint32_t*)addr) != 0);
+		assert(len != 0);
+
 		w5500->writeSnDIPR(socket_no, addr);
 		w5500->writeSnDPORT(socket_no, port);
 		return send(buf, len);
