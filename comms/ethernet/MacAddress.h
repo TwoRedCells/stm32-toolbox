@@ -56,6 +56,11 @@ public:
 		return !mac[0] && !mac[1] && !mac[2] && !mac[3] && !mac[4] && !mac[5];
 	}
 
+	bool is_broadcast(void)
+	{
+		return mac[0] == 0xff && mac[1] == 0xff && mac[2] == 0xff && mac[3] == 0xff && mac[4] == 0xff && mac[5] == 0xff;
+	}
+
 private:
 	uint8_t hex_to_byte(char c)
 	{

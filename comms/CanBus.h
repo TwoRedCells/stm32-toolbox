@@ -7,6 +7,8 @@
 #ifndef INC_COMMS_CANBUS_H_
 #define INC_COMMS_CANBUS_H_
 
+#include "utility/FastDelegate.h"
+
 class CanBus
 {
 public:
@@ -21,6 +23,17 @@ public:
 		this->hcan = hcan; // Defined globally.
 	}
 
+	class ICanOpenCallback
+	{
+	public:
+		/**
+		 * Called when a CAN message is received.
+		 * @param data The data (1-8 bytes).
+		 */
+		virtual void on_message(uint16_t cob, uint8_t* data)
+		{
+		}
+	};
 
 	/**
 	 * Performs initialization tasks.
@@ -102,8 +115,15 @@ public:
 		CAN_RxHeaderTypeDef can_rx_header;
 		uint8_t data[8];
 		HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &can_rx_header, data);
+		if (message_callback != nullptr)
+			message_callback(can_rx_header.StdId, data);
 	}
 	
+
+	void set_message_callback(fastdelegate::FastDelegate2<uint16_t, uint8_t*> callback)
+	{
+		message_callback = callback;
+	}
 	
 protected:
 	CAN_HandleTypeDef *hcan;
@@ -111,6 +131,7 @@ protected:
 private:
 	CAN_TxHeaderTypeDef can_tx_header;
 	uint32_t can_tx_mailbox;
+	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
 };
 
 #endif /* INC_COMMS_CANBUS_H_ */
