@@ -54,6 +54,10 @@ private:
 			.payload = this->payload
 		};
 
+		// Avoid false result from integer wrap.
+		if (serial == 0)
+			serial = 1;
+
 		// Calculate checksum.
 		uint16_t packet_length = payload_length + 8;
 		request.checksum = CalculateChecksum(&request, packet_length);
@@ -63,12 +67,14 @@ private:
 
 		Timer t;
 		t.start(milliseconds(timeout));
-		IcmpPacket response;
-		while (socket->recvfrom(&response, payload_length, ip.raw_address(), 0) != payload_length && !t.is_elapsed())
+		IcmpPacket response = {0};
+		socket->recvfrom(&response, packet_length, ip.raw_address(), 0);
+		while (request.sequence != response.sequence && !t.is_elapsed())
 			osDelay(1);
 		socket->close();
 		return t.is_elapsed() ? -1 : t.elapsed();
 	}
+
 
 	uint16_t CalculateChecksum(IcmpPacket* request, uint16_t length)
 	{
@@ -83,11 +89,8 @@ private:
 		return ~sum;
 	}
 
-
-
-
 	uint16_t id = 0xbeef;
-	static inline uint16_t serial = 0;
+	static inline uint16_t serial = 1;
 	Socket* socket;
 	uint8_t* payload = (uint8_t*) DefaultPayload;
 	uint16_t payload_length = 72;
