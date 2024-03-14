@@ -24,20 +24,50 @@ public:
 	 * @brief	This Socket function initialize the channel in particular mode, and set the port and wait for w5500 done it.
 	 * @return 	1 for success else 0.
 	 */
-	bool open(uint8_t protocol, uint16_t port, uint8_t flag)
+	bool open(uint8_t mode, uint16_t port, uint8_t flag)
 	{
 		get_available_socket();
 		sock_is_sending &= ~(1<<socket_no);
 
-		if ((protocol == SnMR::TCP) || (protocol == SnMR::UDP) || (protocol == SnMR::IPRAW) || (protocol == SnMR::MACRAW) || (protocol == SnMR::PPPOE))
+		close();
+		switch(mode)
 		{
-			close();
-			w5500->writeSnMR(socket_no, protocol | flag);
-			w5500->writeSnPORT(socket_no, port);
-			w5500->execute_command(socket_no, Sock_OPEN);
-			return true;
+			case SnMR::TCP:
+			case SnMR::UDP:
+				break;
+			default:
+				return false;
 		}
-		return false;
+		w5500->writeSnMR(socket_no, mode | flag);
+		w5500->writeSnPORT(socket_no, port);
+		w5500->execute_command(socket_no, Sock_OPEN);
+		return true;
+	}
+
+
+	/**
+	 * @brief	This Socket function initialize the channel in particular mode, and set the port and wait for w5500 done it.
+	 * @return 	1 for success else 0.
+	 */
+	bool open(uint8_t mode, uint8_t protocol)
+	{
+		get_available_socket();
+		sock_is_sending &= ~(1<<socket_no);
+
+		close();
+		switch(mode)
+		{
+			case SnMR::IPRAW:
+			case SnMR::MACRAW:
+			case SnMR::PPPOE:
+				break;
+			default:
+				return false;
+		}
+		w5500->writeSnMR(socket_no, mode);
+		w5500->writeSnPROTO(socket_no, protocol);
+		w5500->execute_command(socket_no, Sock_OPEN);
+		return true;
 	}
 
 
@@ -48,15 +78,15 @@ public:
 	void get_available_socket(void)
 	{
 		// MAX_SOCK_NUM is invalid, so if it is the result, we failed.
-		socket_no = MAX_SOCK_NUM;
-		for (int i = 0; i < MAX_SOCK_NUM; i++)
+		for (uint8_t i = 0; i < MAX_SOCK_NUM; i++)
 		{
+			socket_no = i;
 			uint8_t s = status();
 			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
-				socket_no = i;
+				return;
 		}
 
-		assert (socket_no != MAX_SOCK_NUM);
+		assert (false);
 	}
 
 
@@ -233,18 +263,19 @@ public:
 	uint16_t recvfrom(void *buf, uint16_t len, uint8_t *addr, uint16_t *port)
 	{
 		uint8_t head[8];
-		uint16_t data_len=0;
+		uint16_t data_len = 0;
+		int16_t ret = w5500->get_rx_received_size(socket_no);
 
-		if (len > 0)
+		if (ret > 0)
 		{
 			uint16_t ptr = w5500->readSnRX_RD(socket_no);
 			switch (w5500->readSnMR(socket_no) & 0x07)
 			{
-			case SnMR::UDP :
+			case SnMR::UDP:
 				w5500->read_data(socket_no, ptr, head, 0x08);
 				ptr += 8;
 				// read peer's IP address, port number.
-				memcpy(addr,head,4);
+				memcpy(addr, head, 4);
 				*port = (uint16_t)(head[4]<<8) | head[5];
 				data_len = (uint16_t)(head[6]<<8) | head[7];
 
@@ -254,12 +285,13 @@ public:
 				w5500->writeSnRX_RD(socket_no, ptr);
 				break;
 
-			case SnMR::IPRAW :
+			case SnMR::IPRAW:
 				w5500->read_data(socket_no, ptr, head, 0x06);
 				ptr += 6;
 
-				memcpy(addr,head,4);
+				memcpy(addr, head, 4);
 				data_len = word(head[4], head[5]);
+				if (data_len > len) data_len = len;
 
 				w5500->read_data(socket_no, ptr, buf, data_len); // data copy.
 				ptr += data_len;

@@ -137,9 +137,9 @@ public:
 	 * the data from Receive buffer. Here also take care of the condition while it exceed
 	 * the Rx memory uper-bound of socket.
 	 */
-	void read_data(SOCKET s, volatile uint16_t  src, volatile void* dst, uint16_t len)
+	void read_data(SOCKET s, volatile uint16_t src, volatile void* dst, uint16_t len)
 	{
-		read((uint16_t)src, (0x18+(s<<5)), (uint8_t *)dst, len);
+		read(src, (0x18+(s<<5)), (uint8_t *)dst, len);
 	}
 
 

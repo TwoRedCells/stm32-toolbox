@@ -67,6 +67,11 @@ public:
 		return s;
 	}
 
+	bool is_empty(void)
+	{
+		return l == 0;
+	}
+
 	float ToFloat(void)
 	{
 		return atof(s);
@@ -123,5 +128,9 @@ private:
 	const char* token;
 	size_t l;
 };
+
+#ifndef _S
+#define _S(x) ImmutableString(x)
+#endif
 
 #endif

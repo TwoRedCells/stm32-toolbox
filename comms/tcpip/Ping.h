@@ -22,59 +22,69 @@ public:
 		uint8_t type = 8;
 		uint8_t code = 0;
 		uint16_t checksum = 0;
-		uint16_t identifier;
+		uint16_t identifier = 0xbeef;
 		uint16_t sequence;
-		uint8_t* payload;
 	} IcmpPacket;
 
 	Ping(Socket *socket)
 	{
-		this->id = id;
+		this->socket = socket;
 	}
 
 
-	void SetPayload(uint8_t* payload, uint16_t length)
-	{
-		this->payload = payload;
-		this->payload_length = length;
-	}
+//	void SetPayload(uint8_t* payload, uint16_t length)
+//	{
+//		this->payload = payload;
+//		this->payload_length = length;
+//	}
 
 
-	void SetID(uint8_t id)
-	{
-		this->id = id;
-	}
+//	void SetID(uint8_t id)
+//	{
+//		this->id = id;
+//	}
 
-private:
 	int32_t Echo(IPv4Address ip)
 	{
-		IcmpPacket request {
-			.identifier = id,
-			.sequence = serial++,
-			.payload = this->payload
-		};
-
 		// Avoid false result from integer wrap.
 		if (serial == 0)
 			serial = 1;
 
-		// Calculate checksum.
-		uint16_t packet_length = payload_length + 8;
-		request.checksum = CalculateChecksum(&request, packet_length);
+		IcmpPacket request;
+		request.sequence = serial++;
 
-		socket->open(SnMR::IPRAW, 0, 0);
-		socket->sendto(&request, packet_length, ip.raw_address(), 0);
+		// Calculate checksum.
+		request.checksum = CalculateChecksum(&request, sizeof(IcmpPacket));
+
+		socket->open(SnMR::IPRAW, 1);  // 1 == ICMP
+		socket->sendto(&request, sizeof(IcmpPacket), ip.raw_address(), 0);
 
 		Timer t;
 		t.start(milliseconds(timeout));
 		IcmpPacket response = {0};
-		socket->recvfrom(&response, packet_length, ip.raw_address(), 0);
+		uint8_t sender[4];
 		while (request.sequence != response.sequence && !t.is_elapsed())
+		{
+			socket->recvfrom(&response, sizeof(IcmpPacket), sender, 0);
 			osDelay(1);
+		}
 		socket->close();
 		return t.is_elapsed() ? -1 : t.elapsed();
 	}
 
+private:
+	void SwapBytes(void* target, uint16_t length)
+	{
+		uint8_t* p = (uint8_t*) target;
+		assert (length % 2 == 0);
+		for (int i=0; i< length; i+=2)
+		{
+			uint8_t buf[2];
+			memcpy(buf, p+i, 2);
+			*(p+i) = buf[1];
+			*(p+i+1) = buf[0];
+		}
+	}
 
 	uint16_t CalculateChecksum(IcmpPacket* request, uint16_t length)
 	{
@@ -89,12 +99,8 @@ private:
 		return ~sum;
 	}
 
-	uint16_t id = 0xbeef;
 	static inline uint16_t serial = 1;
 	Socket* socket;
-	uint8_t* payload = (uint8_t*) DefaultPayload;
-	uint16_t payload_length = 72;
-	static const constexpr char* DefaultPayload = "Everything under the sun is in tune; but the sun is eclipsed by the moon";
 	uint32_t timeout = 2000;
 };
 
