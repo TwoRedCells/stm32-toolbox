@@ -115,10 +115,9 @@ public:
 
 
 	/**
-	 * @brief	This function established  the connection for the channel in Active (client) mode.
-	 * 		This function waits for the untill the connection is established.
-	 *
-	 * @return	1 for success else 0.
+	 * @brief Opens a TCP socket to a remote host.
+	 * @param addr The IP address of the remote host.
+	 * @param port The port of the remote host.
 	 */
 	void connect(uint8_t* addr, uint16_t port)
 	{
@@ -409,11 +408,6 @@ public:
 	}
 
 
-//	Ethernet* get_hardware(void)
-//	{
-//		return this->w5500;
-//	}
-
 	uint8_t status(void)
 	{
 		return w5500->readSnSR(socket_no);
@@ -440,12 +434,6 @@ public:
 		return !(s == SnSR::LISTEN || s == SnSR::CLOSED || s == SnSR::FIN_WAIT ||
 				(s == SnSR::CLOSE_WAIT && !available()));
 	}
-
-//	void set_socket_no(uint8_t socket_no)
-//	{
-//		this->socket_no = socket_no;
-//	}
-
 
 private:
 	Ethernet* w5500;
