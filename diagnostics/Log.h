@@ -41,7 +41,7 @@ public:
     {
    	serial = port;
         minimum_level = LOGLEVEL_INFO;
-#ifdef USING_FREERTOS
+#if USING_FREERTOS
 		const osMutexAttr_t mutex_attr = {
 			"SerialMutex",
 			osMutexPrioInherit,
@@ -82,7 +82,7 @@ public:
 
     void get_mutex(void)
     {
-#ifdef USING_FREERTOS
+#if USING_FREERTOS
 	if (osThreadGetId() != nullptr)
 		osMutexAcquire(mutex, osWaitForever);
 #endif
@@ -90,7 +90,7 @@ public:
 
     void release_mutex(void)
     {
-#ifdef USING_FREERTOS
+#if USING_FREERTOS
 	if (osThreadGetId() != nullptr)
 		osMutexRelease(mutex);
 #endif
@@ -100,7 +100,7 @@ private:
     LogLevels last_level;
     LogLevels minimum_level;
 
-#ifdef USING_FREERTOS
+#if USING_FREERTOS
     osMutexId_t mutex;
 #endif
 
