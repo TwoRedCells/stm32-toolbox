@@ -76,7 +76,7 @@ public:
 	/// <remarks>Must be called periodically to prevent activation of the watchdog.</remarks>
 	void taunt(void)
 	{
-		if (flags == expected)
+		if ((flags & expected) == expected)
 		{
 			HAL_IWDG_Refresh(&hiwdg);
 			flags = 0;
@@ -91,6 +91,16 @@ public:
 	void ignore(void)
 	{
 		HAL_IWDG_Refresh(&hiwdg);
+	}
+
+
+	/// <summary>
+	/// Gets the current watchdog state flags.
+	/// </summary>
+	/// <returns>The watchdog state flags.</returns>
+	uint32_t get(void)
+	{
+		return flags;
 	}
 
 private:

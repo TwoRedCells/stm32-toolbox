@@ -123,6 +123,15 @@ public:
 		return strtok(nullptr, token);
 	}
 
+	void copyto(char* target, uint32_t maximum=0)
+	{
+		if (maximum == 0)
+			maximum = l;
+
+		for (uint32_t i=0; i < (l>maximum?maximum:l); i++)
+			target[i] = s[i];
+	}
+
 private:
 	const char* s;
 	const char* token;
