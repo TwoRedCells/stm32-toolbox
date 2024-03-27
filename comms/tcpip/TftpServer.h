@@ -36,22 +36,40 @@ public:
 	static constexpr uint16_t ErrorNoSuchUser = 0x07;
 
 
+	/**
+	 * @brief	Constructs a TftpServer instance.
+	 * @param socket	Pointer to a socket instance.
+	 * @param tftp_port	The UDP port to use, 69 per the RFC.
+	 */
 	TftpServer(Socket* socket, uint16_t port=tftp_port)
 	{
 		this->socket = socket;
 		this->port = port;
 	}
 
+
+	/**
+	 * @brief	Configures the server to start receiving packets.
+	 */
 	bool begin(void)
 	{
 		return socket->open(SnMR::UDP, port, 0);
 	}
 
+
+	/**
+	 * @brief	Sets the data callback function.
+	 * @param	data_callback	Pointer to the callback function.
+	 */
 	void set_data_callback(void (*data_callback)(char*, uint16_t, uint8_t*, uint16_t))
 	{
 		this->data_callback = data_callback;
 	}
 
+
+	/**
+	 * @brief Checks for incoming TFTP packets and handles them. The data callback may be called as required.
+	 */
     void poll(void)
     {
     	uint8_t addr[4];
@@ -67,7 +85,7 @@ public:
     	}
 
 		uint16_t opcode = swap(*(uint16_t*)buffer);
-    	if (length > 0 && state == Closed)
+    	if (length > 0 /*&& state == Closed*/)
     	{
     		memcpy(client_ip, addr, 4);
     		client_port = port;
@@ -88,16 +106,13 @@ public:
 				timeout.start(timeout_duration);
 				data_callback(filename, 0, nullptr, 0);
 			}
-    	}
 
-    	else if (length > 0 && state == Open)
-    	{
-			// If the client IP doesn't match, another host is connecting, which isn't allowed.
-    		if (memcmp(client_ip, addr, 4))
-    		{
-    			error(addr, port, ErrorIllegalOperation, "Another host is connected to this server.");
-    			return;
-    		}
+//			// If the client IP doesn't match, another host is connecting, which isn't allowed.
+//    		if (memcmp(client_ip, addr, 4))
+//    		{
+//    			error(addr, port, ErrorIllegalOperation, "Another host is connected to this server.");
+//    			return;
+//    		}
 
     		else if (opcode == OpcodeError)
 			{
@@ -129,11 +144,21 @@ public:
 
 
 private:
+    /**
+     * @brief Swaps the bytes of a 16-bit word.
+     * @param word	The word to manipulate.
+     * @returns	Teh manipulated word.
+     */
     uint16_t swap(uint16_t word)
     {
     	return word << 8 | word >> 8;
     }
 
+
+    /**
+     * @brief Acknowledges a block to the client.
+     * @param block_id	The block to acknowledge.
+     */
     void ack(uint16_t block_id)
     {
     	uint16_t out[2];
@@ -145,6 +170,14 @@ private:
     	socket->send_udp();
     }
 
+
+    /**
+     * @brief Sends an error to the client.
+     * @param ip	The client's IP address.
+     * @param port	The client's UDP port.
+     * @param error_code	The error code per the RFC.
+     * @param error_message	A message further explaining the error.     *
+     */
     void error(uint8_t* ip, uint16_t port, uint16_t error_code, const char* error_message)
     {
     	uint16_t length = strlen(error_message)+5;
@@ -170,7 +203,7 @@ private:
 	uint16_t client_port;
 	uint16_t last_block;
 	Socket* socket;
-	uint8_t buffer[512];
+	uint8_t buffer[516];
 	char filename[81];
 	enum { Closed, Open } state = Closed;
 	void (*data_callback)(char* filename, uint16_t block_id, uint8_t* data, uint16_t length);
