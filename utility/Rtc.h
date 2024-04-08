@@ -51,25 +51,8 @@ public:
 	 */
 	void set_time(int32_t time)
 	{
-		RTC_TimeTypeDef rtc_time;
-		RTC_DateTypeDef rtc_date;
-
-		// Convert UNIX epoch timestamp to RTC time and date
-		uint32_t remaining_time = time;
-		rtc_time.Seconds = remaining_time % 60;
-		remaining_time /= 60;
-		rtc_time.Minutes = remaining_time % 60;
-		remaining_time /= 60;
-		rtc_time.Hours = remaining_time % 24;
-		remaining_time /= 24;
-		rtc_date.Date = remaining_time % 31 + 1;
-		remaining_time /= 31;
-		rtc_date.Month = remaining_time % 12 + 1;
-		remaining_time /= 12;
-		rtc_date.Year = remaining_time - 30;
-
-		HAL_RTC_SetTime(hrtc_, &rtc_time, RTC_FORMAT_BIN);
-		HAL_RTC_SetDate(hrtc_, &rtc_date, RTC_FORMAT_BIN);
+		DateTime now = time;
+		set_time(now);
 	}
 
 	void set_time(DateTime time)
@@ -79,8 +62,9 @@ public:
 					.Minutes = time.minute,
 					.Seconds = time.second
 		};
+		int dow = time.GetDayOfWeek();
 		RTC_DateTypeDef rtc_date = {
-					.WeekDay = time.GetDayOfWeek(),
+					.WeekDay = dow == 0 ? 7 : dow+1,
 					.Month = (uint8_t) (time.month + 1),
 					.Date = (uint8_t) (time.day + 1),
 					.Year = (uint8_t) (time.year - 2000)
