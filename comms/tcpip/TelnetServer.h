@@ -35,14 +35,19 @@ public:
 
 	void on_data_received(uint8_t value)
 	{
-		if (value == '\r')
+		switch (value)
 		{
+		case '\r':
 			queue.enqueue(0);
 			eol_callback();
-		}
-		else
-		{
+			break;
+		case '\b':
+		case 0x7f:
+			queue.trim();
+			break;
+		default:
 			queue.enqueue(value);
+			break;
 		}
 	}
 

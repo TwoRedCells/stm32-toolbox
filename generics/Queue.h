@@ -136,6 +136,15 @@ public:
         length = 0;
     }
 
+    /**
+     * Discards an item from the end of the queue.
+     */
+    void trim(void)
+    {
+    	if (length > 0)
+    		length--;
+    }
+
 private:
     T* buffer;  // Pointer to the buffer.
     uint32_t buffer_length;  // Length of the buffer.
