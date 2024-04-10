@@ -17,8 +17,6 @@
 #include <stdarg.h>
 #include "toolbox.h"
 
-enum OledColour { Black, White, Inverse };
-
 
 class OledSsd1306 : public PrintLite
 {
@@ -96,10 +94,10 @@ public:
 		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, init_commands, sizeof(init_commands), timeout);
 	}
 
-	void pixel(uint16_t x, uint16_t y, OledColour colour)
+	void pixel(uint16_t x, uint16_t y, bool colour)
 	{
 		uint16_t address = y / 8 * width + x;
-		if (colour == Black) pixels[address] &= ~(1 << (y%8));
+		if (!colour) pixels[address] &= ~(1 << (y%8));
 		else pixels[address] |= 1 << (y%8);
 	}
 
@@ -148,8 +146,8 @@ public:
 
 	void clear_line(void)
 	{
-		OledColour c = colour;
-		set_colour(c == Black ? White : Black);
+		bool c = colour;
+		set_colour(!c);
 		rectangle(0, y, width-1, font6x8.height, true);
 		set_colour(c);
 	}
@@ -200,7 +198,7 @@ public:
 //		string(x, y, buffer);
 //	}
 
-	void set_colour(OledColour colour)
+	void set_colour(bool colour)
 	{
 		this->colour = colour;
 	}
@@ -267,7 +265,7 @@ private:
 	uint32_t timeout = DefaultTimeout;
 	uint8_t pixels[OLED_SSD1306_WIDTH/8 * OLED_SSD1306_HEIGHT];
 	uint8_t x=0, y=0;
-	OledColour colour = White;
+	bool colour = true;
 	Font6x8 font6x8;
 };
 

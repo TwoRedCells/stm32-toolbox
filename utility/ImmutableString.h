@@ -23,6 +23,12 @@ public:
 		l = strlen(s);
 	}
 
+	ImmutableString(const ImmutableString& string)
+	{
+		this->s = string.s;
+		this->l = string.l;
+	}
+
 	ImmutableString& operator=(const char* s)
 	{
 		this->s = s;
@@ -34,7 +40,6 @@ public:
 	{
 		return string.s;
 	}
-
 
 	bool operator==(ImmutableString o)
 	{
