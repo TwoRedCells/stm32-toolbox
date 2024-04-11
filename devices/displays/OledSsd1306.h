@@ -11,7 +11,12 @@
 #define INC_STM32_TOOLBOX_DEVICES_OLEDSSD1306_H_
 
 #include "utility/PrintLite.h"
-#include <graphics/Font6x8.h>
+#if OLED_SSD1306_ENABLE_TEXT
+#ifndef PROGMEM
+#define PROGMEM
+#endif
+#include "graphics/GFXFont.h"
+#endif
 #include "i2c.h"
 #include <stdint.h>
 #include <stdarg.h>
@@ -56,7 +61,6 @@ public:
 	static constexpr uint8_t SetVerticalScrollArea = 0xa3;
 
 	static constexpr uint32_t DefaultTimeout = 100000;
-
 
 	/**
 	 * @brief	Initializes this instance.
@@ -165,13 +169,15 @@ public:
 		refresh();
 	}
 
+#if OLED_SSD1306_ENABLE_TEXT
 	void clear_line(void)
 	{
 		bool c = colour;
 		set_colour(!c);
-		rectangle(x, y, width-1-c, font6x8.height, true);
+		rectangle(x, y, width-1-c, font->yAdvance, true);
 		set_colour(c);
 	}
+#endif
 
 	void refresh(void)
 	{
@@ -212,19 +218,21 @@ public:
 	}
 
 
+#if OLED_SSD1306_ENABLE_TEXT
 	size_t write(uint8_t ch) override
 	{
+		uint8_t width = font->glyph[' '-font->first].xAdvance;
 		if (ch == '\r')
 		{
 			x = 0;
 		}
 		else if (ch == '\t')
 		{
-			x += font6x8.width/2;
+			x += width/2;
 		}
 		else if (ch == '\n')
 		{
-			y += font6x8.height;
+			y += font->yAdvance+1;
 		}
 		else if (ch == '\b')
 		{
@@ -232,20 +240,68 @@ public:
 		}
 		else if (ch == '\v')
 		{
-			y += font6x8.height / 2;
+			y += (font->yAdvance+1) / 2;
 		}
 		else
 		{
-			const uint8_t* glyph = font6x8.glyphs[ch];
-			for (uint16_t i=0; i<8; i++)
-				for (uint16_t j=0; j<8; j++)
-					if (glyph[i] & (1 << j))
-						pixel(x+j, i+y, colour);
-			x += font6x8.width;
+			uint8_t bit=0, bits=0;
+			uint8_t c = ch - font->first;  // De-index the character
+			GFXglyph glyph = font->glyph[c];
+			uint16_t bitmap_offset = glyph.bitmapOffset;
+			for (uint16_t i=0; i<glyph.height; i++)
+				for (uint16_t j=0; j<glyph.width; j++)
+				{
+			        if (!(bit++ & 7))
+			        	bits = font->bitmap[bitmap_offset++];
+			        if (bits & 0x80)
+					    pixel(x+j+glyph.xOffset, i+y+glyph.yOffset+font->yAdvance+1, colour);
+			        bits <<= 1;
+				}
+			x += glyph.xAdvance;
 		}
 		return 1;
 	}
 
+
+
+	void set_font(const GFXfont* font)
+	{
+		this->font = font;
+	}
+//	size_t write(uint8_t ch) override
+//	{
+//		if (ch == '\r')
+//		{
+//			x = 0;
+//		}
+//		else if (ch == '\t')
+//		{
+//			x += font6x8.width/2;
+//		}
+//		else if (ch == '\n')
+//		{
+//			y += font6x8.height;
+//		}
+//		else if (ch == '\b')
+//		{
+//			clear_line();
+//		}
+//		else if (ch == '\v')
+//		{
+//			y += font6x8.height / 2;
+//		}
+//		else
+//		{
+//			const uint8_t* glyph = font6x8.glyphs[ch];
+//			for (uint16_t i=0; i<8; i++)
+//				for (uint16_t j=0; j<8; j++)
+//					if (glyph[i] & (1 << j))
+//						pixel(x+j, i+y, colour);
+//			x += font6x8.width;
+//		}
+//		return 1;
+//	}
+#endif
 
 	void set_rotation(uint16_t degrees)
 	{
@@ -279,7 +335,9 @@ private:
 	uint8_t pixels[OLED_SSD1306_WIDTH/8 * OLED_SSD1306_HEIGHT];
 	uint16_t x=0, y=0;
 	bool colour = true;
-	Font6x8 font6x8;
+#if OLED_SSD1306_ENABLE_TEXT
+	const GFXfont* font;
+#endif
 	uint16_t rotation = 0;
 };
 
