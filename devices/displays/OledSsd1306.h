@@ -96,7 +96,9 @@ public:
 
 	void pixel(uint16_t x, uint16_t y, bool colour)
 	{
-	//	assert(x >=0 && x < width && y >= 0 && y < height);
+		if (((rotation == 0 || rotation == 180) && (x > width-1 || y > height-1))
+			|| ((rotation == 90 || rotation == 270) && (x > height-1 || y > width-1)))
+			return;
 		// Translate
 		uint16_t a=x, b=y;
 		if (rotation == 180)
@@ -167,7 +169,7 @@ public:
 	{
 		bool c = colour;
 		set_colour(!c);
-		rectangle(0, y, width-1, font6x8.height, true);
+		rectangle(x, y, width-1-c, font6x8.height, true);
 		set_colour(c);
 	}
 

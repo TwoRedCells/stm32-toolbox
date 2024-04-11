@@ -86,7 +86,7 @@
 #define ICANVAS_MAX_WIDGETS (100)
 
 // Generics
-#define GENERICS_ALLOW_NEW (1)   // Whether the generics are allowed to use dynamic memory allocations.
+#define GENERICS_ALLOW_NEW (0)   // Whether the generics are allowed to use dynamic memory allocations.
 
 // Whether to allow classes to call malloc for dynamic memory allocation.
 // Chip
