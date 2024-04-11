@@ -96,16 +96,35 @@ public:
 
 	void pixel(uint16_t x, uint16_t y, bool colour)
 	{
-		uint16_t address = y / 8 * width + x;
-		if (!colour) pixels[address] &= ~(1 << (y%8));
-		else pixels[address] |= 1 << (y%8);
+	//	assert(x >=0 && x < width && y >= 0 && y < height);
+		// Translate
+		uint16_t a=x, b=y;
+		if (rotation == 180)
+		{
+			a = width - x;
+			b = height - y - 1;
+		}
+		else if (rotation == 90)
+		{
+			a = y;
+			b = height - x - 1;
+		}
+		else if (rotation == 270)
+		{
+			a = width - y - 1;
+			b = x;
+		}
+
+		uint16_t address = b / 8 * width + a;
+		if (!colour) pixels[address] &= ~(1 << (b%8));
+		else pixels[address] |= 1 << (b%8);
 	}
 
-	void rectangle(uint8_t x, uint8_t y, uint8_t w, uint8_t h, bool fill=false)
+	void rectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool fill=false)
 	{
 		if (fill)
 		{
-			for (uint8_t b=y; b<y+h; b++)
+			for (uint16_t b=y; b<y+h; b++)
 				hline(x, b, w-1);
 		}
 		else
@@ -117,16 +136,16 @@ public:
 		}
 	}
 
-	void hline(uint8_t x, uint8_t y, uint8_t w)
+	void hline(uint16_t x, uint16_t y, uint16_t w)
 	{
-		for (uint8_t a=x; a<x+w; a++)
+		for (uint16_t a=x; a<x+w; a++)
 			pixel(a, y, colour);
 	}
 
 
-	void vline(uint8_t x, uint8_t y, uint8_t h)
+	void vline(uint16_t x, uint16_t y, uint16_t h)
 	{
-		for (uint8_t b=y; b<y+h; b++)
+		for (uint16_t b=y; b<y+h; b++)
 			pixel(x, b, colour);
 	}
 
@@ -177,33 +196,14 @@ public:
 		command(DisplayOn);
 	}
 
-//	void string(uint8_t x, uint8_t y, const char* str)
-//	{
-//		this->x = x;
-//		this->y = y;
-//
-//		for (const char* s=str; *s != 0; s++)
-//		{
-//			uint8_t c = *s;
-//			write(c);
-//		}
-//
-//	}
-//
-//    template<typename... Args>
-//	void string(const char* format, Args... args)
-//	{
-//		char buffer[30];
-//		PrintLite::vsprintf(buffer, format, args...);
-//		string(x, y, buffer);
-//	}
 
 	void set_colour(bool colour)
 	{
 		this->colour = colour;
 	}
 
-	void move(uint8_t x, uint8_t y)
+
+	void move(uint16_t x, uint16_t y)
 	{
 		this->x = x;
 		this->y = y;
@@ -228,16 +228,27 @@ public:
 		{
 			clear_line();
 		}
+		else if (ch == '\v')
+		{
+			y += font6x8.height / 2;
+		}
 		else
 		{
 			const uint8_t* glyph = font6x8.glyphs[ch];
-			for (uint8_t i=0; i<8; i++)
-				for (uint8_t j=0; j<8; j++)
+			for (uint16_t i=0; i<8; i++)
+				for (uint16_t j=0; j<8; j++)
 					if (glyph[i] & (1 << j))
 						pixel(x+j, i+y, colour);
 			x += font6x8.width;
 		}
 		return 1;
+	}
+
+
+	void set_rotation(uint16_t degrees)
+	{
+		assert(degrees < 360 && degrees % 90 == 0);
+		rotation = degrees;
 	}
 
 private:
@@ -264,9 +275,10 @@ private:
 	uint16_t i2cadr;
 	uint32_t timeout = DefaultTimeout;
 	uint8_t pixels[OLED_SSD1306_WIDTH/8 * OLED_SSD1306_HEIGHT];
-	uint8_t x=0, y=0;
+	uint16_t x=0, y=0;
 	bool colour = true;
 	Font6x8 font6x8;
+	uint16_t rotation = 0;
 };
 
 
