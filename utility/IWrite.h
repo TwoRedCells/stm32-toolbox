@@ -1,5 +1,5 @@
 /**
- * @file 		utility/IWrite.g
+ * @file 		utility/IWrite.h
  * @class		IWrite
  * @author 		Yvan Rodrigues <yvan.r@radskunkworks.com>
  * @brief 		Defines an interface for a class that can write a byte.
