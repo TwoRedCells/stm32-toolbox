@@ -136,8 +136,8 @@ public:
 		else
 		{
 			hline(x, y, w-1);
-			hline(x, y+h-1, w-1);
-			vline(x, y, h-1);
+			hline(x+1, y+h-1, w-1);
+			vline(x, y+1, h-1);
 			vline(x+w-1, y, h-1);
 		}
 	}
