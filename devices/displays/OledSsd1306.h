@@ -174,7 +174,7 @@ public:
 	{
 		bool c = colour;
 		set_colour(!c);
-		rectangle(x, y, width-1-c, font->yAdvance, true);
+		rectangle(x, y, width-x, font->yAdvance, true);
 		set_colour(c);
 	}
 #endif
