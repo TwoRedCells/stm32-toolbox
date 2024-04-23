@@ -162,7 +162,7 @@ public:
 
 						// Output the whole part of the number. If the number is zero, optionally output 0 depending on formatting specified.
 						uint32_t whole = (uint32_t)f;
-						if ((whole == 0 && zero_padding) || f == 0)
+						if ((whole == 0 && zero_padding) || (whole == 0 && decimals == 0))
 							write('0'), count++;
 						else
 							count += xtoa(f, Auto, false);
