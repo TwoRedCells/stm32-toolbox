@@ -89,17 +89,17 @@ public:
 
 	uint8_t ToUInt8(void)
 	{
-		return (uint8_t) atoi(s);
+		return (uint8_t) strtol(s, NULL, 0);
 	}
 
 	uint16_t ToUInt16(void)
 	{
-		return (uint16_t) atoi(s);
+		return (uint16_t) strtol(s, NULL, 0);
 	}
 
 	uint32_t ToUInt32(void)
 	{
-		return (uint32_t) atoi(s);
+		return (uint32_t) strtol(s, NULL, 0);
 	}
 
 	int8_t ToInt8(void)
@@ -121,6 +121,12 @@ public:
 	{
 		this->token = token;
 		return strtok((char*)s, token);
+	}
+
+	ImmutableString NewToken(const char* token)
+	{
+		this->token = token;
+		return strtok(nullptr, token);
 	}
 
 	ImmutableString Token(void)
