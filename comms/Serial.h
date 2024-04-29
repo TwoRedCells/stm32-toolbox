@@ -48,7 +48,7 @@ public:
 	 * Writes a byte to the port.
 	 * @param c The byte.
 	 */
-	size_t write(uint8_t c)
+	size_t Write(uint8_t c)
 	{
 
 #if SERIAL_USE_DMA_TX
@@ -65,7 +65,7 @@ public:
 	 * @param buffer Pointer to the memory to write from.
 	 * @param length Number of bytes to write.
 	 */
-	size_t write(void* buffer, uint32_t length)
+	size_t Write(void* buffer, uint32_t length)
 	{
 		HAL_UART_Transmit_IT(handle, (uint8_t*)buffer, length);
 		return 1;
@@ -75,10 +75,10 @@ public:
 	 * Writes 16-bits to the port in big-endian format.
 	 * @param val The value to write.
 	 */
-	size_t write16(uint16_t val)
+	size_t Write16(uint16_t val)
 	{
-		write(val >> 8);
-		write(val & 0xff);
+		Write(val >> 8);
+		Write(val & 0xff);
 		return 2;
 	}
 
@@ -87,12 +87,12 @@ public:
 	 * Writes 32-bits to the port in big-endian format.
 	 * @param val The value to write.
 	 */
-	size_t write32(uint32_t val)
+	size_t Write32(uint32_t val)
 	{
-		write(val >> 24);
-		write(val >> 16);
-		write(val >> 8);
-		write(val & 0xff);
+		Write(val >> 24);
+		Write(val >> 16);
+		Write(val >> 8);
+		Write(val & 0xff);
 		return 4;
 	}
 
@@ -103,24 +103,24 @@ public:
 	 * @param length Number of bytes to read.
 	 * @param timeout Number of milliseconds to wait for the buffer to fill.
 	 */
-	void read(uint8_t* buffer, uint32_t length)
+	void Read(uint8_t* buffer, uint32_t length)
 	{
 		for(uint32_t i=0; i<length; i++)
-			buffer[i] = read();
+			buffer[i] = Read();
 	}
 
 
-	uint8_t read(void)
+	uint8_t Read(void)
 	{
 		return queue.dequeue();
 	}
 
-	uint32_t available(void)
+	uint32_t Available(void)
 	{
 		return queue.get_length();
 	}
 
-	void start(void)
+	void Start(void)
 	{
 		HAL_UART_Receive_IT(handle, &in, 1);
 	}
@@ -133,12 +133,12 @@ public:
 			eol_callback();
 	}
 
-	void flush_read(void)
+	void Purge(void)
 	{
 		queue.clear();
 	}
 
-	void set_eol_callback(void (*callback)(void))
+	void SetEolCallback(void (*callback)(void))
 	{
 		eol_callback = callback;
 	}

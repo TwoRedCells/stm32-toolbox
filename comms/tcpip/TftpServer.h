@@ -84,9 +84,9 @@ public:
     		return;
     	}
 
-		uint16_t opcode = swap(*(uint16_t*)buffer);
     	if (length > 0 /*&& state == Closed*/)
     	{
+    		uint16_t opcode = swap(*(uint16_t*)buffer);
     		memcpy(client_ip, addr, 4);
     		client_port = port;
 			if (opcode == OpcodeWriteRequest) // WRQ / Write request
