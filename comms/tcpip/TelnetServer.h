@@ -76,7 +76,7 @@ public:
 
 	using TcpServer::read;
 
-	void flush_read()
+	void purge()
 	{
 		while (is_available())
 			read();
