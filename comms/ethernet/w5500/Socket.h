@@ -72,25 +72,6 @@ public:
 
 
 	/**
-	 * @brief Selects an available socket.
-	 * @returns True if a socket is available; otherwise false.
-	 */
-	void get_available_socket(void)
-	{
-		// MAX_SOCK_NUM is invalid, so if it is the result, we failed.
-		for (uint8_t i = 0; i < MAX_SOCK_NUM; i++)
-		{
-			socket_no = i;
-			uint8_t s = status();
-			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
-				return;
-		}
-
-		assert (false);
-	}
-
-
-	/**
 	 * @brief	This function close the socket and parameter is "s" which represent the socket number
 	 */
 	void close(void)
@@ -186,10 +167,17 @@ public:
 			}
 
 			// copy data
-			w5500->send_data_processing(socket_no, (uint8_t *)buf+ret, trx);
-			w5500->execute_command(socket_no, Sock_SEND);
-			sock_is_sending |= (1 << socket_no);
-			ret += trx;
+			if (is_buffered)
+			{
+				bufferData(buf, len);
+			}
+			else
+			{
+				w5500->send_data_processing(socket_no, (uint8_t *)buf+ret, trx);
+				w5500->execute_command(socket_no, Sock_SEND);
+				sock_is_sending |= (1 << socket_no);
+				ret += trx;
+			}
 		}
 		return ret;
 	}
@@ -321,6 +309,8 @@ public:
 	 */
 	void flush(void)
 	{
+		buffer_offset = 0;
+		w5500->execute_command(socket_no, Sock_SEND);
 	}
 
 	uint16_t igmpsend(const void * buf, uint16_t len)
@@ -354,19 +344,21 @@ public:
 	}
 
 
-	/*
-	  @brief This function copies up to len bytes of data from buf into a UDP datagram to be
-	  sent later by sendUDP.  Allows datagrams to be built up from a series of bufferData calls.
-	  @return Number of bytes successfully buffered
+	/**
+	 * @brief	Queues data in the transmit buffer. Use flush() to send it.
+	 * @param	buf	Pointer to the data to send.
+	 * @param	len The number of bytes to send.
+	 * @returns	The number of bytes sent.
 	 */
-	uint16_t bufferData(uint16_t offset, const void* buf, uint16_t len)
+	uint16_t bufferData(const void* buf, uint16_t len)
 	{
-		uint16_t ret =0;
+		uint16_t ret = 0;
 		if (len > w5500->get_tx_free_size(socket_no))
 			ret = w5500->get_tx_free_size(socket_no); // check size not to exceed MAX size.
 		else
 			ret = len;
-		w5500->send_data_processing_offset(socket_no, offset, buf, ret);
+		w5500->send_data_processing_offset(socket_no, buffer_offset, buf, ret);
+		buffer_offset += ret;
 		return ret;
 	}
 
@@ -392,7 +384,8 @@ public:
 	 */
 	bool send_udp(void)
 	{
-		w5500->execute_command(socket_no, Sock_SEND);
+		flush();
+		//w5500->execute_command(socket_no, Sock_SEND);
 
 		while (!(w5500->readSnIR(socket_no) & SnIR::SEND_OK))
 		{
@@ -435,12 +428,41 @@ public:
 				(s == SnSR::CLOSE_WAIT && !available()));
 	}
 
+	void set_buffered(bool value)
+	{
+		is_buffered = value;
+	}
+
 private:
+
+
+	/**
+	 * @brief Selects an available socket.
+	 * @returns True if a socket is available; otherwise false.
+	 */
+	void get_available_socket(void)
+	{
+		// MAX_SOCK_NUM is invalid, so if it is the result, we failed.
+		for (uint8_t i = 0; i < MAX_SOCK_NUM; i++)
+		{
+			socket_no = i;
+			uint8_t s = status();
+			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
+				return;
+		}
+
+		assert (false);
+	}
+
+
+
 	Ethernet* w5500;
 	uint8_t socket_no;
 	inline static uint16_t local_port = 0;
 	inline static uint8_t sock_is_sending = 0;
 	inline static uint16_t server_port[MAX_SOCK_NUM] = { 0, };
+	bool is_buffered = false;
+	uint16_t buffer_offset = 0;
 };
 
 #endif /* _SOCKET_H_ */

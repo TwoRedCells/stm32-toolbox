@@ -165,7 +165,7 @@ private:
     	out[0] = swap(OpcodeAcknowledge);
     	out[1] = swap(block_id);
     	socket->start_udp(client_ip, client_port);
-    	socket->bufferData(0, out, 4);
+    	socket->bufferData(out, 4);
  //   	socket->send(out, 4);
     	socket->send_udp();
     }
@@ -191,7 +191,7 @@ private:
 //    	socket->send(&OpcodeError, sizeof(uint16_t));
 //    	socket->send(&error_code, sizeof(uint16_t));
 //    	socket->send(error_message, strlen(error_message));
-    	socket->bufferData(0, out, length);
+    	socket->bufferData(out, length);
 //    	socket->send(out, length);
     	socket->send_udp();
     }

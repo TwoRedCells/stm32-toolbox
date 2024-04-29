@@ -35,12 +35,12 @@ public:
 		return socket->recv(buf, size);
 	}
 
-	void flush_write()
+	void flush()
 	{
 		socket->flush();
 	}
 
-	void flush_read()
+	void purge()
 	{
 		while(available())
 			read();
@@ -101,7 +101,7 @@ public:
 	{
 		Timer t(milliseconds(1000));
 		t.start();
-		flush_write();
+		flush();
 
 		// attempt to close the connection gracefully (send a FIN to other side)
 		socket->disconnect();

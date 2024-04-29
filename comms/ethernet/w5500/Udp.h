@@ -82,7 +82,7 @@ public:
 
 	virtual void beginPacket(void) override
 	{
-		_offset = 0;
+//		_offset = 0;
 		socket->start_udp(ip, port);
 	}
 
@@ -99,8 +99,8 @@ public:
 
 	virtual size_t write(const uint8_t *buffer, size_t size) override
 	{
-		uint16_t bytes_written = socket->bufferData(_offset, buffer, size);
-		_offset += bytes_written;
+		uint16_t bytes_written = socket->bufferData(buffer, size);
+//		_offset += bytes_written;
 		return bytes_written;
 	}
 
@@ -232,7 +232,7 @@ private:
 	uint16_t port; // local port to listen on
 	IPv4Address _remoteIP; // remote IP address for the incoming packet whilst it's being processed
 	uint16_t _remotePort; // remote port for the incoming packet whilst it's being processed
-	uint16_t _offset; // offset into the packet being sent
+//	uint16_t _offset; // offset into the packet being sent
 	uint16_t _remaining; // remaining bytes of incoming packet yet to be processed
 	Socket* socket;
 };
