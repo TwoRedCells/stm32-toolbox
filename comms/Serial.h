@@ -133,7 +133,7 @@ public:
 			eol_callback();
 	}
 
-	void flush_read(void)
+	void purge(void)
 	{
 		queue.clear();
 	}
