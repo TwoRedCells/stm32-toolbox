@@ -30,8 +30,8 @@
 /// resources. As such, it should not be considered a substitute for a full printf function, either in terms of scope
 /// of features, or compatibility.
 ///
-/// As an abstract class, it has no value of its own. It must be inherited and the write method overwritten in order
-/// to provide functionality. This may include writing to a file, stream, memory, or peripheral.
+/// As an abstract class, it only implements a static vsprintf.
+/// It must be inherited and the write method overwritten in order to provide functionality to a file, stream, memory, or peripheral.
 /// </remarks>
 
 
@@ -45,9 +45,14 @@
  *			%% - The percent sign
  *			%c - An ASCII character (char)
  *			%s - A NUL-terminated string (char *)
- *			%d - An integer (uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t)
+ *			%S - An ImmutableString
+ *			%d - An integer in base 10 (uint8_t, int8_t, uint16_t, int16_t, uint32_t, int32_t)
  *			%04d - An integer padded with preceding zeros to a width of 4 characters.
- *
+ *			%f - A floating point value (float, double)
+ *			%.2f - A floating point value with two decimals and no leading zero.
+ *			%0.3f - A floating point value with three decimals and a leading zero.
+ *			%x - A hexadecimal value without prefix or suffix. Alpha characters are lower case. Defaults to 8 digits.
+ *			%8X - An 8-digit hexadecimal value without prefix or suffix. Alpha characters are upper case.
  */
 class PrintLite : public IWrite
 {
@@ -93,14 +98,22 @@ public:
 						formatting = false;
 						break;
 					case 'i':                       // signed integer
-					case 'u':                       // unsigned integer
 					case 'd':						// signed integer
 					case 'l':                       // 32 bit long signed integer
+					{
+						int32_t n = va_arg(a, int32_t);  // Convert all integers to signed int
+						if (n < 0) n = -n, write('-'), count++;
+						count += xtoa((uint32_t)n, fixed_width);
+						fixed_width = Auto;
+						zero_padding = false;
+						formatting = false;
+						break;
+					}
+					case 'u':                       // unsigned integer
 					case 'n':                       // 32 bit long unsigned integer
 					{
-						int32_t n = va_arg(a, int32_t);
-						if(c == 'l' && n < 0) n = -n, write('-');
-						count += xtoa((uint32_t)n, fixed_width);
+						uint32_t n = va_arg(a, int32_t);  // Convert all integers to signed int
+						count += xtoa(n, fixed_width);
 						fixed_width = Auto;
 						zero_padding = false;
 						formatting = false;
@@ -110,8 +123,24 @@ public:
 						capitalize = true;
 					case 'x':                       // 16 bit heXadecimal
 					{
-						uint32_t u = va_arg(a, uint32_t);
-						if (fixed_width == 8 || fixed_width == Auto)
+						uint64_t u = va_arg(a, uint64_t);
+						if (fixed_width == 16)
+						{
+							puth(u >> 60 & 0xf, capitalize);
+							puth(u >> 56 & 0xf, capitalize);
+							puth(u >> 52 & 0xf, capitalize);
+							puth(u >> 48 & 0xf, capitalize);
+							count += 4;
+						}
+						if (fixed_width >= 12)
+						{
+							puth(u >> 44 & 0xf, capitalize);
+							puth(u >> 40 & 0xf, capitalize);
+							puth(u >> 36 & 0xf, capitalize);
+							puth(u >> 32 & 0xf, capitalize);
+							count += 4;
+						}
+						if (fixed_width >= 8 || fixed_width == Auto)
 						{
 							puth(u >> 28 & 0xf, capitalize);
 							puth(u >> 24 & 0xf, capitalize);
@@ -119,7 +148,7 @@ public:
 							puth(u >> 16 & 0xf, capitalize);
 							count += 4;
 						}
-						if (fixed_width == 4 || fixed_width == 8 || fixed_width == Auto)
+						if (fixed_width >= 4 || fixed_width == Auto)
 						{
 							puth(u >> 12, capitalize);
 							puth(u >> 8, capitalize);
@@ -141,6 +170,16 @@ public:
 						zero_padding = true;
 						break;
 					case '1':
+						if (*(format+1) == '2')
+						{
+							fixed_width = 12;
+							break;
+						}
+						if (*(format+1) == '6')
+						{
+							fixed_width = 16;
+							break;
+						}
 					case '2':
 					case '3':
 					case '4':

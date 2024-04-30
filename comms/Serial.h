@@ -103,10 +103,10 @@ public:
 	 * @param length Number of bytes to read.
 	 * @param timeout Number of milliseconds to wait for the buffer to fill.
 	 */
-	void read(uint8_t* buffer, uint32_t length)
+	void read(void* buffer, uint32_t length)
 	{
 		for(uint32_t i=0; i<length; i++)
-			buffer[i] = read();
+			((uint8_t*)buffer)[i] = read();
 	}
 
 

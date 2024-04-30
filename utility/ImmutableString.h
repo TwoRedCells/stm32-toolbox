@@ -139,9 +139,13 @@ public:
 		if (maximum == 0)
 			maximum = l;
 
-		for (uint32_t i=0; i < (l>maximum?maximum:l); i++)
+		uint32_t lesser = l>maximum?maximum:l;
+		for (uint32_t i=0; i < lesser; i++)
 			target[i] = s[i];
+
+		target[lesser] = 0; // NUL terminate.
 	}
+
 
 private:
 	const char* s;
