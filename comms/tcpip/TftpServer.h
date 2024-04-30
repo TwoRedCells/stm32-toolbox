@@ -76,10 +76,12 @@ public:
     	uint16_t port;
     	uint16_t length = socket->recvfrom(buffer, 512, addr, &port);
 
-    	if (length == 0 && state == Open && timeout.is_elapsed())
+    	if (length == 0 && timeout.is_elapsed())
     	{
     		timeout.reset();
     		error(addr, port, ErrorUndefined, "Timeout exceeded");
+    		socket->disconnect();
+    		socket->close();
     		state = Closed;
     		return;
     	}
@@ -117,7 +119,9 @@ public:
     		else if (opcode == OpcodeError)
 			{
 				state = Closed;
-				timeout.reset();
+	    		socket->disconnect();
+	    		socket->close();
+	    		timeout.reset();
 				return;
 			}
 
@@ -127,7 +131,7 @@ public:
 				data_callback(filename, block_id, buffer+4, length-4);
 				timeout.restart();
 
-				// If less than 512b of data, it is the last block.
+				// If less than 512B of data, it is the last block.
 				if (length-4 < 512)
 				{
 					state = Closed;
@@ -208,7 +212,7 @@ private:
 	enum { Closed, Open } state = Closed;
 	void (*data_callback)(char* filename, uint16_t block_id, uint8_t* data, uint16_t length);
 	Timer timeout;
-	const uint32_t timeout_duration = seconds(15);
+	const uint32_t timeout_duration = milliseconds(Constants::TftpTimeout);
 };
 
 #endif /* LIB_STM32_TOOLBOX_COMMS_ETHERNET_NTPCLIENT_H_ */

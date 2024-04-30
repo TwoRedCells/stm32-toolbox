@@ -169,11 +169,14 @@ public:
 			// copy data
 			if (is_buffered)
 			{
-				bufferData(buf, len);
+//				bufferData(buf, len);
+				w5500->send_data_processing_offset(socket_no, buffer_offset, (uint8_t*)buf, trx);
+				buffer_offset += trx;
+				ret += trx;
 			}
 			else
 			{
-				w5500->send_data_processing(socket_no, (uint8_t *)buf+ret, trx);
+				w5500->send_data_processing(socket_no, (uint8_t*)buf+ret, trx);
 				w5500->execute_command(socket_no, Sock_SEND);
 				sock_is_sending |= (1 << socket_no);
 				ret += trx;
@@ -310,7 +313,8 @@ public:
 	void flush(void)
 	{
 		buffer_offset = 0;
-		w5500->execute_command(socket_no, Sock_SEND);
+		send_udp();
+		//w5500->execute_command(socket_no, Sock_SEND);
 	}
 
 	uint16_t igmpsend(const void * buf, uint16_t len)
@@ -372,6 +376,7 @@ public:
 	{
 		assert (!addr.is_empty());
 		assert (port != 0);
+		buffer_offset = 0;
 
 		w5500->writeSnDIPR(socket_no, addr.raw_address());
 		w5500->writeSnDPORT(socket_no, port);
@@ -384,8 +389,7 @@ public:
 	 */
 	bool send_udp(void)
 	{
-		flush();
-		//w5500->execute_command(socket_no, Sock_SEND);
+		w5500->execute_command(socket_no, Sock_SEND);
 
 		while (!(w5500->readSnIR(socket_no) & SnIR::SEND_OK))
 		{
