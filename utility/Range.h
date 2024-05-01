@@ -32,9 +32,9 @@ public:
 		return l;
 	}
 
-	T difference(void)
+	T span(void)
 	{
-		return l - f;
+		return l - f + 1;
 	}
 
 	bool in(T value)
