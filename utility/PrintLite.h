@@ -170,14 +170,16 @@ public:
 						zero_padding = true;
 						break;
 					case '1':
-						if (*(format+1) == '2')
+						if (*format == '2')
 						{
 							fixed_width = 12;
+							format++;
 							break;
 						}
-						if (*(format+1) == '6')
+						if (*format == '6')
 						{
 							fixed_width = 16;
+							format++;
 							break;
 						}
 					case '2':

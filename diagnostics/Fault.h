@@ -87,6 +87,18 @@ public:
 
 
 	/// <summary>
+	/// Updates a range of faults
+	/// </summary>
+	/// <param name="mask">The mask to use when applying the state.</param>
+	/// <param name="state">The state to merge.</param>
+	void merge(uint64_t mask, uint64_t state)
+	{
+		this->fault &= ~mask;  // Reset these bits.
+		this->fault |= (state & mask);
+	}
+
+
+	/// <summary>
 	/// Gets the current fault state.
 	/// </summary>
 	/// <returns>The bitfield representing the current fault state, or zero if no faults are present.</returns>
