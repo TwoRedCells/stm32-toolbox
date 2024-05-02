@@ -127,11 +127,11 @@ public:
 	
 protected:
 	CAN_HandleTypeDef *hcan;
+	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
 
 private:
 	CAN_TxHeaderTypeDef can_tx_header;
 	uint32_t can_tx_mailbox;
-	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
 };
 
 #endif /* INC_COMMS_CANBUS_H_ */

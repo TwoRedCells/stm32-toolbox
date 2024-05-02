@@ -60,7 +60,7 @@ public:
 	static constexpr uint8_t ActivateScroll = 0x2f;
 	static constexpr uint8_t SetVerticalScrollArea = 0xa3;
 
-	static constexpr uint32_t DefaultTimeout = 100000;
+	static constexpr uint32_t DefaultTimeout = 250;
 
 	/**
 	 * @brief	Initializes this instance.
@@ -312,22 +312,25 @@ public:
 private:
 	void command(uint8_t cmd)
 	{
-		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, &cmd, 1, timeout);
+//		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, &cmd, 1, timeout);
+		HAL_I2C_Master_Transmit(i2c, i2cadr, &cmd, 1, timeout);
 	}
 
 	void command(uint8_t cmd, uint8_t arg)
 	{
 		uint8_t msg[2] { cmd, arg };
-		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, msg, 2, timeout);
+//		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, msg, 2, timeout);
+		HAL_I2C_Master_Transmit(i2c, i2cadr, msg, 2, timeout);
 	}
 
 	void command(uint8_t cmd, uint8_t arg1, uint8_t arg2)
 	{
 		uint8_t msg[3] { cmd, arg1, arg2 };
-		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, msg, 3, timeout);
+//		HAL_I2C_Mem_Write(i2c, i2cadr, 0x00, 1, msg, 3, timeout);
+		HAL_I2C_Master_Transmit(i2c, i2cadr, msg, 3, timeout);
 	}
 
-
+	bool mutex = false;
 	I2C_HandleTypeDef* i2c;
 	uint16_t width, height;
 	uint16_t i2cadr;
