@@ -116,6 +116,8 @@
 #endif
 
 #ifdef __GNUC__ // Workaround GCC bug #8271 
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 	// At present, GCC doesn't recognize constness of MFPs in templates
 #define FASTDELEGATE_GCC_BUG_8271
 #endif

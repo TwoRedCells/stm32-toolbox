@@ -142,7 +142,10 @@ public:
     void trim(void)
     {
     	if (length > 0)
+    	{
     		length--;
+    		next--;
+    	}
     }
 
 private:

@@ -64,7 +64,7 @@ public:
 		};
 		int dow = time.GetDayOfWeek();
 		RTC_DateTypeDef rtc_date = {
-					.WeekDay = dow == 0 ? 7 : dow+1,
+					.WeekDay = (uint8_t) (dow == 0 ? 7 : dow+1),
 					.Month = (uint8_t) (time.month + 1),
 					.Date = (uint8_t) (time.day + 1),
 					.Year = (uint8_t) (time.year - 2000)

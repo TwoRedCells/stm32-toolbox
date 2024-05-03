@@ -6,12 +6,6 @@
 ///             firmware for STM32 microcontrollers. _See https://github.com/TwoRedCells/stm32-toolbox/_
 /// @copyright  See https://github.com/TwoRedCells/stm32-toolbox/blob/main/LICENSE
 
-/**
- * \file       comms/Serial.h
- * \class      Serial
- * \brief      Encapsulates communications over the serial UART RS232C interface.
- */
-
 #ifndef INC_COMMS_SERIAL_HPP_
 #define INC_COMMS_SERIAL_HPP_
 
@@ -30,13 +24,19 @@ public:
     /**
      * Initializes the serial interface.
      * @param handle Handle to the hardware interface.
-     * @return True on success; otherwise failure.
      */
 	Serial(UART_HandleTypeDef *handle)
 	{
 		this->handle = handle;
 	}
 
+
+    /**
+     * Initializes the serial interface.
+     * @param	handle	Handle to the hardware interface.
+     * @param	buffer	Pointer to an input buffer.
+     * @param	length	Length of the input buffer.
+     */
 	Serial(UART_HandleTypeDef *handle, uint8_t* buffer, uint32_t length)
 	: queue(buffer, length)
 	{
@@ -110,37 +110,89 @@ public:
 	}
 
 
+	/**
+	 * Reads a byte from the input buffer.
+	 * @returns	The first available byte from the input buffer.
+	 */
 	uint8_t read(void)
 	{
 		return queue.dequeue();
 	}
 
+
+	/**
+	 * Gets the number of bytes waiting in the input buffer
+	 * @returns	The number of bytes in the input buffer.
+	 */
 	uint32_t available(void)
 	{
 		return queue.get_length();
 	}
 
+
+	/**
+	 * Instructs the UART peripheral to start receiving bytes in interrupt mode.
+	 */
 	void start(void)
 	{
 		HAL_UART_Receive_IT(handle, &in, 1);
 	}
 
+
+	/**
+	 * Call this from the UART interrupt handler to indicate to the class that a byte has been received by hardware.
+	 */
 	void on_rx_interrupt(void)
 	{
-		queue.enqueue(in);
+		if (input_callback != nullptr)
+			input_callback(in);
+
+		switch (in)
+		{
+		case '\r':
+			queue.enqueue(0);
+			if (eol_callback != nullptr)
+				eol_callback();
+			break;
+		case 0x08:  // backspace
+		case 0x7f:  // delete
+			queue.trim();
+			break;
+		default:
+			queue.enqueue(in);
+			break;
+		}
+
 		HAL_UART_Receive_IT(handle, &in, 1);
-		if (in == '\r' && eol_callback != nullptr)
-			eol_callback();
 	}
 
+
+	/**
+	 * Purges all bytes from the input (read) buffer.
+	 */
 	void purge(void)
 	{
 		queue.clear();
 	}
 
+
+	/**
+	 * Sets the function to callback when an end-of-line is encountered.
+	 * @param	callback	Pointer to the function.
+	 */
 	void set_eol_callback(void (*callback)(void))
 	{
 		eol_callback = callback;
+	}
+
+
+	/**
+	 * Sets the function to callback when a character is input.
+	 * @param	callback	Pointer to the function.
+	 */
+	void set_input_callback(void (*callback)(uint8_t))
+	{
+		input_callback = callback;
 	}
 
 private:
@@ -150,6 +202,7 @@ private:
 	uint32_t length;
 	Queue<uint8_t> queue;
 	void (*eol_callback)(void) = nullptr;
+	void (*input_callback)(uint8_t) = nullptr;
 };
 
 #endif /* INC_COMMS_SERIAL_HPP_ */

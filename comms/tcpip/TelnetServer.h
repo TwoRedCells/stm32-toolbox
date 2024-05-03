@@ -28,21 +28,45 @@ public:
 
 	}
 
+
+	/**
+	 * Sets the function to callback when an end-of-line is encountered.
+	 * @param	callback	Pointer to the function.
+	 */
 	void set_eol_callback(void (*callback)(void))
 	{
 		eol_callback = callback;
 	}
 
+
+	/**
+	 * Sets the function to callback when a character is input.
+	 * @param	callback	Pointer to the function.
+	 */
+	void set_input_callback(void (*callback)(uint8_t))
+	{
+		input_callback = callback;
+	}
+
+
+	/**
+	 * Called by an external function when data is received.
+	 * @param	value	The byte value to pass into the input buffer.
+	 */
 	void on_data_received(uint8_t value)
 	{
+		if (input_callback != nullptr)
+			input_callback(value);
+
 		switch (value)
 		{
 		case '\r':
 			queue.enqueue(0);
-			eol_callback();
+			if (eol_callback != nullptr)
+				eol_callback();
 			break;
-		case '\b':
-		case 0x7f:
+		case 0x08:  // backspace
+		case 0x7f:  // delete
 			queue.trim();
 			break;
 		default:
@@ -51,11 +75,21 @@ public:
 		}
 	}
 
+
+	/**
+	 * Gets the number of bytes available in the input buffer.
+	 * @returns	The number of bytes in the input buffer.
+	 */
 	size_t available(void) override
 	{
 		return queue.get_length();
 	}
 
+
+	/**
+	 * Determines if data is available in the input buffer.
+	 * @returns True if data is buffered; otherwise false.
+	 */
 	bool is_available(void)
 	{
 		return TcpServer::available();
@@ -76,6 +110,10 @@ public:
 
 	using TcpServer::read;
 
+
+	/**
+	 * Discards all bytes from the input buffer.
+	 */
 	void purge()
 	{
 		while (is_available())
@@ -89,6 +127,7 @@ private:
 	Socket* socket;
 	Queue<uint8_t> queue;
 	void (*eol_callback)(void) = nullptr;
+	void (*input_callback)(uint8_t) = nullptr;
 };
 
 #endif /* LIB_STM32_TOOLBOX_COMMS_ETHERNET_NTPCLIENT_H_ */
