@@ -438,8 +438,6 @@ public:
 	}
 
 private:
-
-
 	/**
 	 * @brief Selects an available socket.
 	 * @returns True if a socket is available; otherwise false.
@@ -457,7 +455,6 @@ private:
 
 		assert (false);
 	}
-
 
 
 	Ethernet* w5500;

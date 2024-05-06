@@ -304,7 +304,7 @@ public:
 		this->callback = instance;
 	}
 
-	void set_message_callback(fastdelegate::FastDelegate2<uint16_t, uint8_t*> callback)
+	void set_message_callback(FastDelegate2<uint16_t, uint8_t*> callback)
 	{
 		this->message_callback = callback;
 	}
@@ -347,7 +347,7 @@ private:
 	uint32_t sync_count = 0;
 	ICanOpenCallback* callback = nullptr;
 	roles role = Master;
-	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
+	FastDelegate2<uint16_t, uint8_t*> message_callback;
 	bool allow_tpdo5 = false;
 };
 

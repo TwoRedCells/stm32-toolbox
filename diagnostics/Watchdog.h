@@ -74,13 +74,15 @@ public:
 	/// Refreshes the watchdog only if all tasks have checked in.
 	/// </summary>
 	/// <remarks>Must be called periodically to prevent activation of the watchdog.</remarks>
-	void taunt(void)
+	bool taunt(void)
 	{
 		if ((flags & expected) == expected)
 		{
 			HAL_IWDG_Refresh(&hiwdg);
 			flags = 0;
+			return true;
 		}
+		return false;
 	}
 
 
