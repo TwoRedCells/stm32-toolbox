@@ -78,7 +78,11 @@ public:
 				timestamp += 86400; // Add leap day
 
 		for (int i=0; i<month; i++)
+		{
 			timestamp += months[i] * 86400;
+			if (i == 1 && IsLeapYear(year))
+				timestamp += 86400;
+		}
 		timestamp += day * 86400; // Days to seconds
 		timestamp += hour * 3600; // Hours to seconds
 		timestamp += minute * 60; // Minutes to seconds

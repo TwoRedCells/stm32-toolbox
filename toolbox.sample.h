@@ -88,6 +88,9 @@
 // Graphics
 #define ICANVAS_MAX_WIDGETS (100)
 
+// Timer
+#define TIMER_OVERFLOW_INTERVAL (0xffffffff/2)  // A timer is determined to have overflowed if the difference between its settings and the current time exceed this.
+
 // Generics
 #define GENERICS_ALLOW_NEW (0)   // Whether the generics are allowed to use dynamic memory allocations.
 

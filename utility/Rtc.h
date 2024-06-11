@@ -95,7 +95,4 @@ private:
 	}
 };
 
-
-
-
 #endif /* INC_STM32_TOOLBOX_DEVICES_RTC_H_ */

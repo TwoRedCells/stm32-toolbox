@@ -210,7 +210,7 @@ private:
     U* values;
     uint32_t buffer_length;  // Length of the buffer.
     uint32_t length;  // The current length of the queue.
-    U _default;  // Empty value.
+    U _default = nullptr;  // Empty value.
     bool dynamic = false;  // True if the buffer was allocated at runtime.
 };
 #endif

@@ -25,7 +25,6 @@ public:
 	TelnetServer(Socket* socket, uint8_t* buffer, uint32_t length, uint16_t port=telnet_port) : TcpServer(socket, port),
 	queue(buffer, length)
 	{
-
 	}
 
 
@@ -94,6 +93,7 @@ public:
 	{
 		return TcpServer::available();
 	}
+
 
 	/**
 	 * Reads bytes from the port.

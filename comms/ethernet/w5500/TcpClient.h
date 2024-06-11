@@ -11,18 +11,6 @@
 class TcpClient : public IWrite
 {
 public:
-
-//	virtual operator bool() { return _sock != MAX_SOCK_NUM; }
-//
-//	virtual bool operator==(const bool value) { return bool() == value; }
-//	virtual bool operator!=(const bool value) { return bool() != value; }
-//	virtual bool operator==(const TcpClient& rhs)
-//    		{ return _sock == rhs._sock && _sock != MAX_SOCK_NUM && rhs._sock != MAX_SOCK_NUM; }
-//
-//	virtual bool operator!=(const TcpClient& rhs) { return !this->operator==(rhs); }
-//
-
-//	inline uint8_t get_socket_number() { return _sock; }
 //	inline void getRemoteIP(uint8_t * remoteIP) { socket->getRemoteIP(_sock, remoteIP); }
 
 	TcpClient(Socket* socket)
@@ -101,7 +89,6 @@ public:
 	{
 		Timer t(milliseconds(1000));
 		t.start();
-		flush();
 
 		// attempt to close the connection gracefully (send a FIN to other side)
 		socket->disconnect();
@@ -132,6 +119,7 @@ public:
 		return socket->status();
 	}
 
+protected:
 	static uint16_t assign_local_port(void)
 	{
 		static uint16_t port = 49152; //Use IANA recommended ephemeral port range 49152-65535

@@ -120,14 +120,14 @@ public:
 	}
 	
 
-	void set_message_callback(fastdelegate::FastDelegate2<uint16_t, uint8_t*> callback)
+	void set_message_callback(FastDelegate2<uint16_t, uint8_t*> callback)
 	{
 		message_callback = callback;
 	}
 	
 protected:
 	CAN_HandleTypeDef *hcan;
-	fastdelegate::FastDelegate2<uint16_t, uint8_t*> message_callback;
+	FastDelegate2<uint16_t, uint8_t*> message_callback;
 
 private:
 	CAN_TxHeaderTypeDef can_tx_header;

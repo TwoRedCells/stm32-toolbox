@@ -174,7 +174,7 @@ public:
 	{
 		bool c = colour;
 		set_colour(!c);
-		rectangle(x, y, width-x, font->yAdvance, true);
+		rectangle(x, y, width-x, font->yAdvance+1, true);
 		set_colour(c);
 	}
 #endif
@@ -240,7 +240,7 @@ public:
 		}
 		else if (ch == '\v')
 		{
-			y += (font->yAdvance+1) / 2;
+			y += (font->yAdvance+1) / 2 - 1;
 		}
 		else
 		{
@@ -268,39 +268,6 @@ public:
 	{
 		this->font = font;
 	}
-//	size_t write(uint8_t ch) override
-//	{
-//		if (ch == '\r')
-//		{
-//			x = 0;
-//		}
-//		else if (ch == '\t')
-//		{
-//			x += font6x8.width/2;
-//		}
-//		else if (ch == '\n')
-//		{
-//			y += font6x8.height;
-//		}
-//		else if (ch == '\b')
-//		{
-//			clear_line();
-//		}
-//		else if (ch == '\v')
-//		{
-//			y += font6x8.height / 2;
-//		}
-//		else
-//		{
-//			const uint8_t* glyph = font6x8.glyphs[ch];
-//			for (uint16_t i=0; i<8; i++)
-//				for (uint16_t j=0; j<8; j++)
-//					if (glyph[i] & (1 << j))
-//						pixel(x+j, i+y, colour);
-//			x += font6x8.width;
-//		}
-//		return 1;
-//	}
 #endif
 
 	void set_rotation(uint16_t degrees)

@@ -125,9 +125,11 @@ public:
 	/// <returns>True if the timer has elapsed; otherwise false.</returns>
 	bool is_elapsed(void)
 	{
-		return alarm != 0 &&
-				((alarm > started && now() >= alarm && now() > started)
-						|| (alarm < started && now() >= alarm && now() < started));
+		return alarm != 0 && (
+			(alarm > started && now() >= alarm && now() > started)
+			|| (alarm < started && now() >= alarm && now() < started)
+			|| now() - started > TIMER_OVERFLOW_INTERVAL
+		);
 	}
 
 

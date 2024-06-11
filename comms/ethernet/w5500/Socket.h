@@ -27,7 +27,7 @@ public:
 	bool open(uint8_t mode, uint16_t port, uint8_t flag)
 	{
 		get_available_socket();
-		sock_is_sending &= ~(1<<socket_no);
+		sending = false;
 
 		close();
 		switch(mode)
@@ -52,7 +52,7 @@ public:
 	bool open(uint8_t mode, uint8_t protocol)
 	{
 		get_available_socket();
-		sock_is_sending &= ~(1<<socket_no);
+		sending = false;
 
 		close();
 		switch(mode)
@@ -76,7 +76,7 @@ public:
 	 */
 	void close(void)
 	{
-		sock_is_sending &= ~(1<<socket_no);
+		sending = false;
 		w5500->execute_command(socket_no, Sock_CLOSE);
 		w5500->writeSnIR(socket_no, 0xFF);
 	}
@@ -91,7 +91,7 @@ public:
 		if (w5500->readSnSR(socket_no) != SnSR::INIT)
 			return false;
 		w5500->execute_command(socket_no, Sock_LISTEN);
-			return true;
+		return true;
 	}
 
 
@@ -129,9 +129,9 @@ public:
 		uint16_t ret = 0;
 		while (ret < len)
 		{
-			if (sock_is_sending & (1 << socket_no))
+			if (sending)
 			{
-				sock_is_sending &= ~(1 << socket_no);
+				sending = false;
 				while (!(w5500->readSnIR(socket_no) & SnIR::SEND_OK))
 				{
 					uint8_t snSR = w5500->readSnSR(socket_no);
@@ -147,7 +147,6 @@ public:
 						return 0;
 					}
 				}
-				/* +2008.01 bj */
 				w5500->writeSnIR(socket_no, SnIR::SEND_OK);
 			}
 
@@ -155,12 +154,13 @@ public:
 			if (trx > w5500->SSIZE)
 				trx = w5500->SSIZE; // check size not to exceed MAX size.
 
-			// if freebuf is available, start.
+			// Wait for data in the send buffer to be sent.
 			while (w5500->get_tx_free_size(socket_no) < trx)
 			{
 				uint8_t status = w5500->readSnSR(socket_no);
 				if ((status != SnSR::ESTABLISHED) && (status != SnSR::CLOSE_WAIT))
 				{
+					// The connection has been closed. Give up.
 					close();
 					return 0;
 				}
@@ -169,7 +169,6 @@ public:
 			// copy data
 			if (is_buffered)
 			{
-//				bufferData(buf, len);
 				w5500->send_data_processing_offset(socket_no, buffer_offset, (uint8_t*)buf, trx);
 				buffer_offset += trx;
 				ret += trx;
@@ -178,7 +177,7 @@ public:
 			{
 				w5500->send_data_processing(socket_no, (uint8_t*)buf+ret, trx);
 				w5500->execute_command(socket_no, Sock_SEND);
-				sock_is_sending |= (1 << socket_no);
+				sending = true;
 				ret += trx;
 			}
 		}
@@ -438,33 +437,31 @@ public:
 	}
 
 private:
-
-
 	/**
 	 * @brief Selects an available socket.
 	 * @returns True if a socket is available; otherwise false.
 	 */
-	void get_available_socket(void)
+	bool get_available_socket(void)
 	{
 		// MAX_SOCK_NUM is invalid, so if it is the result, we failed.
+		uint8_t statuses[MAX_SOCK_NUM];
 		for (uint8_t i = 0; i < MAX_SOCK_NUM; i++)
 		{
 			socket_no = i;
 			uint8_t s = status();
+			statuses[i] = s;
 			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
-				return;
+				return true;
 		}
 
 		assert (false);
 	}
 
 
-
 	Ethernet* w5500;
 	uint8_t socket_no;
 	inline static uint16_t local_port = 0;
-	inline static uint8_t sock_is_sending = 0;
-	inline static uint16_t server_port[MAX_SOCK_NUM] = { 0, };
+	bool sending = false;
 	bool is_buffered = false;
 	uint16_t buffer_offset = 0;
 };
