@@ -20,7 +20,7 @@ public:
 		this->ethernet = ethernet;
 	}
 
-	void get_remote_ip(SOCKET s, uint8_t *ip) { ethernet->readSnDIPR(s, ip); }
+	//void get_remote_ip(SOCKET s, uint8_t *ip) { ethernet->readSnDIPR(s, ip); }
 
 	void set_gateway_ip(uint8_t* addr)  { ethernet->tcpip_set_gateway_ip(addr); }
 	void get_gateway_ip(uint8_t* addr)  { ethernet->tcpip_get_gateway_ip(addr); }

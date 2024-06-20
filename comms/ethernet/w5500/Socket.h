@@ -79,6 +79,7 @@ public:
 		sending = false;
 		w5500->execute_command(socket_no, Sock_CLOSE);
 		w5500->writeSnIR(socket_no, 0xFF);
+		reservations[socket_no] = false;
 	}
 
 
@@ -403,6 +404,14 @@ public:
 		return true;
 	}
 
+	uint32_t get_client_ip(void)
+	{
+		uint32_t ip;
+		uint8_t* ip8 = (uint8_t*)&ip;
+		w5500->readSnDIPR(socket_no, ip8);
+		return ip;
+	}
+
 
 	uint8_t status(void)
 	{
@@ -447,11 +456,17 @@ private:
 		uint8_t statuses[MAX_SOCK_NUM];
 		for (uint8_t i = 0; i < MAX_SOCK_NUM; i++)
 		{
+			if (reservations[i])
+				continue;
+
 			socket_no = i;
 			uint8_t s = status();
 			statuses[i] = s;
 			if (s == SnSR::CLOSED || s == SnSR::FIN_WAIT)
+			{
+				reservations[socket_no] = true;
 				return true;
+			}
 		}
 
 		assert (false);
@@ -464,6 +479,7 @@ private:
 	bool sending = false;
 	bool is_buffered = false;
 	uint16_t buffer_offset = 0;
+	static inline bool reservations[8] = {0};
 };
 
 #endif /* _SOCKET_H_ */

@@ -11,8 +11,6 @@
 class TcpClient : public IWrite
 {
 public:
-//	inline void getRemoteIP(uint8_t * remoteIP) { socket->getRemoteIP(_sock, remoteIP); }
-
 	TcpClient(Socket* socket)
 	{
 		this->socket = socket;
