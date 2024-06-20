@@ -14,17 +14,21 @@
 #include "comms/ethernet/w5500/TcpServer.h"
 #include "comms/tcpip/IPv4Address.h"
 #include "generics/Queue.h"
+#include "utility/Timer.h"
 
 
 class TelnetServer : public TcpServer
 {
 public:
 	static constexpr uint16_t telnet_port = 23;
+	static constexpr uint8_t nop = 0xf1;
 
 
-	TelnetServer(Socket* socket, uint8_t* buffer, uint32_t length, uint16_t port=telnet_port) : TcpServer(socket, port),
-	queue(buffer, length)
+	TelnetServer(Socket* socket, uint8_t* buffer, uint32_t length, uint16_t port=telnet_port, uint32_t timeout=seconds(60)) : TcpServer(socket, port),
+		queue(buffer, length),
+		timer(milliseconds(timeout))
 	{
+		this->socket = socket;
 	}
 
 
@@ -54,6 +58,12 @@ public:
 	 */
 	void on_data_received(uint8_t value)
 	{
+		if (value == nop)
+		{
+			timer.restart();
+			return;
+		}
+
 		if (input_callback != nullptr)
 			input_callback(value);
 
@@ -61,6 +71,7 @@ public:
 		{
 		case '\r':
 			queue.enqueue(0);
+			timer.restart();
 			if (eol_callback != nullptr)
 				eol_callback();
 			break;
@@ -96,6 +107,15 @@ public:
 
 
 	/**
+	 * Determines whether a timeout has occurred.
+	 */
+	bool is_timedout(void)
+	{
+		return timer.is_elapsed();
+	}
+
+
+	/**
 	 * Reads bytes from the port.
 	 * @param buffer Pointer to the location to store the data.
 	 * @param length Number of bytes to read.
@@ -114,11 +134,18 @@ public:
 	/**
 	 * Discards all bytes from the input buffer.
 	 */
-	void purge()
+	void purge(void)
 	{
 		while (is_available())
 			read();
 		queue.clear();
+		timer.restart();
+	}
+
+	void stop(void)
+	{
+		timer.reset();
+		TcpServer::stop();
 	}
 
 
@@ -128,6 +155,7 @@ private:
 	Queue<uint8_t> queue;
 	void (*eol_callback)(void) = nullptr;
 	void (*input_callback)(uint8_t) = nullptr;
+	Timer timer;
 };
 
 #endif /* LIB_STM32_TOOLBOX_COMMS_ETHERNET_NTPCLIENT_H_ */

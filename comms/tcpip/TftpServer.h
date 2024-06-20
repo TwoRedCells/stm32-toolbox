@@ -76,38 +76,40 @@ public:
     	uint16_t port;
     	uint16_t length = socket->recvfrom(buffer, 512, addr, &port);
 
-    	if (length == 0 && timeout.is_elapsed())
+    	if (length == 0)
     	{
-    		timeout.reset();
-    		error(addr, port, ErrorUndefined, "Timeout exceeded");
-    		socket->disconnect();
-    		socket->close();
-    		state = Closed;
+    		if (timeout.is_elapsed())
+    		{
+				timeout.reset();
+				error(addr, port, ErrorUndefined, "Timeout exceeded");
+				socket->disconnect();
+				socket->close();
+				state = Closed;
+				begin();
+    		}
     		return;
     	}
 
 		uint16_t opcode = swap(*(uint16_t*)buffer);
-    	if (length > 0 /*&& state == Closed*/)
-    	{
-    		memcpy(client_ip, addr, 4);
-    		client_port = port;
-			if (opcode == OpcodeWriteRequest) // WRQ / Write request
+		memcpy(client_ip, addr, 4);
+		client_port = port;
+		if (opcode == OpcodeWriteRequest) // WRQ / Write request
+		{
+			state = Open;
+			// Copy filename.
+			for (uint16_t i=0; i < 80; i++)
 			{
-				state = Open;
-				// Copy filename.
-				for (uint16_t i=0; i < 80; i++)
-				{
-					filename[i] = buffer[i+2];
-					filename[i+1] = 0;
-					if (filename[i] == 0x00)
-						break;
-				}
-
-				// Respond with acknowledgement.
-				ack(0);
-				timeout.start(timeout_duration);
-				data_callback(filename, 0, nullptr, 0);
+				filename[i] = buffer[i+2];
+				filename[i+1] = 0;
+				if (filename[i] == 0x00)
+					break;
 			}
+
+			// Respond with acknowledgement.
+			ack(0);
+			timeout.start(timeout_duration);
+			data_callback(filename, 0, nullptr, 0);
+		}
 
 //			// If the client IP doesn't match, another host is connecting, which isn't allowed.
 //    		if (memcmp(client_ip, addr, 4))
@@ -116,34 +118,34 @@ public:
 //    			return;
 //    		}
 
-    		else if (opcode == OpcodeError)
+		else if (opcode == OpcodeError)
+		{
+			state = Closed;
+			socket->disconnect();
+			socket->close();
+			timeout.reset();
+			return;
+		}
+
+		else if (opcode == OpcodeData)
+		{
+			uint16_t block_id = swap(*(uint16_t*)(buffer+2));
+			data_callback(filename, block_id, buffer+4, length-4);
+			timeout.restart();
+
+			// If less than 512B of data, it is the last block.
+			if (length-4 < 512)
 			{
 				state = Closed;
-	    		socket->disconnect();
-	    		socket->close();
-	    		timeout.reset();
-				return;
+				timeout.reset();
 			}
+			ack(block_id);
+		}
 
-    		else if (opcode == OpcodeData)
-			{
-				uint16_t block_id = swap(*(uint16_t*)(buffer+2));
-				data_callback(filename, block_id, buffer+4, length-4);
-				timeout.restart();
-
-				// If less than 512B of data, it is the last block.
-				if (length-4 < 512)
-				{
-					state = Closed;
-					timeout.reset();
-				}
-				ack(block_id);
-			}
-    		else
-    		{
-    			error(addr, port, ErrorUndefined, "Intention not understood.");
-    		}
-    	}
+		else
+		{
+			error(addr, port, ErrorUndefined, "Intention not understood.");
+		}
     }
 
 
