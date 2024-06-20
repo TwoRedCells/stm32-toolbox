@@ -111,6 +111,7 @@ public:
 	 */
 	bool is_timedout(void)
 	{
+//		log_d("%d %d %d", timer.elapsed(), timer.now(), timer.now()/(0xffffffff/80));
 		return timer.is_elapsed();
 	}
 

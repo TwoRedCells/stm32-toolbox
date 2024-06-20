@@ -123,7 +123,7 @@ public:
 						capitalize = true;
 					case 'x':                       // 16 bit heXadecimal
 					{
-						uint64_t u = va_arg(a, uint64_t);
+						uint32_t u = va_arg(a, uint32_t);
 						if (fixed_width == 16)
 						{
 							puth(u >> 60 & 0xf, capitalize);

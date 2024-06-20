@@ -187,19 +187,23 @@ public:
 	{
 		static uint32_t last = 0;
 		static uint32_t accumulator = 0;
-		static volatile bool lock = false;
+		static osMutexId_t lock = osMutexNew();
 
 		// n is the value of the DWT timer in microseconds.
 		uint32_t n = DWT->CYCCNT / (HAL_RCC_GetHCLKFreq() / 1000000);
 		// When DWT reaches 2^32 (every 30-60 seconds depending on clock speed), it will roll over to zero.
 		// When that happens, we add 2^32 ticks (converted to microseconds) to the accumulator,
 		// allowing us to return the value as a 32-bit integer.
-		if (n < last && !lock)
+#ifdef USING_FREERTOS
+//		static volatile bool lock;
+		if (n < last && osAcquireMutex(lock, 0) == osOK)
 		{
-			lock = true;
 			accumulator += 0xffffffff / (HAL_RCC_GetHCLKFreq() / 1000000) + 1;
-			lock = false;
+			osReleaseMutex(lock);
 		}
+#else
+		accumulator += 0xffffffff / (HAL_RCC_GetHCLKFreq() / 1000000) + 1;
+#endif
 		last = n;
 		// Now we can return the number of microseconds since the system started (until 2^32 microseconds).
 		return n + accumulator;
