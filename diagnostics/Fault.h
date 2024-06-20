@@ -102,7 +102,7 @@ public:
 	/// Gets the current fault state.
 	/// </summary>
 	/// <returns>The bitfield representing the current fault state, or zero if no faults are present.</returns>
-	uint32_t get(void)
+	uint64_t get(void)
 	{
 		return this->fault;
 	}
